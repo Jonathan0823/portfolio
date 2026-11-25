@@ -48,7 +48,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
               <div class="md:grid md:grid-cols-[1fr_240px] md:items-baseline md:gap-6">
                 <p class="text-[17px] leading-[1.55] text-body text-pretty md:text-lg md:leading-relaxed">{a.text}{(() => {
                     const published = projectForAchievement(projects, a.id);
-                    return published && (<> I later rebuilt it as open source: <a href={`#${projectAnchor(published.id)}`} class="text-ink">{published.data.name} ↓</a></>);
+                    return published && (<> I also published an open-source version: <a href={`#${projectAnchor(published.id)}`} class="text-ink">{published.data.name} ↓</a></>);
                   })()}</p>
                 <div class="mt-1.5 flex justify-between gap-3 md:mt-0 md:flex-col md:items-end md:gap-1 md:text-right">
                   {a.tags.length > 0 && <p class="font-mono text-[13px] leading-relaxed text-muted">{a.tags.join(' · ')}</p>}
