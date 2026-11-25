@@ -1,5 +1,6 @@
 ---
 import { render } from 'astro:content';
+import Nav from '../components/Nav.astro';
 import PageEnd from '../components/PageEnd.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getStoryYears } from '../lib/content';
@@ -17,15 +18,19 @@ const groupsWithBodies = await Promise.all(
     milestones: await Promise.all(g.milestones.map(async (m) => ({ ...m, Content: (await render(m)).Content }))),
   })),
 );
+
+// One link per year of the story, then contact.
+const navLinks = [
+  ...groups.map((g) => ({ href: `#y${g.year}`, label: g.year === NOW_YEAR ? NOW_LABEL : String(g.year), sec: `y${g.year}` })),
+  { href: '#contact', label: 'Contact', sec: 'contact' },
+];
 ---
 
 <BaseLayout title={seo.title} description={seo.description} image={seo.ogPath}>
-  <div class="text-muted flex justify-between px-5 py-7 font-mono text-[13px] leading-relaxed md:px-24">
-    <a href="/" data-cursor="back" class="text-ink hover:text-muted">← Eguin Jonathan</a>
-    <p>The full story</p>
-  </div>
-
-  <div data-pixel-field="strip" aria-hidden="true" class="h-[120px] w-full md:h-[150px]"></div>
+  <Nav links={navLinks} brandHref="/" />
+  <!-- As on home, the pixels start at the very top and the nav floats over them, turning solid once
+       they are scrolled past (the nav script looks for id="top"). -->
+  <div id="top" data-pixel-field="strip" aria-hidden="true" class="h-[200px] w-full md:h-[240px]"></div>
 
   <main>
     <section class="px-5 pt-10 md:px-24 md:pt-14">

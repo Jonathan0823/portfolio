@@ -20,7 +20,7 @@ const { links, brandHref = '#top' } = Astro.props;
     >
     </div>
 
-    <a href={brandHref} class="bg-paper px-3.5 py-2.5 text-[17px] font-semibold tracking-[-0.03em] whitespace-nowrap text-ink no-underline">Eguin Jonathan</a>
+    <a href={brandHref} data-cursor={brandHref === '/' ? 'back' : undefined} aria-label={brandHref === '/' ? 'Eguin Jonathan, back to the home page' : undefined} class="bg-paper px-3.5 py-2.5 text-[17px] font-semibold tracking-[-0.03em] whitespace-nowrap text-ink no-underline">{brandHref === '/' && <span aria-hidden="true">← </span>}Eguin Jonathan</a>
 
     <div class="bg-paper hidden gap-0.5 p-1.5 font-mono text-[13px] md:flex">
       {links.map((l) => (
