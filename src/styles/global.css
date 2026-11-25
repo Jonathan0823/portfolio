@@ -3,6 +3,24 @@
 @import '@fontsource-variable/geist-mono';
 
 /* Design tokens, from the original design. Use them as utilities: text-ink, bg-accent, border-line, ... */
+/* Pixel buttons (see scripts/pixel-button.ts): the canvas sits behind the label; the label flips once pixels land. */
+@media (hover: hover) {
+  [data-pixel-btn] {
+    position: relative;
+    isolation: isolate;
+    transition: color 120ms 120ms, border-color 120ms 120ms;
+  }
+  [data-pixel-btn]:not([data-pixel-btn='dark'])[data-pixel-on] {
+    color: var(--color-paper);
+    border-color: var(--color-ink);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [data-pixel-btn] {
+      transition: none;
+    }
+  }
+}
+
 @theme {
   --font-sans: 'Geist Variable', system-ui, sans-serif;
   --font-mono: 'Geist Mono Variable', ui-monospace, monospace;

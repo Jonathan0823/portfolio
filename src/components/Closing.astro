@@ -15,10 +15,10 @@ const pill = 'rounded-full border border-[#d4d4d4] px-[23px] py-[15px] text-base
   </p>
   <p class="mt-8 text-4xl font-semibold tracking-[-0.04em]">Eguin Jonathan</p>
   <div class="mt-6 flex flex-wrap gap-2.5 md:gap-3">
-    <a href={MAILTO_URL} class="rounded-full bg-ink px-6 py-4 text-base font-medium text-paper no-underline">{CONTACT_EMAIL}</a>
-    <a href={GITHUB_URL} class={pill}>GitHub</a>
-    <a href={LINKEDIN_URL} class={pill}>LinkedIn</a>
-    {cv && <a href="/cv.pdf" class={pill}>Résumé</a>}
+    <a href={MAILTO_URL} data-pixel-btn="dark" class="rounded-full bg-ink px-6 py-4 text-base font-medium text-paper no-underline">{CONTACT_EMAIL}</a>
+    <a href={GITHUB_URL} data-pixel-btn class={pill}>GitHub</a>
+    <a href={LINKEDIN_URL} data-pixel-btn class={pill}>LinkedIn</a>
+    {cv && <a href="/cv.pdf" data-pixel-btn class={pill}>Résumé</a>}
   </div>
 </section>
 
