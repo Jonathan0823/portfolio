@@ -1,0 +1,123 @@
+---
+import { render } from 'astro:content';
+import StoryClosing from '../components/story/StoryClosing.astro';
+import StoryStats from '../components/story/StoryStats.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getStoryYears } from '../lib/content';
+import { NOW_LABEL, NOW_YEAR } from '../lib/content-logic';
+import { CONTACT_EMAIL, GITHUB_URL, LINKEDIN_URL, MAILTO_URL } from '../lib/profile';
+import { formatMonth } from '../lib/role-timeline';
+import { pageSeo } from '../lib/seo';
+
+const seo = pageSeo('story');
+
+const groups = await getStoryYears();
+const groupsWithBodies = await Promise.all(
+  groups.map(async (g) => ({
+    ...g,
+    milestones: await Promise.all(g.milestones.map(async (m) => ({ ...m, Content: (await render(m)).Content }))),
+  })),
+);
+---
+
+<BaseLayout title={seo.title} description={seo.description} image={seo.ogPath}>
+  <div class="text-muted flex justify-between px-5 py-7 font-mono text-[13px] leading-relaxed md:px-24">
+    <a href="/" class="text-ink hover:text-muted">← Eguin Jonathan</a>
+    <p>The full story</p>
+  </div>
+
+  <main>
+    <section class="px-5 pt-10 md:px-24 md:pt-14">
+      <h1 class="text-[56px] leading-[0.9] font-semibold tracking-[-0.06em] md:text-[168px] md:whitespace-nowrap">
+        How I got here<span class="text-accent">.</span>
+      </h1>
+      <p class="mt-8 max-w-[34ch] text-xl leading-[1.45] tracking-[-0.01em] text-pretty md:text-[26px]">
+        I’m a software engineer in Karawang, Indonesia. Three years ago I was a student who liked taking things apart.
+        Now I write the software between factory machines and the people who watch them.
+      </p>
+      <p class="text-muted mt-6 font-mono text-[13px] leading-relaxed">
+        <a href={MAILTO_URL} class="text-ink hover:text-muted">{CONTACT_EMAIL}</a> ·
+        <a href={GITHUB_URL} class="text-ink hover:text-muted">GitHub</a> ·
+        <a href={LINKEDIN_URL} class="text-ink hover:text-muted">LinkedIn</a>
+      </p>
+    </section>
+
+    <p class="text-muted px-5 pt-16 font-mono text-[13px] leading-relaxed md:px-24 md:pt-28">
+      Each square beside a year is a month. Red months have a milestone.
+    </p>
+
+    {
+      groupsWithBodies.map((g) => (
+        <section id={`y${g.year}`} class="px-5 pt-20 md:px-24 md:pt-36">
+          <div class="grid gap-4 pb-6 md:grid-cols-12 md:items-end md:gap-x-6">
+            <div class="flex flex-col gap-3.5 md:col-span-3">
+              <h2 class="text-7xl leading-[0.85] font-semibold tracking-[-0.06em] md:text-[88px]">
+                {g.year === NOW_YEAR ? NOW_LABEL : g.year}
+              </h2>
+              {g.months.length > 0 && (
+                <ol class="flex gap-[3px]" aria-hidden="true">
+                  {g.months.map((m) => (
+                    <li
+                      title={formatMonth(m.month)}
+                      class:list={['h-3.5 w-3.5', m.count > 0 ? 'bg-accent' : 'bg-line']}
+                    />
+                  ))}
+                </ol>
+              )}
+            </div>
+            <div class="flex flex-col gap-2 md:col-span-9">
+              <p class="text-3xl leading-[1.1] font-semibold tracking-[-0.03em] text-balance md:text-4xl">
+                {g.subtitle}
+              </p>
+              {g.meta && <p class="text-muted font-mono text-[13px] leading-relaxed">{g.meta}</p>}
+            </div>
+          </div>
+
+          <ol>
+            {g.milestones.map((m) => (
+              <li class="border-line-soft grid gap-3 border-t py-6 md:grid-cols-12 md:items-baseline md:gap-x-6">
+                <p class="text-muted font-mono text-[13px] leading-relaxed md:col-span-2">
+                  {formatMonth(m.data.date)}<br />{m.data.label}
+                </p>
+                <h3 class="text-2xl leading-[1.15] font-semibold tracking-[-0.02em] text-balance md:col-span-5 md:text-[26px]">
+                  {m.data.title}
+                </h3>
+                <div class="flex flex-col gap-2 md:col-span-5">
+                  <div class="milestone-body text-body text-lg leading-[1.6] text-pretty">
+                    <m.Content />
+                  </div>
+                  {m.data.tags.length > 0 && (
+                    <p class="text-muted font-mono text-[13px] leading-relaxed">{m.data.tags.join(' · ')}</p>
+                  )}
+                  {m.data.link && (
+                    <p class="font-mono text-[13px] leading-relaxed">
+                      <a href={m.data.link.href} class="text-ink hover:text-muted">
+                        {m.data.link.text}
+                      </a>
+                    </p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ))
+    }
+
+    <StoryStats />
+    <StoryClosing />
+  </main>
+</BaseLayout>
+
+<style is:global>
+  .milestone-body > * + * {
+    margin-top: 0.5rem;
+  }
+  .milestone-body h2 {
+    margin-top: 1rem;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--color-muted);
+  }
+</style>

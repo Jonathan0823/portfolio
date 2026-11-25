@@ -1,0 +1,41 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+
+/* Design tokens, from the original design. Use them as utilities: text-ink, bg-accent, border-line, ... */
+@theme {
+  --font-sans: 'Geist Variable', system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+
+  --color-ink: #111111;
+  --color-body: #333333;
+  --color-muted: #5e5e5e;
+  --color-muted-strong: #4a4a4a;
+  --color-line: #eeeeee;
+  --color-line-soft: #ededed;
+  --color-square: #c8c8c8;
+  --color-accent: #e5484d;
+  --color-paper: #ffffff;
+
+  /* Hero pixel field palette */
+  --color-pixel-night: #1e1b4b;
+  --color-pixel-indigo: #4338ca;
+  --color-pixel-violet: #7c5cfa;
+  --color-pixel-orange: #ff7a28;
+  --color-pixel-sun: #ffc43c;
+  --color-pixel-mist: #f4f1ff;
+}
+
+/* Month squares start filled; the script in Experience.astro adds .sq-hidden to animate them in. */
+.sq {
+  transition: background-color 0.4s;
+}
+.sq.sq-hidden {
+  background-color: var(--color-line);
+}
+
+@layer base {
+  html {
+    @apply bg-paper text-ink font-sans antialiased;
+  }
+}

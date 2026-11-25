@@ -1,0 +1,66 @@
+---
+// Top navigation. Desktop: a row of links. Mobile: a <details> menu that works without JS.
+// The link for the section on screen gets aria-current="true" (set by the script below).
+const links: { href: string; label: string; sec?: string }[] = [
+  { href: '#experience', label: 'Experience', sec: 'experience' },
+  { href: '#skills', label: 'Skills', sec: 'skills' },
+  { href: '#projects', label: 'Projects', sec: 'projects' },
+  { href: '/story', label: 'Story' },
+  { href: '#contact', label: 'Contact', sec: 'contact' },
+];
+---
+
+<nav aria-label="Main" class="sticky top-0 z-40 h-0">
+  <div class="flex items-start justify-between px-3 pt-3 md:items-center md:px-24 md:pt-4">
+    <a href="#top" class="bg-paper px-3.5 py-2.5 text-[17px] font-semibold tracking-[-0.03em] whitespace-nowrap text-ink no-underline">Eguin Jonathan</a>
+
+    <div class="bg-paper hidden gap-0.5 p-1.5 font-mono text-[13px] md:flex">
+      {links.map((l) => (
+        <a
+          href={l.href}
+          data-sec={l.sec}
+          class:list={[
+            'px-3 py-1.5 text-ink no-underline decoration-accent decoration-2 underline-offset-[6px] aria-[current=true]:underline',
+            l.sec === 'contact' && 'bg-ink text-paper',
+          ]}>{l.label}</a>
+      ))}
+    </div>
+
+    <details data-menu class="bg-paper font-mono text-[13px] md:hidden">
+      <summary class="cursor-pointer list-none px-4 py-3 [&::-webkit-details-marker]:hidden">
+        <span class="in-open:hidden">Menu</span>
+        <span class="hidden in-open:inline">Close</span>
+      </summary>
+      <div class="flex min-w-[180px] flex-col gap-1 px-4 pt-1 pb-4">
+        {links.map((l) => (
+          <a
+            href={l.href}
+            data-sec={l.sec}
+            class="py-1 font-sans text-[28px] font-semibold tracking-[-0.03em] text-ink no-underline decoration-accent decoration-2 underline-offset-4 aria-[current=true]:underline">{l.label}</a>
+        ))}
+      </div>
+    </details>
+  </div>
+</nav>
+
+<script>
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-sec]')];
+  const sections = [...new Set(links.map((a) => a.dataset.sec!))]
+    .map((id) => document.getElementById(id))
+    .filter((el): el is HTMLElement => !!el);
+
+  const mark = () => {
+    // The last section whose top has passed 45% of the viewport is the one on screen.
+    let current: string | null = null;
+    for (const el of sections) if (el.getBoundingClientRect().top < innerHeight * 0.45) current = el.id;
+    for (const a of links) a.setAttribute('aria-current', String(a.dataset.sec === current));
+  };
+  addEventListener('scroll', mark, { passive: true });
+  mark();
+
+  // Picking a mobile menu entry closes the menu.
+  const menu = document.querySelector<HTMLDetailsElement>('details[data-menu]');
+  menu?.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('a')) menu.open = false;
+  });
+</script>

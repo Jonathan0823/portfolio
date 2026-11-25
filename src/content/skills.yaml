@@ -1,0 +1,10 @@
+- group: Languages
+  items: [Go, Python, TypeScript, Rust]
+- group: Backend & data
+  items: [PostgreSQL, Redis Streams, FastAPI, Gin]
+- group: IoT & protocols
+  items: [Modbus TCP/RTU, MQTT, ESP32]
+- group: Frontend
+  items: [Next.js, React]
+- group: Tooling
+  items: [Docker, Podman, Linux, GitHub Actions]

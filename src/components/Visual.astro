@@ -1,0 +1,16 @@
+---
+// A Project or Achievement visual: the real image when `src` exists, otherwise a neutral "coming soon" box.
+interface Props {
+  visual: { kind: string; label: string; src?: string | undefined };
+}
+const { visual } = Astro.props;
+---
+
+{visual.src ? (
+  <img src={visual.src} alt={visual.label} loading="lazy" class="aspect-[16/10] w-full rounded-md object-cover" />
+) : (
+  <div class="flex aspect-[16/10] flex-col items-center justify-center gap-2 rounded-md border border-dashed border-square bg-line px-6 text-center">
+    <p class="font-mono text-[13px] leading-relaxed text-muted">Coming soon</p>
+    <p class="text-base leading-snug text-body">{visual.label}</p>
+  </div>
+)}

@@ -1,0 +1,58 @@
+---
+import { HEAT_PALETTE } from '../lib/palette';
+import { calendarLabel, cellPosition, contributionLevel, dayTooltip, type GithubStats } from '../lib/github';
+
+interface Props {
+  calendar: GithubStats['calendar'];
+}
+const { calendar } = Astro.props;
+const cols = calendar.weeks.length;
+const cell = 12;
+const EMPTY = '#F1F1F1';
+const cells = calendar.weeks.flatMap((w, i) =>
+  w.days.map((d) => {
+    const { col, row } = cellPosition(d.date, i);
+    const level = contributionLevel(d.count);
+    return { x: col * cell + 1, y: row * cell + 1, fill: level < 0 ? EMPTY : HEAT_PALETTE[level], tip: dayTooltip(d.date, d.count) };
+  }),
+);
+---
+
+<figure class="relative" data-calendar>
+  <svg
+    role="img"
+    aria-label={calendarLabel(calendar.total)}
+    viewBox={`0 0 ${cols * cell} ${7 * cell}`}
+    class="block h-auto w-full"
+  >
+    {cells.map((c) => <rect x={c.x} y={c.y} width={cell - 2} height={cell - 2} fill={c.fill} data-tip={c.tip} />)}
+  </svg>
+  <div
+    data-calendar-tip
+    class="pointer-events-none absolute top-0 left-0 rounded-lg bg-ink px-3 py-2 font-mono text-xs whitespace-nowrap text-white opacity-0 transition-opacity duration-150"
+    aria-hidden="true"
+  >
+  </div>
+</figure>
+
+<script>
+  for (const fig of document.querySelectorAll<HTMLElement>('[data-calendar]')) {
+    const tip = fig.querySelector<HTMLElement>('[data-calendar-tip]');
+    if (!tip) continue;
+    fig.addEventListener('pointermove', (e) => {
+      const text = (e.target as Element).getAttribute?.('data-tip');
+      if (!text) {
+        tip.style.opacity = '0';
+        return;
+      }
+      const box = fig.getBoundingClientRect();
+      const x = Math.min(e.clientX - box.left + 12, box.width - 260);
+      tip.textContent = text;
+      tip.style.transform = `translate(${Math.max(0, x)}px, ${e.clientY - box.top - 40}px)`;
+      tip.style.opacity = '1';
+    });
+    fig.addEventListener('pointerleave', () => {
+      tip.style.opacity = '0';
+    });
+  }
+</script>
