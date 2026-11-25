@@ -18,6 +18,9 @@ const copy = z
     if (hit) ctx.addIssue({ code: 'custom', message: `placeholder text is not allowed: "${hit}"` });
   });
 
+/** A Role's `end` while it is still open. */
+export const PRESENT = 'present';
+
 /** YYYY-MM */
 export const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'must be a month like 2025-08');
 
@@ -50,7 +53,7 @@ export const roleSchema = z.object({
   org: copy,
   location: copy.optional(),
   start: month,
-  end: z.union([month, z.literal('present')]),
+  end: z.union([month, z.literal(PRESENT)]),
   kind: z.enum(['work', 'education']),
   note: copy.optional(),
   achievements: z.array(achievementSchema).default([]),

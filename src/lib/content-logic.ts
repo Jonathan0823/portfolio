@@ -1,3 +1,4 @@
+import { monthsOfYear, yearOf } from './role-timeline';
 import { findPlaceholder, type Milestone, type Project, type Role } from './schemas';
 
 export interface Entry<T> {
@@ -67,6 +68,10 @@ export function assertContentIntegrity(content: {
   if (problems.length) throw new Error(`Content check failed:\n - ${problems.join('\n - ')}`);
 }
 
+/** The Milestone label that puts a Milestone in the closing group, and that group's year key. */
+export const NOW_LABEL = 'Now';
+export const NOW_YEAR = 'now';
+
 export interface YearInfo {
   /** "2025", or "now" for the closing group. */
   year: string;
@@ -91,23 +96,20 @@ export function groupMilestonesByYear<T extends MilestoneEntry>(
 ): YearGroup<T>[] {
   const buckets = new Map<string, T[]>();
   for (const m of [...milestones].sort((a, b) => a.data.date.localeCompare(b.data.date))) {
-    const key = m.data.label === 'Now' ? 'now' : m.data.date.slice(0, 4);
+    const key = m.data.label === NOW_LABEL ? NOW_YEAR : yearOf(m.data.date);
     buckets.set(key, [...(buckets.get(key) ?? []), m]);
   }
   const keys = [...buckets.keys()].sort((a, b) =>
-    a === 'now' ? 1 : b === 'now' ? -1 : a.localeCompare(b),
+    a === NOW_YEAR ? 1 : b === NOW_YEAR ? -1 : a.localeCompare(b),
   );
   return keys.map((key) => {
     const info = years.find((y) => y.year === key);
     if (!info) throw new Error(`No subtitle for story year "${key}": add it to src/content/years.yaml`);
     const items = buckets.get(key)!;
     const months =
-      key === 'now'
+      key === NOW_YEAR
         ? []
-        : Array.from({ length: 12 }, (_, i) => {
-            const month = `${key}-${String(i + 1).padStart(2, '0')}`;
-            return { month, count: items.filter((m) => m.data.date === month).length };
-          });
+        : monthsOfYear(key).map((month) => ({ month, count: items.filter((m) => m.data.date === month).length }));
     return { ...info, months, milestones: items };
   });
 }

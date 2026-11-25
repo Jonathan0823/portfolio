@@ -1,6 +1,7 @@
 import { z } from 'astro/zod';
+import { GITHUB_LOGIN } from './profile';
 
-export const GITHUB_LOGIN = 'Jonathan0823';
+export { GITHUB_LOGIN };
 
 const dayList = z.array(z.object({ date: z.string(), count: z.number().int().nonnegative() }));
 
@@ -102,9 +103,6 @@ export async function loadGithubStats(opts: LoadOptions): Promise<GithubStats> {
   }
 }
 
-/** The heat palette, dark to hot. */
-export const COL = ['#1E1B4B', '#4338CA', '#7C5CFA', '#E5484D', '#FF7A28', '#FFC43C'] as const;
-
 /** -1 for an empty day, then 0..5 using fixed thresholds. */
 export function contributionLevel(count: number): number {
   if (count <= 0) return -1;
@@ -134,5 +132,5 @@ export function dayTooltip(date: string, count: number): string {
 }
 
 export function calendarLabel(total: number): string {
-  return `${total.toLocaleString('en-US')} contributions in the last year`;
+  return `${total.toLocaleString('en-US')} contributions in the last 12 months`;
 }

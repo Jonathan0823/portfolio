@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PALETTE, createField, fbm, hash, noise, stepField } from './pixel-math';
+import { HEAT_PALETTE, createField, fbm, hash, noise, stepField } from './pixel-math';
 
 describe('noise helpers', () => {
   it('hash is deterministic, in [0,1) and zero at the origin', () => {
@@ -47,7 +47,7 @@ describe('stepField', () => {
       for (let y = 0; y < f.R; y++) {
         const k = f.bucket[y * f.C + x];
         expect(k).toBeGreaterThanOrEqual(-1);
-        expect(k).toBeLessThan(PALETTE.length);
+        expect(k).toBeLessThan(HEAT_PALETTE.length);
         if (k >= 0) low = y;
       }
       expect(f.low[x]).toBe(low);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDuration, formatMonth, formatRange, roleSquares, type RoleEntry } from './role-timeline';
+import { formatDuration, formatMonth, formatRange, monthOf, monthsOfYear, resolveEnd, roleSquares, wholeYearsSince, yearOf, type RoleEntry } from './role-timeline';
 
 const role = (start: string, end: string, months: string[] = []): RoleEntry => ({
   id: 'r',

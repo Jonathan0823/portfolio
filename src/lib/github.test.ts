@@ -111,6 +111,6 @@ describe('calendar presentation', () => {
     expect(dayTooltip('2026-11-23', 2)).toBe('Mon, 23 Nov 2026 · 2 contributions');
     expect(dayTooltip('2026-11-23', 1)).toBe('Mon, 23 Nov 2026 · 1 contribution');
     expect(dayTooltip('2026-11-24', 0)).toBe('Tue, 24 Nov 2026 · nothing pushed');
-    expect(calendarLabel(1234)).toBe('1,234 contributions in the last year');
+    expect(calendarLabel(1234)).toBe('1,234 contributions in the last 12 months');
   });
 });

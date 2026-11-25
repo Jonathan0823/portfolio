@@ -1,4 +1,4 @@
-import { PALETTE, createField, stepField, type Field } from './pixel-math';
+import { HEAT_PALETTE, createField, stepField, type Field } from './pixel-math';
 
 export interface HeroField {
   canvas: HTMLCanvasElement;
@@ -40,8 +40,8 @@ export function mountHeroField(host: HTMLElement, reduced: boolean): HeroField {
     stepField(field, t, SEED);
     ctx.clearRect(0, 0, field.w, field.h);
     const { C, R, cs, bucket } = field;
-    for (let k = 0; k < PALETTE.length; k++) {
-      ctx.fillStyle = PALETTE[k];
+    for (let k = 0; k < HEAT_PALETTE.length; k++) {
+      ctx.fillStyle = HEAT_PALETTE[k];
       for (let i = 0; i < C * R; i++) {
         if (bucket[i] === k) ctx.fillRect((i % C) * cs + 1, Math.floor(i / C) * cs + 1, cs - 1, cs - 1);
       }

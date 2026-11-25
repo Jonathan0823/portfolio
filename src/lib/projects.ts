@@ -1,4 +1,7 @@
 /** Helpers for rendering a Project row. */
+import { yearOf } from './role-timeline';
+
+export const projectYear = yearOf;
 
 export interface ProjectSection {
   label: string;
@@ -13,10 +16,6 @@ export function splitProjectBody(body: string | undefined): { description: strin
     return { label: label.trim(), text: rest.join('\n').trim() };
   });
   return { description: intro.trim(), sections };
-}
-
-export function projectYear(month: string): string {
-  return month.slice(0, 4);
 }
 
 /** The repo link first, then any extra repos; the first is labelled with the repo name. */

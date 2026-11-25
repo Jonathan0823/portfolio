@@ -1,3 +1,5 @@
+import { PROFILE_URLS } from './profile';
+
 export type SeoPage = 'home' | 'story';
 
 const PAGES: Record<SeoPage, { title: string; description: string }> = {
@@ -12,11 +14,6 @@ const PAGES: Record<SeoPage, { title: string; description: string }> = {
       'How Eguin Jonathan went from informatics student to backend engineer writing software for factory machines and the people who watch them.',
   },
 };
-
-export const PROFILE_URLS = [
-  'https://github.com/Jonathan0823',
-  'https://www.npmjs.com/~jonathan0823',
-];
 
 export function pageSeo(page: SeoPage) {
   return { ...PAGES[page], ogPath: `/og/${page}.png` };
