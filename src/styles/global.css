@@ -34,6 +34,13 @@
   background-color: var(--color-line);
 }
 
+/* Smooth in-page anchor jumps; sections carry their own top padding, which clears the sticky nav. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 @layer base {
   html {
     @apply bg-paper text-ink font-sans antialiased;
