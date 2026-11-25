@@ -1,5 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getProjects } from '../lib/content';
+
+// Loading content runs the cross-entry checks, so bad content fails the build.
+await getProjects();
 ---
 
 <BaseLayout title="Eguin Jonathan — Backend Engineer">
