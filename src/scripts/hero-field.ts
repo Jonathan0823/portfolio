@@ -1,4 +1,5 @@
 import { HEAT_PALETTE, createField, stepField, type Field } from './pixel-math';
+import { decayFactor } from './timing';
 
 export interface HeroField {
   canvas: HTMLCanvasElement;
@@ -15,6 +16,9 @@ export interface HeroField {
 
 const SEED = 1.3;
 const FRAME_MS = 50; // about 20 fps, like the original design
+const TIME_STEP = 0.02; // animation time per FRAME_MS
+const HEAT_DECAY = 0.965; // heat decay per FRAME_MS; cursor heat lingers about 1.5 to 2 s
+const MAX_ELAPSED_MS = 200;
 
 /**
  * Mounts the hero pixel field into a fixed-size host element. The host keeps its size
@@ -34,10 +38,11 @@ export function mountHeroField(host: HTMLElement, reduced: boolean): HeroField {
 
   const wants = () => visible && !document.hidden && (dirty || !reduced || field.hottest > 0.01);
 
-  const paint = () => {
+  const paint = (elapsed: number) => {
     dirty = false;
-    if (!reduced) t += 0.02;
-    stepField(field, t, SEED);
+    const steps = Math.min(Math.max(elapsed, 0), MAX_ELAPSED_MS) / FRAME_MS;
+    if (!reduced) t += TIME_STEP * steps;
+    stepField(field, t, SEED, 1, decayFactor(HEAT_DECAY, steps));
     ctx.clearRect(0, 0, field.width, field.height);
     const { columns, rows, cellSize, bucket } = field;
     for (let k = 0; k < HEAT_PALETTE.length; k++) {
@@ -51,9 +56,12 @@ export function mountHeroField(host: HTMLElement, reduced: boolean): HeroField {
   const frame = (now: number) => {
     raf = 0;
     if (!wants()) return;
-    if (dirty || now - last >= FRAME_MS) {
+    // Never faster than FRAME_MS, even when a redraw was requested: time and heat decay
+    // advance by the real elapsed time, so the pace is the same at any refresh rate.
+    if (!last || now - last >= FRAME_MS - 2) {
+      const elapsed = last ? now - last : FRAME_MS;
       last = now;
-      paint();
+      paint(elapsed);
     }
     if (wants()) raf = requestAnimationFrame(frame);
   };
