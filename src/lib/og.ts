@@ -20,7 +20,7 @@ const el = (type: string, style: Record<string, unknown>, children?: unknown) =>
 export async function renderOgImage(headline: string, sub: string): Promise<Uint8Array> {
   const [regular, semi] = await Promise.all([font(400), font(600)]);
   const pixels = PIXELS.map((c, i) => el('div', { width: 40, height: 40, background: c, marginLeft: i ? 8 : 0 }));
-  const tree = el('div', { flexDirection: 'column', justifyContent: 'space-between', width: 1200, height: 630, background: '#ffffff', padding: 80 }, [
+  const tree = el('div', { flexDirection: 'column', justifyContent: 'space-between', width: 1200, height: 630, boxSizing: 'border-box', background: '#ffffff', padding: 80 }, [
     el('div', {}, pixels),
     el('div', { flexDirection: 'column' }, [
       el('div', { fontSize: 112, fontWeight: 600, color: INK, letterSpacing: -6, lineHeight: 1 }, [
