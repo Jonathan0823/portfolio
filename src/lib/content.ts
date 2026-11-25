@@ -2,6 +2,7 @@ import { getCollection } from 'astro:content';
 import {
   achievementMonths,
   assertContentIntegrity,
+  groupMilestonesByYear,
   sortRoles,
   type MilestoneEntry,
   type ProjectEntry,
@@ -47,4 +48,13 @@ export async function getMilestones() {
 export async function getSkills() {
   const groups = await getCollection('skills');
   return groups.sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/** Milestones grouped by year for /story, with each year's subtitle from years.yaml. */
+export async function getStoryYears() {
+  const [milestones, years] = await Promise.all([getMilestones(), getCollection('years')]);
+  return groupMilestonesByYear(
+    milestones,
+    years.map((y) => y.data),
+  );
 }

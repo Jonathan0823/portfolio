@@ -1,0 +1,23 @@
+---
+const stats = [
+  { value: '76', label: 'public repositories' },
+  { value: 'Go · TS', label: 'what I write most, then Python and Rust' },
+  { value: '3 yrs', label: 'writing code every day, since Sep 2023' },
+];
+---
+
+<section class="pt-24 md:pt-44" aria-labelledby="github-heading">
+  <h2 id="github-heading" class="px-5 text-4xl leading-none font-semibold tracking-[-0.04em] md:px-24 md:text-[64px]">
+    My last year on GitHub.
+  </h2>
+  <dl class="mt-8 grid gap-8 px-5 sm:grid-cols-3 md:px-24">
+    {
+      stats.map((s) => (
+        <div class="border-ink flex flex-col gap-1.5 border-t pt-4">
+          <dd class="order-first text-5xl leading-none font-semibold tracking-[-0.05em] md:text-[56px]">{s.value}</dd>
+          <dt class="text-muted font-mono text-[13px] leading-relaxed">{s.label}</dt>
+        </div>
+      ))
+    }
+  </dl>
+</section>
