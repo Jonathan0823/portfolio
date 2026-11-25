@@ -1,22 +1,20 @@
 ---
-import PixelFooter from '../PixelFooter.astro';
+import ClosingScreen from '../ClosingScreen.astro';
 import { CONTACT_EMAIL, GITHUB_URL, LINKEDIN_URL, MAILTO_URL } from '../../lib/profile';
 
 const pill = 'rounded-full px-6 py-4 text-base font-medium no-underline';
 ---
 
-<section class="px-5 pt-24 md:px-24 md:pt-44">
-  <h2 class="max-w-[12ch] text-6xl leading-[0.92] font-semibold tracking-[-0.055em] text-balance md:text-[120px]">
+<ClosingScreen>
+  <h2 class="max-w-[12ch] text-[56px] leading-[0.95] font-semibold tracking-[-0.055em] text-balance md:text-[clamp(56px,11svh,112px)] md:leading-[0.92] md:max-w-[18ch]">
     That’s the story so far<span class="text-accent">.</span>
   </h2>
-  <p class="mt-8 max-w-[34ch] text-xl leading-[1.45] tracking-[-0.01em] md:mt-10 md:text-[26px]">
+  <p class="mt-[clamp(16px,3svh,32px)] max-w-[34ch] text-xl leading-[1.45] tracking-[-0.01em] md:text-[clamp(18px,2.6svh,26px)]">
     Backend roles, data-heavy systems, or a machine that needs to talk to a screen. I’d like to hear about it.
   </p>
-  <p class="mt-8 text-3xl font-semibold tracking-[-0.04em] md:text-4xl">Eguin</p>
-  <div class="mt-6 flex flex-wrap gap-3">
+  <div class="mt-[clamp(20px,4svh,40px)] flex flex-wrap gap-2.5 md:gap-3">
     <a href={MAILTO_URL} class={`bg-ink text-paper ${pill}`}>{CONTACT_EMAIL}</a>
     <a href={GITHUB_URL} class={`border-ink border ${pill}`}>GitHub</a>
     <a href={LINKEDIN_URL} class={`border-ink border ${pill}`}>LinkedIn</a>
   </div>
-</section>
-<PixelFooter />
+</ClosingScreen>
