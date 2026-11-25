@@ -26,8 +26,8 @@ describe('assignPixels', () => {
       const per = assignPixels(g, 32, 38, [3, 16, 28]);
       expect(per.flat().length).toBe(lit(name) * g.scale * g.scale);
       per.forEach((list, k) => list.forEach(p => {
-        const own = Math.abs(p.ti - [3, 16, 28][k]);
-        for (const sx of [3, 16, 28]) expect(own).toBeLessThanOrEqual(Math.abs(p.ti - sx));
+        const own = Math.abs(p.column - [3, 16, 28][k]);
+        for (const sx of [3, 16, 28]) expect(own).toBeLessThanOrEqual(Math.abs(p.column - sx));
       }));
     }
   });

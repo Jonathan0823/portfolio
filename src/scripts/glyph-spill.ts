@@ -1,144 +1,219 @@
-import { PALETTE as COL, fbm, hash } from './pixel-math';
+import { HEAT_PALETTE, fbm, hash } from './pixel-math';
 import { BITMAPS, assignPixels, pickSourceColumns, type GlyphName } from './glyph-model';
 import type { HeroField } from './hero-field';
 
-const G = 14, cols = 32, rows = 38, TR = 12;
-const GLYPH_WIDTH = cols * G;
+const CELL = 14; // cell size in CSS px
+const GLYPH_COLUMNS = 32;
+const GLYPH_ROWS = 38;
+const RISE_ROWS = 12; // how far above the field's lowest row a particle starts
+const GLYPH_WIDTH = GLYPH_COLUMNS * CELL;
+const SHIMMER_INTERVAL_MS = 50;
 
 interface Particle {
-  ti: number; tj: number; sx: number; sy: number; L1: number; L: number;
-  t0: number; del: number; out: boolean; x: number; y: number; src: number;
-  ox?: number; oy?: number; k?: number;
+  targetColumn: number;
+  targetRow: number;
+  sourceColumn: number;
+  sourceRow: number;
+  /** length of the vertical leg of the path, then of the whole path */
+  verticalLength: number;
+  pathLength: number;
+  startedAt: number;
+  delay: number;
+  fadingOut: boolean;
+  column: number;
+  row: number;
+  sourceIndex: number;
+  fadeFromRow?: number;
+  level?: number;
 }
-interface Source { x: number; y: number; k: number }
+interface Source {
+  column: number;
+  row: number;
+  /** palette bucket of the field cell the particles rise from */
+  bucket: number;
+}
 
 /**
  * Glyph spill: hovering a hero link makes pixels rise from the hero field and form its icon.
- * Desktop only. Returns a function that removes the listeners.
+ * Desktop only. The loop runs only while particles are moving or settled on screen, the tab is
+ * visible and the canvas is on screen. Returns a function that removes the listeners.
  */
 export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField): () => void {
   const ctx = canvas.getContext('2d')!;
-  let parts: Particle[] = [];
-  let srcs: Source[] = [];
-  let raf = 0, timer = 0, tt = 0, dpr = 0;
+  let particles: Particle[] = [];
+  let sources: Source[] = [];
+  let raf = 0, timer = 0, fallbackTime = 0, pixelRatio = 0;
+  let onScreen = true;
+
+  const canRun = () => onScreen && !document.hidden;
 
   const ensureSize = () => {
-    const d = Math.min(2, window.devicePixelRatio || 1);
-    if (d === dpr) return;
-    dpr = d;
-    canvas.width = cols * G * dpr;
-    canvas.height = rows * G * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const ratio = Math.min(2, window.devicePixelRatio || 1);
+    if (ratio === pixelRatio) return;
+    pixelRatio = ratio;
+    canvas.width = GLYPH_COLUMNS * CELL * pixelRatio;
+    canvas.height = GLYPH_ROWS * CELL * pixelRatio;
+    ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   };
 
   /** Column of the hero field where the canvas starts; also snaps the canvas to the field grid. */
-  const originColumn = () => {
-    const F = hero.field();
-    const OX = Math.max(0, Math.floor((F.w - 96 - GLYPH_WIDTH) / G));
-    canvas.style.left = OX * G + 'px';
-    return OX;
+  const snapOriginColumn = () => {
+    const field = hero.field();
+    const originColumn = Math.max(0, Math.floor((field.width - 96 - GLYPH_WIDTH) / CELL));
+    canvas.style.left = originColumn * CELL + 'px';
+    return originColumn;
   };
 
-  const sources = (): Source[] => {
-    const F = hero.field(), OX = originColumn();
-    const usable = F.cs === G;
-    const low: number[] = [];
-    for (let i = 0; i < cols; i++) low.push(usable && F.low[OX + i] !== undefined ? Math.max(F.low[OX + i], 14) : 20);
-    return pickSourceColumns(low).map(i => ({ x: i, y: low[i] - TR + 1, k: usable ? F.lowK[OX + i] : 1 }));
+  const pickSources = (): Source[] => {
+    const field = hero.field(), originColumn = snapOriginColumn();
+    const usable = field.cellSize === CELL;
+    const lowestRows: number[] = [];
+    for (let i = 0; i < GLYPH_COLUMNS; i++) {
+      const fieldRow = field.lowestRow[originColumn + i];
+      lowestRows.push(usable && fieldRow !== undefined ? Math.max(fieldRow, 14) : 20);
+    }
+    return pickSourceColumns(lowestRows).map((column) => ({
+      column,
+      row: lowestRows[column] - RISE_ROWS + 1,
+      bucket: usable ? field.lowestBucket[originColumn + column] : 1,
+    }));
   };
 
-  const set = (name: GlyphName | null) => {
+  const spill = (name: GlyphName | null) => {
     if (!canvas.offsetParent) return; // hidden below the desktop breakpoint
     ensureSize();
     const now = performance.now();
-    for (const q of parts) {
-      if (!q.out) {
-        q.out = true; q.t0 = now; q.ox = q.x; q.oy = q.y; q.del = hash(q.ti, q.tj) * 0.12;
+    for (const particle of particles) {
+      if (!particle.fadingOut) {
+        particle.fadingOut = true;
+        particle.startedAt = now;
+        particle.fadeFromRow = particle.row;
+        particle.delay = hash(particle.targetColumn, particle.targetRow) * 0.12;
       }
     }
     if (name) {
-      srcs = sources();
-      const per = assignPixels(BITMAPS[name], cols, rows, srcs.map(s => s.x));
-      per.forEach((list, k) => {
-        const s = srcs[k];
-        list.forEach((p, n) => {
-          const L1 = Math.max(0, p.tj - s.y), L = L1 + Math.abs(p.ti - s.x);
-          parts.push({ ti: p.ti, tj: p.tj, sx: s.x, sy: s.y, L1, L, t0: now, del: n * 0.018 + k * 0.03, out: false, x: s.x, y: s.y - 1, src: k });
+      sources = pickSources();
+      const pixelsBySource = assignPixels(BITMAPS[name], GLYPH_COLUMNS, GLYPH_ROWS, sources.map((s) => s.column));
+      pixelsBySource.forEach((pixels, sourceIndex) => {
+        const source = sources[sourceIndex];
+        pixels.forEach((pixel, order) => {
+          const verticalLength = Math.max(0, pixel.row - source.row);
+          particles.push({
+            targetColumn: pixel.column,
+            targetRow: pixel.row,
+            sourceColumn: source.column,
+            sourceRow: source.row,
+            verticalLength,
+            pathLength: verticalLength + Math.abs(pixel.column - source.column),
+            startedAt: now,
+            delay: order * 0.018 + sourceIndex * 0.03,
+            fadingOut: false,
+            column: source.column,
+            row: source.row - 1,
+            sourceIndex,
+          });
         });
       });
     }
     kick();
   };
 
-  const at = (q: Particle, u: number): [number, number] =>
-    u < q.L1 ? [q.sx, q.sy + u] : [q.sx + Math.sign(q.ti - q.sx) * Math.min(Math.abs(q.ti - q.sx), u - q.L1), Math.max(q.sy, q.tj)];
+  /** Position along a particle's path after travelling `distance` cells: down, then sideways. */
+  const positionAt = (p: Particle, distance: number): [number, number] =>
+    distance < p.verticalLength
+      ? [p.sourceColumn, p.sourceRow + distance]
+      : [
+          p.sourceColumn + Math.sign(p.targetColumn - p.sourceColumn) * Math.min(Math.abs(p.targetColumn - p.sourceColumn), distance - p.verticalLength),
+          Math.max(p.sourceRow, p.targetRow),
+        ];
 
   const loop = (now: number) => {
     raf = 0;
-    tt += 0.02;
-    const ft = hero.time() || tt;
-    ctx.clearRect(0, 0, cols * G, rows * G);
-    let active = false;
-    parts = parts.filter(q => {
-      const e = (now - q.t0) / 1000 - q.del;
-      let alpha = 1, moving = false, trailPos: [number, number] | null = null;
-      if (!q.out) {
-        if (e < 0) return true;
-        const u = Math.min(q.L, 26 * e + 30 * e * e);
-        const p = at(q, u), pb = at(q, Math.max(0, u - 1.2));
-        q.x = p[0]; q.y = p[1]; moving = u < q.L;
-        if (moving) trailPos = pb;
-      } else if (e > 0) {
-        const k = e / 0.55;
-        q.y = (q.oy ?? q.y) + 30 * k * k;
-        alpha = Math.max(0, 1 - k * 1.6);
-        moving = true;
+    if (!canRun()) return;
+    fallbackTime += 0.02;
+    const fieldTime = hero.time() || fallbackTime;
+    ctx.clearRect(0, 0, GLYPH_COLUMNS * CELL, GLYPH_ROWS * CELL);
+    let moving = false;
+    particles = particles.filter((p) => {
+      const elapsed = (now - p.startedAt) / 1000 - p.delay;
+      let alpha = 1, inMotion = false, trailPos: [number, number] | null = null;
+      if (!p.fadingOut) {
+        if (elapsed < 0) return true;
+        const distance = Math.min(p.pathLength, 26 * elapsed + 30 * elapsed * elapsed);
+        const [column, row] = positionAt(p, distance);
+        p.column = column;
+        p.row = row;
+        inMotion = distance < p.pathLength;
+        if (inMotion) trailPos = positionAt(p, Math.max(0, distance - 1.2));
+      } else if (elapsed > 0) {
+        const progress = elapsed / 0.55;
+        p.row = (p.fadeFromRow ?? p.row) + 30 * progress * progress;
+        alpha = Math.max(0, 1 - progress * 1.6);
+        inMotion = true;
         if (alpha <= 0) return false;
       }
-      if (moving) active = true;
-      const sk = srcs[q.src] ? srcs[q.src].k : (q.k ?? 1);
-      q.k = sk;
-      const lvl = Math.max(0, Math.min(5, sk - (fbm(Math.round(q.x) * 0.3 - ft * 0.9, Math.floor(q.y) * 0.3) < 0.45 ? 1 : 0)));
-      ctx.fillStyle = COL[lvl];
+      if (inMotion) moving = true;
+      const bucket = sources[p.sourceIndex] ? sources[p.sourceIndex].bucket : (p.level ?? 1);
+      p.level = bucket;
+      const level = Math.max(0, Math.min(5, bucket - (fbm(Math.round(p.column) * 0.3 - fieldTime * 0.9, Math.floor(p.row) * 0.3) < 0.45 ? 1 : 0)));
+      ctx.fillStyle = HEAT_PALETTE[level];
       if (trailPos) {
         ctx.globalAlpha = alpha * 0.5;
-        ctx.fillRect(Math.round(trailPos[0]) * G + 1, Math.floor(trailPos[1]) * G + 1, G - 1, G - 1);
+        ctx.fillRect(Math.round(trailPos[0]) * CELL + 1, Math.floor(trailPos[1]) * CELL + 1, CELL - 1, CELL - 1);
       }
       ctx.globalAlpha = alpha;
-      ctx.fillRect(Math.round(q.x) * G + 1, Math.floor(q.y) * G + 1, G - 1, G - 1);
+      ctx.fillRect(Math.round(p.column) * CELL + 1, Math.floor(p.row) * CELL + 1, CELL - 1, CELL - 1);
       return true;
     });
     ctx.globalAlpha = 1;
-    if (active) raf = requestAnimationFrame(loop);
-    else if (parts.length) timer = window.setTimeout(() => { timer = 0; kick(); }, 50);
+    if (moving) raf = requestAnimationFrame(loop);
+    // Settled particles still shimmer with the field, at a slow rate; with none left the loop ends.
+    else if (particles.length) timer = window.setTimeout(() => { timer = 0; kick(); }, SHIMMER_INTERVAL_MS);
   };
   const kick = () => {
     if (timer) { clearTimeout(timer); timer = 0; }
-    if (!raf) raf = requestAnimationFrame(loop);
+    if (!raf && canRun()) raf = requestAnimationFrame(loop);
   };
+  const halt = () => {
+    cancelAnimationFrame(raf);
+    clearTimeout(timer);
+    raf = 0;
+    timer = 0;
+  };
+  const onVisibility = () => (document.hidden ? halt() : kick());
+  document.addEventListener('visibilitychange', onVisibility);
+  const io = 'IntersectionObserver' in window
+    ? new IntersectionObserver((entries) => {
+        onScreen = entries[entries.length - 1].isIntersecting;
+        if (onScreen) kick();
+        else halt();
+      })
+    : null;
+  io?.observe(canvas);
 
-  const off: Array<() => void> = [];
-  document.querySelectorAll<HTMLElement>('[data-glyph-for]').forEach(l => {
-    const name = l.dataset.glyphFor as GlyphName;
+  const removers: Array<() => void> = [];
+  document.querySelectorAll<HTMLElement>('[data-glyph-for]').forEach((link) => {
+    const name = link.dataset.glyphFor as GlyphName;
     if (!(name in BITMAPS)) return;
-    const on = () => set(name), out = () => set(null);
-    l.addEventListener('mouseenter', on);
-    l.addEventListener('mouseleave', out);
-    l.addEventListener('focus', on);
-    l.addEventListener('blur', out);
-    off.push(() => {
-      l.removeEventListener('mouseenter', on);
-      l.removeEventListener('mouseleave', out);
-      l.removeEventListener('focus', on);
-      l.removeEventListener('blur', out);
+    const show = () => spill(name), hide = () => spill(null);
+    link.addEventListener('mouseenter', show);
+    link.addEventListener('mouseleave', hide);
+    link.addEventListener('focus', show);
+    link.addEventListener('blur', hide);
+    removers.push(() => {
+      link.removeEventListener('mouseenter', show);
+      link.removeEventListener('mouseleave', hide);
+      link.removeEventListener('focus', show);
+      link.removeEventListener('blur', hide);
     });
   });
 
   return () => {
-    off.forEach(f => f());
-    cancelAnimationFrame(raf);
-    clearTimeout(timer);
-    parts = [];
-    ctx.clearRect(0, 0, cols * G, rows * G);
+    removers.forEach((remove) => remove());
+    document.removeEventListener('visibilitychange', onVisibility);
+    io?.disconnect();
+    halt();
+    particles = [];
+    ctx.clearRect(0, 0, GLYPH_COLUMNS * CELL, GLYPH_ROWS * CELL);
   };
 }
