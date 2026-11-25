@@ -4,6 +4,9 @@ import StoryClosing from '../components/story/StoryClosing.astro';
 import StoryStats from '../components/story/StoryStats.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getStoryYears } from '../lib/content';
+import { pageSeo } from '../lib/seo';
+
+const seo = pageSeo('story');
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const formatMonth = (m: string) => `${MONTHS[Number(m.slice(5)) - 1]} ${m.slice(0, 4)}`;
@@ -17,7 +20,7 @@ const groupsWithBodies = await Promise.all(
 );
 ---
 
-<BaseLayout title="How I got here — Eguin Jonathan" description="The full story: how Eguin Jonathan went from informatics student to backend engineer.">
+<BaseLayout title={seo.title} description={seo.description} image={seo.ogPath}>
   <div class="text-muted flex justify-between px-5 py-7 font-mono text-[13px] leading-relaxed md:px-24">
     <a href="/" class="text-ink hover:text-muted">← Eguin Jonathan</a>
     <p>The full story</p>
