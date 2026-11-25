@@ -1,13 +1,13 @@
 ---
-// Top navigation. Desktop: a row of links. Mobile: a <details> menu that works without JS.
-// The link for the section on screen gets aria-current="true" (set by the script below).
-const links: { href: string; label: string; sec?: string }[] = [
-  { href: '#experience', label: 'Experience', sec: 'experience' },
-  { href: '#skills', label: 'Skills', sec: 'skills' },
-  { href: '#projects', label: 'Projects', sec: 'projects' },
-  { href: '/story', label: 'Story' },
-  { href: '#contact', label: 'Contact', sec: 'contact' },
-];
+// Top navigation, shared by pages. Desktop: a row of links. Mobile: a <details> menu that works
+// without JS. Each page passes its own links; a link with `sec` gets aria-current="true" while
+// the element with that id is on screen (set by the script below). sec "contact" is the dark button.
+interface Props {
+  links: { href: string; label: string; sec?: string }[];
+  /** where the name goes: the top of this page, or back to the home page */
+  brandHref?: string;
+}
+const { links, brandHref = '#top' } = Astro.props;
 ---
 
 <nav aria-label="Main" class="sticky top-0 z-40 h-0">
@@ -20,7 +20,7 @@ const links: { href: string; label: string; sec?: string }[] = [
     >
     </div>
 
-    <a href="#top" class="bg-paper px-3.5 py-2.5 text-[17px] font-semibold tracking-[-0.03em] whitespace-nowrap text-ink no-underline">Eguin Jonathan</a>
+    <a href={brandHref} class="bg-paper px-3.5 py-2.5 text-[17px] font-semibold tracking-[-0.03em] whitespace-nowrap text-ink no-underline">Eguin Jonathan</a>
 
     <div class="bg-paper hidden gap-0.5 p-1.5 font-mono text-[13px] md:flex">
       {links.map((l) => (

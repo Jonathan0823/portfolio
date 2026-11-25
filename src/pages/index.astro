@@ -12,10 +12,18 @@ import { pageSeo, personJsonLd } from '../lib/seo';
 const seo = pageSeo('home');
 const skills = (await getSkills()).map((s) => s.data);
 const jsonLd = personJsonLd(Astro.site!.href, skills);
+
+const navLinks = [
+  { href: '#experience', label: 'Experience', sec: 'experience' },
+  { href: '#skills', label: 'Skills', sec: 'skills' },
+  { href: '#projects', label: 'Projects', sec: 'projects' },
+  { href: '/story', label: 'Story' },
+  { href: '#contact', label: 'Contact', sec: 'contact' },
+];
 ---
 
 <BaseLayout title={seo.title} description={seo.description} image={seo.ogPath} {jsonLd}>
-  <Nav />
+  <Nav links={navLinks} />
   <main>
     <Hero />
     <Experience />
