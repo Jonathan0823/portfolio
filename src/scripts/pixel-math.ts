@@ -1,4 +1,4 @@
-// Pure maths for the pixel canvases (ported from mock/index.html). No DOM access here.
+// Pure maths for the pixel canvases. No DOM access here.
 
 export const PALETTE = ['#1E1B4B', '#4338CA', '#7C5CFA', '#E5484D', '#FF7A28', '#FFC43C'] as const;
 

@@ -14,7 +14,7 @@ export interface HeroField {
 }
 
 const SEED = 1.3;
-const FRAME_MS = 50; // about 20 fps, like the mock
+const FRAME_MS = 50; // about 20 fps, like the original design
 
 /**
  * Mounts the hero pixel field into a fixed-size host element. The host keeps its size
