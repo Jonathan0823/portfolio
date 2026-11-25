@@ -26,6 +26,14 @@
   --color-pixel-mist: #f4f1ff;
 }
 
+/* Month squares start filled; the script in Experience.astro adds .sq-hidden to animate them in. */
+.sq {
+  transition: background-color 0.4s;
+}
+.sq.sq-hidden {
+  background-color: var(--color-line);
+}
+
 @layer base {
   html {
     @apply bg-paper text-ink font-sans antialiased;
