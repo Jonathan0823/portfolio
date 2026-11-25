@@ -14,40 +14,50 @@ export const BITMAPS = {
 export type GlyphName = keyof typeof BITMAPS;
 
 /** Columns the glyph pixels rise from: the highest local peaks, up to 5, at least 5 columns apart. */
-export function pickSourceColumns(low: number[]): number[] {
-  const cols = low.length;
-  const cand: number[] = [];
-  for (let i = 1; i < cols - 1; i++) {
-    let ok = true;
-    for (let d = -2; d <= 2; d++) if (d && low[i + d] !== undefined && low[i + d] > low[i]) ok = false;
-    if (ok) cand.push(i);
+export function pickSourceColumns(lowestRows: number[]): number[] {
+  const columnCount = lowestRows.length;
+  const peaks: number[] = [];
+  for (let column = 1; column < columnCount - 1; column++) {
+    let isPeak = true;
+    for (let offset = -2; offset <= 2; offset++) {
+      const neighbour = lowestRows[column + offset];
+      if (offset && neighbour !== undefined && neighbour > lowestRows[column]) isPeak = false;
+    }
+    if (isPeak) peaks.push(column);
   }
-  cand.sort((p, q) => low[q] - low[p]);
-  const pick: number[] = [];
-  for (const i of cand) if (pick.length < 5 && pick.every(j => Math.abs(j - i) >= 5)) pick.push(i);
-  if (!pick.length) pick.push(Math.floor(cols / 2));
-  return pick;
+  peaks.sort((a, b) => lowestRows[b] - lowestRows[a]);
+  const picked: number[] = [];
+  for (const column of peaks) {
+    if (picked.length < 5 && picked.every((other) => Math.abs(other - column) >= 5)) picked.push(column);
+  }
+  if (!picked.length) picked.push(Math.floor(columnCount / 2));
+  return picked;
 }
 
 export interface TargetPixel {
-  ti: number;
-  tj: number;
+  column: number;
+  row: number;
 }
 
 /** Splits the lit pixels of a glyph (centred, bottom aligned) between sources, nearest column first. */
-export function assignPixels(glyph: Bitmap, cols: number, rows: number, sourceXs: number[]): TargetPixel[][] {
-  const P = glyph.scale, h = glyph.rows.length * P, w = glyph.rows[0].length * P;
-  const top = rows - h, left = Math.floor((cols - w) / 2);
-  const per: TargetPixel[][] = sourceXs.map(() => []);
-  for (let j = 0; j < h; j++) {
-    for (let i = 0; i < w; i++) {
-      if (glyph.rows[Math.floor(j / P)][Math.floor(i / P)] !== '#') continue;
-      const ti = left + i, tj = top + j;
-      let bi = 0;
-      sourceXs.forEach((sx, k) => { if (Math.abs(sx - ti) < Math.abs(sourceXs[bi] - ti)) bi = k; });
-      per[bi].push({ ti, tj });
+export function assignPixels(glyph: Bitmap, columns: number, rows: number, sourceColumns: number[]): TargetPixel[][] {
+  const scale = glyph.scale;
+  const height = glyph.rows.length * scale, width = glyph.rows[0].length * scale;
+  const top = rows - height, left = Math.floor((columns - width) / 2);
+  const bySource: TargetPixel[][] = sourceColumns.map(() => []);
+  for (let j = 0; j < height; j++) {
+    for (let i = 0; i < width; i++) {
+      if (glyph.rows[Math.floor(j / scale)][Math.floor(i / scale)] !== '#') continue;
+      const column = left + i, row = top + j;
+      let nearest = 0;
+      sourceColumns.forEach((sourceColumn, source) => {
+        if (Math.abs(sourceColumn - column) < Math.abs(sourceColumns[nearest] - column)) nearest = source;
+      });
+      bySource[nearest].push({ column, row });
     }
   }
-  per.forEach((list, k) => list.sort((p, q) => q.tj - p.tj || Math.abs(p.ti - sourceXs[k]) - Math.abs(q.ti - sourceXs[k])));
-  return per;
+  bySource.forEach((pixels, source) =>
+    pixels.sort((a, b) => b.row - a.row || Math.abs(a.column - sourceColumns[source]) - Math.abs(b.column - sourceColumns[source])),
+  );
+  return bySource;
 }

@@ -1,4 +1,6 @@
 ---
+import { CONTACT_EMAIL, GITHUB_URL, MAILTO_URL } from '../../lib/profile';
+
 const pill = 'rounded-full px-6 py-4 text-base font-medium no-underline';
 ---
 
@@ -11,8 +13,8 @@ const pill = 'rounded-full px-6 py-4 text-base font-medium no-underline';
   </p>
   <p class="mt-8 text-3xl font-semibold tracking-[-0.04em] md:text-4xl">Eguin</p>
   <div class="mt-6 flex flex-wrap gap-3">
-    <a href="mailto:eguinjonathan77@gmail.com" class={`bg-ink text-paper ${pill}`}>eguinjonathan77@gmail.com</a>
-    <a href="https://github.com/Jonathan0823" class={`border-ink border ${pill}`}>GitHub</a>
+    <a href={MAILTO_URL} class={`bg-ink text-paper ${pill}`}>{CONTACT_EMAIL}</a>
+    <a href={GITHUB_URL} class={`border-ink border ${pill}`}>GitHub</a>
   </div>
 </section>
 <footer

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDuration, formatMonth, formatRange, roleSquares, type RoleEntry } from './role-timeline';
+import { formatDuration, formatMonth, formatRange, monthOf, monthsOfYear, resolveEnd, roleSquares, wholeYearsSince, yearOf, type RoleEntry } from './role-timeline';
 
 const role = (start: string, end: string, months: string[] = []): RoleEntry => ({
   id: 'r',
@@ -48,5 +48,25 @@ describe('formatting', () => {
     expect(formatDuration(17)).toBe('1 yr 5 mo');
     expect(formatDuration(12)).toBe('1 yr');
     expect(formatDuration(36)).toBe('3 yrs');
+  });
+});
+
+describe('month helpers', () => {
+  it('reads the year of a month', () => expect(yearOf('2025-07')).toBe('2025'));
+  it('lists the twelve months of a year', () => {
+    const months = monthsOfYear('2025');
+    expect(months).toHaveLength(12);
+    expect(months[0]).toBe('2025-01');
+    expect(months[11]).toBe('2025-12');
+  });
+  it('finds the month of a date', () => expect(monthOf(new Date('2026-11-25T12:00:00Z'))).toBe('2026-11'));
+  it('resolves an open end to the current month only', () => {
+    expect(resolveEnd('present', '2026-11')).toBe('2026-11');
+    expect(resolveEnd('2025-06', '2026-11')).toBe('2025-06');
+  });
+  it('counts whole years since a month', () => {
+    expect(wholeYearsSince('2023-09', new Date('2026-08-31T00:00:00Z'))).toBe(2);
+    expect(wholeYearsSince('2023-09', new Date('2026-09-01T00:00:00Z'))).toBe(3);
+    expect(wholeYearsSince('2023-09', new Date('2027-11-25T00:00:00Z'))).toBe(4);
   });
 });

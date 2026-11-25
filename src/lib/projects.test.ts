@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { projectLinks, projectYear, splitProjectBody } from './projects';
+import { projectAnchor, projectForAchievement, projectLinks, projectYear, splitProjectBody } from './projects';
 
 const body = `The open-source version.
 
@@ -56,4 +56,18 @@ describe('projectLinks', () => {
       { text: 'nexusbus-mqtt-consumer', href: 'https://github.com/Jonathan0823/nexusbus-mqtt-consumer' },
     ]);
   });
+});
+
+describe('projectForAchievement', () => {
+  const projects = [
+    { id: 'a', data: {} },
+    { id: 'nexusbus', data: { fromAchievement: 'gateway' } },
+  ];
+  it('finds the Project published from an Achievement', () => {
+    expect(projectForAchievement(projects, 'gateway')?.id).toBe('nexusbus');
+  });
+  it('returns undefined when none matches', () => {
+    expect(projectForAchievement(projects, 'other')).toBeUndefined();
+  });
+  it('anchors a Project row by its id', () => expect(projectAnchor('nexusbus')).toBe('project-nexusbus'));
 });

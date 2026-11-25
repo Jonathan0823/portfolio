@@ -4,12 +4,12 @@ import StoryClosing from '../components/story/StoryClosing.astro';
 import StoryStats from '../components/story/StoryStats.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getStoryYears } from '../lib/content';
+import { NOW_LABEL, NOW_YEAR } from '../lib/content-logic';
+import { CONTACT_EMAIL, GITHUB_URL, MAILTO_URL } from '../lib/profile';
+import { formatMonth } from '../lib/role-timeline';
 import { pageSeo } from '../lib/seo';
 
 const seo = pageSeo('story');
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const formatMonth = (m: string) => `${MONTHS[Number(m.slice(5)) - 1]} ${m.slice(0, 4)}`;
 
 const groups = await getStoryYears();
 const groupsWithBodies = await Promise.all(
@@ -36,8 +36,8 @@ const groupsWithBodies = await Promise.all(
         Now I write the software between factory machines and the people who watch them.
       </p>
       <p class="text-muted mt-6 font-mono text-[13px] leading-relaxed">
-        <a href="mailto:eguinjonathan77@gmail.com" class="text-ink hover:text-muted">eguinjonathan77@gmail.com</a> ·
-        <a href="https://github.com/Jonathan0823" class="text-ink hover:text-muted">GitHub</a>
+        <a href={MAILTO_URL} class="text-ink hover:text-muted">{CONTACT_EMAIL}</a> ·
+        <a href={GITHUB_URL} class="text-ink hover:text-muted">GitHub</a>
       </p>
     </section>
 
@@ -51,7 +51,7 @@ const groupsWithBodies = await Promise.all(
           <div class="grid gap-4 pb-6 md:grid-cols-12 md:items-end md:gap-x-6">
             <div class="flex flex-col gap-3.5 md:col-span-3">
               <h2 class="text-7xl leading-[0.85] font-semibold tracking-[-0.06em] md:text-[88px]">
-                {g.year === 'now' ? 'Now' : g.year}
+                {g.year === NOW_YEAR ? NOW_LABEL : g.year}
               </h2>
               {g.months.length > 0 && (
                 <ol class="flex gap-[3px]" aria-hidden="true">

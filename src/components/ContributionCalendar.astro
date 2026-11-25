@@ -1,5 +1,6 @@
 ---
-import { COL, calendarLabel, cellPosition, contributionLevel, dayTooltip, type GithubStats } from '../lib/github';
+import { HEAT_PALETTE } from '../lib/palette';
+import { calendarLabel, cellPosition, contributionLevel, dayTooltip, type GithubStats } from '../lib/github';
 
 interface Props {
   calendar: GithubStats['calendar'];
@@ -12,7 +13,7 @@ const cells = calendar.weeks.flatMap((w, i) =>
   w.days.map((d) => {
     const { col, row } = cellPosition(d.date, i);
     const level = contributionLevel(d.count);
-    return { x: col * cell + 1, y: row * cell + 1, fill: level < 0 ? EMPTY : COL[level], tip: dayTooltip(d.date, d.count) };
+    return { x: col * cell + 1, y: row * cell + 1, fill: level < 0 ? EMPTY : HEAT_PALETTE[level], tip: dayTooltip(d.date, d.count) };
   }),
 );
 ---

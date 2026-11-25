@@ -1,4 +1,7 @@
 /** Helpers for rendering a Project row. */
+import { yearOf } from './role-timeline';
+
+export const projectYear = yearOf;
 
 export interface ProjectSection {
   label: string;
@@ -15,11 +18,18 @@ export function splitProjectBody(body: string | undefined): { description: strin
   return { description: intro.trim(), sections };
 }
 
-export function projectYear(month: string): string {
-  return month.slice(0, 4);
+/** The repo link first, then any extra repos; the first is labelled with the repo name. */
+/** The Project that was published from an Achievement, if any. */
+export function projectForAchievement<T extends { data: { fromAchievement?: string | undefined } }>(
+  projects: readonly T[],
+  achievementId: string,
+): T | undefined {
+  return projects.find((p) => p.data.fromAchievement === achievementId);
 }
 
-/** The repo link first, then any extra repos; the first is labelled with the repo name. */
+/** Element id of a Project row in #projects. */
+export const projectAnchor = (id: string): string => `project-${id}`;
+
 export function projectLinks(project: {
   repo: string;
   extraRepos: { text: string; href: string }[];
