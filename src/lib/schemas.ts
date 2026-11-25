@@ -85,6 +85,13 @@ export const skillGroupSchema = z.object({
   items: z.array(copy).min(1),
 });
 
+/** Subtitle for one year of the story page; "now" is the closing group. */
+export const storyYearSchema = z.object({
+  year: z.string().regex(/^(\d{4}|now)$/, 'must be a year like 2025, or "now"'),
+  subtitle: copy,
+  meta: copy.optional(),
+});
+
 export type Role = z.infer<typeof roleSchema>;
 export type Project = z.infer<typeof projectSchema>;
 export type Milestone = z.infer<typeof milestoneSchema>;

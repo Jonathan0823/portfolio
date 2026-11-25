@@ -66,3 +66,48 @@ export function assertContentIntegrity(content: {
 
   if (problems.length) throw new Error(`Content check failed:\n - ${problems.join('\n - ')}`);
 }
+
+export interface YearInfo {
+  /** "2025", or "now" for the closing group. */
+  year: string;
+  subtitle: string;
+  meta?: string | undefined;
+}
+
+export interface YearGroup<T extends MilestoneEntry = MilestoneEntry> extends YearInfo {
+  /** Jan to Dec of the year (empty for the closing group), with how many Milestones fall in each. */
+  months: { month: string; count: number }[];
+  milestones: T[];
+}
+
+/**
+ * Groups Milestones by year, oldest first, each group in date order. Milestones
+ * labelled "Now" go in a closing "now" group. Subtitles come from `years`;
+ * a group without one is an error.
+ */
+export function groupMilestonesByYear<T extends MilestoneEntry>(
+  milestones: readonly T[],
+  years: readonly YearInfo[],
+): YearGroup<T>[] {
+  const buckets = new Map<string, T[]>();
+  for (const m of [...milestones].sort((a, b) => a.data.date.localeCompare(b.data.date))) {
+    const key = m.data.label === 'Now' ? 'now' : m.data.date.slice(0, 4);
+    buckets.set(key, [...(buckets.get(key) ?? []), m]);
+  }
+  const keys = [...buckets.keys()].sort((a, b) =>
+    a === 'now' ? 1 : b === 'now' ? -1 : a.localeCompare(b),
+  );
+  return keys.map((key) => {
+    const info = years.find((y) => y.year === key);
+    if (!info) throw new Error(`No subtitle for story year "${key}": add it to src/content/years.yaml`);
+    const items = buckets.get(key)!;
+    const months =
+      key === 'now'
+        ? []
+        : Array.from({ length: 12 }, (_, i) => {
+            const month = `${key}-${String(i + 1).padStart(2, '0')}`;
+            return { month, count: items.filter((m) => m.data.date === month).length };
+          });
+    return { ...info, months, milestones: items };
+  });
+}
