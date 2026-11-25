@@ -1,7 +1,7 @@
 import { defineCollection } from 'astro:content';
 import { glob, file } from 'astro/loaders';
 import { parse } from 'yaml';
-import { milestoneSchema, projectSchema, roleSchema, skillGroupSchema } from './lib/schemas';
+import { milestoneSchema, projectSchema, roleSchema, skillGroupSchema, storyYearSchema } from './lib/schemas';
 
 const roles = defineCollection({
   loader: glob({ pattern: '*.md', base: './src/content/roles' }),
@@ -27,4 +27,12 @@ const skills = defineCollection({
   schema: skillGroupSchema,
 });
 
-export const collections = { roles, projects, milestones, skills };
+// Subtitle and one-line meta for each year of /story, keyed by year.
+const years = defineCollection({
+  loader: file('src/content/years.yaml', {
+    parser: (text) => (parse(text) as { year: string }[]).map((y) => ({ id: y.year, ...y })),
+  }),
+  schema: storyYearSchema,
+});
+
+export const collections = { roles, projects, milestones, skills, years };
