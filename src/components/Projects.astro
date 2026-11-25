@@ -1,0 +1,84 @@
+---
+import Section from './Section.astro';
+import Visual from './Visual.astro';
+import { getProjects } from '../lib/content';
+import { projectLinks, projectYear, splitProjectBody } from '../lib/projects';
+
+const projects = await Promise.all(
+  (await getProjects()).map(async (p) => ({ p, links: projectLinks(p.data), year: projectYear(p.data.month), ...splitProjectBody(p.body) })),
+);
+---
+
+<Section id="projects" title="Projects.">
+  <a slot="aside" href="https://github.com/Jonathan0823?tab=repositories" class="text-ink">
+    <span class="md:hidden">All repos ↗</span><span class="hidden md:inline">All repositories ↗</span>
+  </a>
+  {projects.map(({ p, links, year, description, sections }) => (
+    <article data-project class="border-t border-ink py-6 md:py-7">
+      <div class="md:grid md:grid-cols-12 md:items-baseline md:gap-x-6">
+        <div class="flex items-baseline justify-between md:col-span-3 md:block">
+          <h3 class="text-[28px] leading-[1.1] font-semibold tracking-[-0.03em] md:text-[32px]">{p.data.name}</h3>
+          <p class="font-mono text-[13px] leading-relaxed text-muted md:hidden">{year}</p>
+        </div>
+        <div class="mt-2.5 flex flex-col gap-2 md:col-span-6 md:mt-0 md:gap-2.5">
+          <p class="text-[17px] leading-[1.55] text-body text-pretty md:text-lg md:leading-relaxed">{description}</p>
+          <p class="text-[15px] leading-normal text-ink md:text-base">
+            <span class="font-mono text-[13px] leading-relaxed text-muted">Result&nbsp;&nbsp;</span>{p.data.result}
+          </p>
+        </div>
+        <div class="mt-2.5 flex flex-col gap-1 md:col-span-3 md:mt-0 md:text-right">
+          <p class="font-mono text-[13px] leading-relaxed text-muted">
+            {p.data.tags.join(' · ')}<span class="hidden md:inline"> · {year}</span>
+          </p>
+          <div class="flex items-baseline justify-between gap-3 md:flex-col md:items-end md:gap-1">
+            <p class="font-mono text-[13px] leading-relaxed text-muted">
+              {links.map((l, i) => (<>{i > 0 && ' · '}<a href={l.href} class="text-ink">{l.text} ↗</a></>))}
+            </p>
+            <button
+              type="button"
+              hidden
+              data-toggle
+              aria-expanded="true"
+              aria-controls={`project-${p.id}`}
+              class="shrink-0 cursor-pointer font-mono text-[13px] leading-relaxed whitespace-nowrap text-ink"
+            >Close −</button>
+          </div>
+        </div>
+      </div>
+      <div id={`project-${p.id}`} data-detail class="grid grid-rows-[1fr] transition-[grid-template-rows] duration-[450ms] ease-[cubic-bezier(.2,.7,.2,1)] data-[collapsed]:grid-rows-[0fr] motion-reduce:transition-none">
+        <div class="min-h-0 overflow-hidden">
+          <div class="grid gap-6 pt-5 pb-2 md:grid-cols-[1.1fr_1fr]">
+            <Visual visual={p.data.visual} />
+            <dl>
+              {sections.map((s) => (
+                <div class="grid grid-cols-[96px_1fr] gap-3 border-t border-line-soft py-2.5">
+                  <dt class="font-mono text-[13px] leading-relaxed text-muted">{s.label}</dt>
+                  <dd class="text-base leading-[1.55] text-body">{s.text}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </div>
+      </div>
+    </article>
+  ))}
+  <div class="border-t border-ink"></div>
+</Section>
+
+<script>
+  // Progressive enhancement: details are open without JS; with JS they start collapsed behind a real button.
+  document.querySelectorAll<HTMLElement>('[data-project]').forEach((project) => {
+    const button = project.querySelector<HTMLButtonElement>('[data-toggle]');
+    const detail = project.querySelector<HTMLElement>('[data-detail]');
+    if (!button || !detail) return;
+    const set = (open: boolean) => {
+      detail.toggleAttribute('data-collapsed', !open);
+      detail.toggleAttribute('inert', !open);
+      button.setAttribute('aria-expanded', String(open));
+      button.textContent = open ? 'Close −' : 'Open +';
+    };
+    button.hidden = false;
+    set(false);
+    button.addEventListener('click', () => set(button.getAttribute('aria-expanded') !== 'true'));
+  });
+</script>

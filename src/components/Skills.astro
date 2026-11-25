@@ -1,0 +1,17 @@
+---
+import Section from './Section.astro';
+import { getSkills } from '../lib/content';
+
+const groups = await getSkills();
+---
+
+<Section id="skills" title="Skills.">
+  <div class="border-t border-ink">
+    {groups.map((g) => (
+      <div class="grid grid-cols-12 items-baseline gap-x-6 border-t border-line-soft py-3.5 md:py-5">
+        <p class="col-span-12 font-mono text-[13px] leading-relaxed text-muted md:col-span-3">{g.data.group}</p>
+        <p class="col-span-12 mt-0.5 text-lg leading-[1.4] text-ink md:col-span-9 md:mt-0 md:text-[22px] md:tracking-[-0.01em]">{g.data.items.join(', ')}</p>
+      </div>
+    ))}
+  </div>
+</Section>
