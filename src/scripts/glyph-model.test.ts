@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BITMAPS, assignPixels, pickSourceColumns } from './glyph-model';
+import { BITMAPS, assignPixels, glyphCanvasLayout, pickSourceColumns } from './glyph-model';
 
 describe('pickSourceColumns', () => {
   it('picks the highest local peaks first, at least 5 columns apart, at most 5', () => {
@@ -21,14 +21,75 @@ describe('pickSourceColumns', () => {
 describe('assignPixels', () => {
   it('gives every lit glyph pixel to exactly one source, the nearest column', () => {
     const lit = (n: keyof typeof BITMAPS) => BITMAPS[n].rows.join('').split('#').length - 1;
-    for (const name of ['mail', 'git', 'cv'] as const) {
+    for (const name of ['mail', 'git', 'linkedin'] as const) {
       const g = BITMAPS[name];
-      const per = assignPixels(g, 32, 38, [3, 16, 28]);
+      const per = assignPixels(g, 28, 36, [3, 16, 28]);
       expect(per.flat().length).toBe(lit(name) * g.scale * g.scale);
       per.forEach((list, k) => list.forEach(p => {
         const own = Math.abs(p.column - [3, 16, 28][k]);
         for (const sx of [3, 16, 28]) expect(own).toBeLessThanOrEqual(Math.abs(p.column - sx));
       }));
     }
+  });
+});
+
+describe('BITMAPS', () => {
+  it('has well-formed rectangular bitmaps for every hero link, all at scale 1 and at most 28 wide', () => {
+    expect(Object.keys(BITMAPS).sort()).toEqual(['git', 'linkedin', 'mail']);
+    for (const g of Object.values(BITMAPS)) {
+      expect(g.scale).toBe(1);
+      expect(g.rows[0].length).toBeLessThanOrEqual(28);
+      expect(g.rows.length).toBeLessThanOrEqual(28);
+      for (const row of g.rows) {
+        expect(row).toMatch(/^[#.]+$/);
+        expect(row.length).toBe(g.rows[0].length);
+      }
+    }
+  });
+});
+
+describe('glyphCanvasLayout', () => {
+  const base = { heroWidth: 1440, cell: 10, columns: 28, glyphRows: 28, rightMargin: 96, minTop: 64, gap: 40 };
+  const text = { textRight: 900, textTop: 420, textBottom: 740, limitBottom: 900 };
+  it('puts the icon box right of the text, bottom level with the text block, on the grid', () => {
+    const l = glyphCanvasLayout({ ...base, ...text });
+    expect(l).toMatchObject({ originColumn: 106, left: 1060, top: 0, width: 280, height: 740, rows: 74, rising: false });
+    expect(l.left + l.width).toBeLessThanOrEqual(1440 - 96);
+    expect(l.left % 10).toBe(0);
+    expect(l.height % 10).toBe(0);
+  });
+  it('stays inside the viewport', () => {
+    expect(glyphCanvasLayout({ ...base, ...text, limitBottom: 700 }).height).toBe(700);
+  });
+  it('moves above the headline when the text leaves no room on the right', () => {
+    const l = glyphCanvasLayout({ ...base, ...text, textRight: 1200 });
+    expect(l.height).toBe(380);
+  });
+  it('never goes off the left edge or above the nav', () => {
+    const l = glyphCanvasLayout({ ...base, ...text, heroWidth: 100, textTop: 100, textRight: 1200, textBottom: 200 });
+    expect(l.originColumn).toBe(0);
+    expect(l.height).toBe(350);
+  });
+});
+
+describe('glyphCanvasLayout on phones', () => {
+  const base = { heroWidth: 390, cell: 4, columns: 28, glyphRows: 28, rightMargin: 20, minTop: 60, gap: 16, textRight: 230, textTop: 470, textBottom: 620, limitBottom: 800 };
+  it('sits beside the headline, right aligned, on the 4 px grid, bottom level with the headline', () => {
+    const l = glyphCanvasLayout(base);
+    expect(l).toMatchObject({ left: 256, width: 112, height: 620, rising: false });
+    expect(l.left + l.width).toBeLessThanOrEqual(390 - 20);
+    expect(l.left).toBeGreaterThanOrEqual(230 + 16);
+    expect(l.left % 4).toBe(0);
+    expect(l.height % 4).toBe(0);
+  });
+  it('falls back to the band above the headline when it does not fit beside it', () => {
+    expect(glyphCanvasLayout({ ...base, textRight: 300 }).height).toBe(452);
+  });
+});
+
+describe('assignPixels order', () => {
+  it('sends the highest rows first when rising', () => {
+    const [list] = assignPixels(BITMAPS.mail, 28, 36, [14], true);
+    expect(list[0].row).toBeLessThanOrEqual(list[list.length - 1].row);
   });
 });

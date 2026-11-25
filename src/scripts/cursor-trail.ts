@@ -1,14 +1,22 @@
-import { HEAT_PALETTE, hash, heatLevel } from './pixel-math';
+import { HEAT_PALETTE, hash } from './pixel-math';
 import type { HeroField } from './hero-field';
+import { blobGeometry, blobValue, levelForValue, shortestTurn } from './blob-shape';
+import { decayFactor, easeFactor, frameScale, smoothVelocity } from './timing';
 
-const CELL = 14; // cell size in CSS px
+const MAX_CELL = 10; // largest cell size in CSS px (desktop hero field); canvases are sized for it
+const TEXT_SELECTOR = 'p,li,dt,dd,span,h3,h4,figcaption,blockquote';
 const BLOB_CELLS = 64; // blob overlay cells per side
 const BLOB_CENTER = 32; // cursor cell inside the blob overlay
-const BLOB_SIZE = BLOB_CELLS * CELL;
+const BLOB_SIZE = BLOB_CELLS * MAX_CELL;
 const TRAIL_CELLS = 120; // trail overlay cells per side
 const TRAIL_CENTER = 60;
-const TRAIL_SIZE = TRAIL_CELLS * CELL;
-const NEAR_CANVAS_PX = 260; // how close to a pixel canvas the blob starts to heat up
+const TRAIL_SIZE = TRAIL_CELLS * MAX_CELL;
+const REST_RADIUS = 5; // cells; about 10 across (~100 px)
+const SQUARE_RADIUS = 2;
+const UNDERLINE_LEVEL = 0;
+const HEADING_SCALE = 2.4; // blob radius multiplier over headings (3.6 / 1.5)
+// Light, low-contrast greys for the blob drawn behind text, by heat level 0..5.
+const UNDER_PALETTE = ['#f3f3f3', '#efefef', '#ebebeb', '#e6e6e6', '#e1e1e1', '#dcdcdc'];
 
 interface TrailCell {
   cellX: number;
@@ -17,37 +25,34 @@ interface TrailCell {
   strength: number;
 }
 
-interface BlobShape {
-  /** how stretched the blob is along its heading, from speed */
-  stretch: number;
-  heading: number;
-  wobble: number;
-  phase: number;
-}
-
 /**
- * The cursor pixel trail: a pixel blob that follows the pointer plus fading cells left behind.
- * Overlays are fixed-position and ignore pointer events; the system cursor is never hidden.
- * The animation loop only runs while the pointer is over the page, the tab is visible and
- * something is still moving or the pointer is near a pixel canvas; otherwise it stops.
- * Returns a function that removes everything.
+ * The cursor blob: one round pixel blob in heat colours that follows the pointer, stretches
+ * into an oval along its travel with the hot core toward the leading edge. Over the hero it
+ * heats the field instead of drawing an overlay, and leaving the hero drags a fading drip of
+ * cells out behind it. Overlays are fixed-position and ignore pointer events; the system
+ * cursor is never hidden. The loop only runs while the pointer is over the page, the tab is
+ * visible and something is still moving; otherwise it stops. Returns a function that removes
+ * everything.
  */
 export function mountCursorTrail(hero: HeroField | null): () => void {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
-  const createBlobCanvas = (blend: boolean) => {
+  // Two blob canvases: heat colours above the content, and light greys behind it (z-index -1,
+  // so text keeps its own colour). An eased "overText" value cross-fades between them.
+  const makeBlobCanvas = (zIndex: number) => {
     const canvas = document.createElement('canvas');
     canvas.setAttribute('aria-hidden', 'true');
-    canvas.style.cssText = `position:fixed;left:0;top:0;width:${BLOB_SIZE}px;height:${BLOB_SIZE}px;pointer-events:none;z-index:51;opacity:0;transition:opacity .15s;${blend ? 'mix-blend-mode:difference;' : ''}`;
+    canvas.style.cssText = `position:fixed;left:0;top:0;width:${BLOB_SIZE}px;height:${BLOB_SIZE}px;pointer-events:none;z-index:${zIndex};opacity:0`;
     canvas.width = BLOB_SIZE * dpr;
     canvas.height = BLOB_SIZE * dpr;
     const ctx = canvas.getContext('2d')!;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    document.body.appendChild(canvas);
-    return [canvas, ctx] as const;
+    if (zIndex < 0) document.body.insertBefore(canvas, document.body.firstChild);
+    else document.body.appendChild(canvas);
+    return { canvas, ctx };
   };
-  const [lightCanvas, lightCtx] = createBlobCanvas(true);
-  const [colorCanvas, colorCtx] = createBlobCanvas(false);
-  const blobCanvases = [lightCanvas, colorCanvas];
+  const heat = makeBlobCanvas(50);
+  const mono = makeBlobCanvas(-1);
+  const blobCanvas = heat.canvas, blobCtx = heat.ctx;
 
   const trailCanvas = document.createElement('canvas');
   trailCanvas.setAttribute('aria-hidden', 'true');
@@ -55,191 +60,223 @@ export function mountCursorTrail(hero: HeroField | null): () => void {
   trailCanvas.width = TRAIL_SIZE;
   trailCanvas.height = TRAIL_SIZE;
   const trailCtx = trailCanvas.getContext('2d')!;
-  const previousIsolation = document.body.style.isolation;
-  document.body.style.isolation = 'isolate';
   document.body.insertBefore(trailCanvas, document.body.firstChild);
 
   const trail = new Map<string, TrailCell>();
   let targetX = 0, targetY = 0; // where the pointer is
   let cursorX = 0, cursorY = 0; // the eased position the blob follows
   let speed = 0, heading = 0, clock = 0;
-  let radius = 1.5, targetRadius = 1.5;
+  let radius = REST_RADIUS, targetRadius = REST_RADIUS;
   let raf = 0, pointerInside = false;
-  let warmth = 0, targetWarmth = 0; // 0..1, closeness to a pixel canvas
   let heroContact = 0;
-  let smoothDx = 0, smoothDy = 0;
+  let smoothDx = 0, smoothDy = 0, lastFrameTime = 0;
+  let pointerClientX = 0, pointerClientY = 0, scrollRaf = 0;
   let hoveredLink: Element | null = null, linkProgress = 0, overLink = false;
-  let shape: BlobShape = { stretch: 0, heading: 0, wobble: 0, phase: 0 };
+  let onHeading = false, overText = false, overTextValue = 0, visible = 0, cell = MAX_CELL;
 
-  const blobDistance = (du: number, dv: number, blobRadius: number) => {
-    const cos = Math.cos(shape.heading), sin = Math.sin(shape.heading);
-    const along = du * cos + dv * sin, across = -du * sin + dv * cos;
-    const longRadius = blobRadius * (1 + shape.stretch), shortRadius = blobRadius / (1 + shape.stretch * 0.45);
-    const angle = Math.atan2(across, along);
-    const wobble = 1 + shape.wobble * (0.3 * Math.sin(3 * angle + shape.phase) + 0.2 * Math.sin(5 * angle - 1.7 * shape.phase));
-    return Math.sqrt((along / longRadius) ** 2 + (across / shortRadius) ** 2) / wobble;
-  };
-  const fillCell = (cellX: number, cellY: number, originX: number, originY: number, ctx: CanvasRenderingContext2D) =>
-    ctx.fillRect((cellX - originX) * CELL + 1, (cellY - originY) * CELL + 1, CELL - 1, CELL - 1);
+  const fillCell = (cellX: number, cellY: number, originX: number, originY: number, offsetX: number, offsetY: number, ctx: CanvasRenderingContext2D) =>
+    ctx.fillRect((cellX - originX) * cell + offsetX + 1, (cellY - originY) * cell + offsetY + 1, cell - 1, cell - 1);
 
-  const frame = () => {
+  const frame = (now: number) => {
     raf = 0;
     if (document.hidden) return;
+    // Everything eases by real elapsed time, relative to a 60 fps frame.
+    const scale = lastFrameTime ? frameScale(now - lastFrameTime) : 1;
+    lastFrameTime = now;
+    cell = hero ? hero.field().cellSize : window.innerWidth < 700 ? 8 : MAX_CELL;
     const prevX = cursorX, prevY = cursorY;
-    cursorX += (targetX - cursorX) * 0.35;
-    cursorY += (targetY - cursorY) * 0.35;
-    clock += 0.12;
-    radius += (targetRadius - radius) * 0.25;
+    const follow = easeFactor(0.35, scale);
+    cursorX += (targetX - cursorX) * follow;
+    cursorY += (targetY - cursorY) * follow;
+    clock += 0.12 * scale;
+    radius += (targetRadius - radius) * easeFactor(0.25, scale);
     const dx = cursorX - prevX, dy = cursorY - prevY, stepLength = Math.hypot(dx, dy);
-    smoothDx += (dx - smoothDx) * 0.18;
-    smoothDy += (dy - smoothDy) * 0.18;
+    const perFrame = scale > 0 ? 1 / scale : 0; // step in px per 60 fps frame
+    const smooth = smoothVelocity({ x: smoothDx, y: smoothDy }, { x: dx * perFrame, y: dy * perFrame }, 0.18, scale);
+    smoothDx = smooth.x;
+    smoothDy = smooth.y;
     const smoothSpeed = Math.hypot(smoothDx, smoothDy);
-    speed += (smoothSpeed - speed) * 0.5;
+    speed += (smoothSpeed - speed) * easeFactor(0.5, scale);
     if (smoothSpeed > 0.6) {
-      const wantedHeading = Math.atan2(smoothDy, smoothDx);
-      let turn = wantedHeading - heading;
-      turn -= Math.round(turn / Math.PI) * Math.PI;
-      heading += turn * 0.3;
+      heading += shortestTurn(heading, Math.atan2(smoothDy, smoothDx)) * easeFactor(0.3, scale);
     }
-    const stretch = Math.min(speed / 18, 1), wobble = Math.min(0.6, speed / 40);
-    shape = { stretch, heading, wobble, phase: clock };
-    const cursorCellX = Math.floor(cursorX / CELL), cursorCellY = Math.floor(cursorY / CELL);
+    const stretch = Math.min(speed / 18, 1);
+    linkProgress += ((overLink ? 1 : 0) - linkProgress) * easeFactor(0.3, scale);
+    overTextValue += ((overText ? 1 : 0) - overTextValue) * easeFactor(0.25, scale);
+    visible += ((pointerInside ? 1 : 0) - visible) * easeFactor(0.35, scale);
+    heat.canvas.style.opacity = String(visible * (1 - overTextValue));
+    mono.canvas.style.opacity = String(visible * overTextValue);
+
+    // Cells sit on the hero field's grid: its origin is the hero's top-left corner.
+    const heroRect = hero ? hero.rect() : null;
+    const offsetX = heroRect ? ((heroRect.left % cell) + cell) % cell : 0;
+    const offsetY = heroRect ? ((heroRect.top % cell) + cell) % cell : 0;
+    const cursorCellX = Math.floor((cursorX - offsetX) / cell), cursorCellY = Math.floor((cursorY - offsetY) / cell);
     const originX = cursorCellX - BLOB_CENTER, originY = cursorCellY - BLOB_CENTER;
-    for (const canvas of blobCanvases) canvas.style.transform = `translate(${originX * CELL}px,${originY * CELL}px)`;
-    lightCtx.clearRect(0, 0, BLOB_SIZE, BLOB_SIZE);
-    colorCtx.clearRect(0, 0, BLOB_SIZE, BLOB_SIZE);
-    lightCtx.fillStyle = '#FFFFFF';
-    const fieldTime = hero ? hero.time() : clock * 0.2;
-    warmth += (targetWarmth - warmth) * 0.15;
-    const effectiveWarmth = Math.min(1, warmth + stretch * 0.25);
-    linkProgress += ((overLink ? 1 : 0) - linkProgress) * 0.3;
+    const blobTransform = `translate(${originX * cell}px,${originY * cell}px)`;
+    heat.canvas.style.transform = blobTransform;
+    mono.canvas.style.transform = blobTransform;
+    blobCtx.clearRect(0, 0, BLOB_SIZE, BLOB_SIZE);
+    mono.ctx.clearRect(0, 0, BLOB_SIZE, BLOB_SIZE);
+
+    const insideHero = !!heroRect && pointerInside &&
+      cursorX >= heroRect.left && cursorX <= heroRect.right && cursorY >= heroRect.top && cursorY <= heroRect.bottom;
+    const flickerTime = Math.floor(clock * 2);
 
     // Over a link the blob turns into an underline.
     if (linkProgress > 0.02 && hoveredLink && hoveredLink.isConnected) {
       const rect = hoveredLink.getBoundingClientRect();
-      const row = Math.floor((rect.bottom + 5) / CELL);
-      const firstCell = Math.floor(rect.left / CELL), lastCell = Math.floor((rect.right - 1) / CELL);
+      const row = Math.floor((rect.bottom + 5 - offsetY) / cell);
+      const firstCell = Math.floor((rect.left - offsetX) / cell), lastCell = Math.floor((rect.right - 1 - offsetX) / cell);
       const half = (lastCell - firstCell + 1) / 2 + 0.5, middle = (firstCell + lastCell + 1) / 2;
+      blobCtx.fillStyle = HEAT_PALETTE[UNDERLINE_LEVEL];
       for (let cell = firstCell; cell <= lastCell; cell++) {
-        if (Math.abs(cell + 0.5 - middle) <= half * linkProgress) fillCell(cell, row, originX, originY, lightCtx);
+        if (Math.abs(cell + 0.5 - middle) <= half * linkProgress) fillCell(cell, row, originX, originY, offsetX, offsetY, blobCtx);
       }
     }
     const blobAlpha = linkProgress < 0.5 ? 1 - linkProgress / 0.5 : 0;
-    if (blobAlpha > 0.05) {
-      const blobRadius = radius * Math.max(0.3, blobAlpha);
-      const reach = Math.ceil(blobRadius * (1 + stretch) * 1.4) + 1;
+    // The hero shows the blob through its own cells, so the overlay is skipped there.
+    if (blobAlpha > 0.05 && !insideHero) {
+      const shaped = blobGeometry(radius * Math.max(0.3, blobAlpha), stretch);
+      const reach = Math.ceil(shaped.longRadius + shaped.shift) + 1;
       for (let cellY = cursorCellY - reach; cellY <= cursorCellY + reach; cellY++) {
         for (let cellX = cursorCellX - reach; cellX <= cursorCellX + reach; cellX++) {
-          const distance = blobDistance(cellX + 0.5 - cursorX / CELL, cellY + 0.5 - cursorY / CELL, blobRadius);
-          if (distance > 1) continue;
-          if (effectiveWarmth < 0.12 || (effectiveWarmth < 0.4 && distance < 0.45)) fillCell(cellX, cellY, originX, originY, lightCtx);
-          else {
-            colorCtx.fillStyle = HEAT_PALETTE[heatLevel(cellX, cellY, distance, stretch, fieldTime, effectiveWarmth)];
-            fillCell(cellX, cellY, originX, originY, colorCtx);
+          const value = blobValue(cellX + 0.5 - (cursorX - offsetX) / cell, cellY + 0.5 - (cursorY - offsetY) / cell, heading, shaped);
+          if (value === null) continue;
+          const level = levelForValue(value, hash(cellX, cellY, flickerTime) * 2 - 1);
+          blobCtx.fillStyle = HEAT_PALETTE[level];
+          fillCell(cellX, cellY, originX, originY, offsetX, offsetY, blobCtx);
+          if (overTextValue > 0.02) {
+            mono.ctx.fillStyle = UNDER_PALETTE[level];
+            fillCell(cellX, cellY, originX, originY, offsetX, offsetY, mono.ctx);
           }
         }
       }
     }
 
-    // Heat dragged into the hero field, and fading cells left on the page near it.
-    const steps = Math.max(1, Math.min(40, Math.ceil(stepLength / (CELL * 0.5))));
-    let insideHero = false;
-    if (hero) {
-      const heroRect = hero.rect(), margin = 3 * CELL;
-      const near =
-        pointerInside &&
-        cursorX >= heroRect.left - margin && cursorX <= heroRect.right + margin &&
-        cursorY >= heroRect.top - margin && cursorY <= heroRect.bottom + margin;
-      if (near) {
-        if (cursorX >= heroRect.left && cursorX <= heroRect.right && cursorY >= heroRect.top && cursorY <= heroRect.bottom) insideHero = true;
-        const field = hero.field(), brushRadius = 2.2;
-        for (let step = 1; step <= steps; step++) {
-          const fieldColumn = (prevX + (dx * step) / steps - heroRect.left) / field.cellSize;
-          const fieldRow = (prevY + (dy * step) / steps - heroRect.top) / field.cellSize;
-          for (let row = Math.max(0, Math.floor(fieldRow - brushRadius)); row < Math.min(field.rows, fieldRow + brushRadius); row++) {
-            for (let column = Math.max(0, Math.floor(fieldColumn - brushRadius)); column < Math.min(field.columns, fieldColumn + brushRadius); column++) {
-              const distance = Math.hypot(column + 0.5 - fieldColumn, row + 0.5 - fieldRow) / brushRadius;
-              if (distance < 1) {
-                const index = row * field.columns + column;
-                field.heat[index] = Math.max(field.heat[index], 0.55 + (1 - distance) * 0.35);
-              }
-            }
+    // Heat stamped into the hero field, and fading cells dragged out when leaving it.
+    const steps = Math.max(1, Math.min(12, Math.ceil(stepLength / cell)));
+    if (hero && heroRect && insideHero && blobAlpha > 0.05) {
+      const field = hero.field();
+      const shaped = blobGeometry(radius, stretch);
+      const reach = Math.ceil(shaped.longRadius + shaped.shift) + 1;
+      for (let step = 1; step <= steps; step++) {
+        const column = (prevX + (dx * step) / steps - heroRect.left) / field.cellSize;
+        const row = (prevY + (dy * step) / steps - heroRect.top) / field.cellSize;
+        for (let r = Math.max(0, Math.floor(row - reach)); r < Math.min(field.rows, row + reach); r++) {
+          for (let c = Math.max(0, Math.floor(column - reach)); c < Math.min(field.columns, column + reach); c++) {
+            const value = blobValue(c + 0.5 - column, r + 0.5 - row, heading, shaped);
+            if (value === null) continue;
+            const index = r * field.columns + c;
+            const jitter = (hash(c, r, flickerTime) * 2 - 1) * 0.06;
+            field.heat[index] = Math.max(field.heat[index], 0.3 + value * 0.75 + jitter);
           }
         }
-        hero.markDirty();
       }
+      hero.markDirty();
     }
-    heroContact = insideHero ? 1 : heroContact * 0.93;
+    heroContact = insideHero ? 1 : heroContact * decayFactor(0.95, scale);
     if (pointerInside && !insideHero && heroContact > 0.05 && speed > 1.2) {
-      const amount = heroContact * Math.min(1, speed / 18), brushRadius = 1.5;
+      const amount = heroContact * Math.min(1, speed / 14), brushRadius = 3.2;
       for (let step = 1; step <= steps; step++) {
-        const column = (prevX + (dx * step) / steps) / CELL, row = (prevY + (dy * step) / steps) / CELL;
+        const column = (prevX - offsetX + (dx * step) / steps) / cell, row = (prevY - offsetY + (dy * step) / steps) / cell;
         for (let cellY = Math.floor(row - brushRadius); cellY < row + brushRadius; cellY++) {
           for (let cellX = Math.floor(column - brushRadius); cellX < column + brushRadius; cellX++) {
             const distance = Math.hypot(cellX + 0.5 - column, cellY + 0.5 - row) / brushRadius;
             if (distance > 1) continue;
-            const key = cellX + ',' + cellY, strength = amount * (1 - distance * 0.5), existing = trail.get(key);
+            const key = cellX + ',' + cellY, strength = amount * (1 - distance * distance * 0.8) * (0.8 + 0.2 * hash(cellX, cellY, 3));
+            const existing = trail.get(key);
             if (!existing || existing.strength < strength) trail.set(key, { cellX, cellY, strength });
           }
         }
       }
     }
-    trailCanvas.style.transform = `translate(${(cursorCellX - TRAIL_CENTER) * CELL}px,${(cursorCellY - TRAIL_CENTER) * CELL}px)`;
+    trailCanvas.style.transform = `translate(${(cursorCellX - TRAIL_CENTER) * cell + offsetX}px,${(cursorCellY - TRAIL_CENTER) * cell + offsetY}px)`;
     trailCtx.clearRect(0, 0, TRAIL_SIZE, TRAIL_SIZE);
-    trail.forEach((cell, key) => {
-      cell.strength *= 0.9;
-      if (cell.strength < 0.08) {
+    trail.forEach((entry, key) => {
+      entry.strength *= decayFactor(0.955, scale);
+      if (entry.strength < 0.08) {
         trail.delete(key);
         return;
       }
-      const localX = cell.cellX - cursorCellX + TRAIL_CENTER, localY = cell.cellY - cursorCellY + TRAIL_CENTER;
+      const localX = entry.cellX - cursorCellX + TRAIL_CENTER, localY = entry.cellY - cursorCellY + TRAIL_CENTER;
       if (localX < 0 || localY < 0 || localX >= TRAIL_CELLS || localY >= TRAIL_CELLS) return;
-      const flicker = hash(cell.cellX, cell.cellY, Math.floor(clock * 3)) < 0.3 ? 1 : 0;
-      const level = Math.max(0, Math.min(5, Math.round(cell.strength * 5 - flicker)));
+      const flicker = hash(entry.cellX, entry.cellY, Math.floor(clock * 3)) < 0.3 ? 1 : 0;
+      const level = Math.max(0, Math.min(5, Math.round(entry.strength * 5 - flicker)));
       trailCtx.fillStyle = HEAT_PALETTE[level];
-      trailCtx.fillRect(localX * CELL + 1, localY * CELL + 1, CELL - 1, CELL - 1);
+      trailCtx.fillRect(localX * cell + 1, localY * cell + 1, cell - 1, cell - 1);
     });
 
     // Keep going only while something is still changing. Idle, the loop stops and the next
-    // mouse move wakes it. Near a pixel canvas the blob keeps tracking the field's animation.
+    // mouse move wakes it.
     const busy =
-      trail.size > 0 || Math.abs(targetWarmth - warmth) > 0.01 || targetWarmth > 0.02 ||
+      trail.size > 0 ||
       Math.abs(targetX - cursorX) + Math.abs(targetY - cursorY) > 0.2 || speed > 0.15 ||
-      Math.abs(targetRadius - radius) > 0.02 || (linkProgress > 0.02 && linkProgress < 0.98);
+      Math.abs(targetRadius - radius) > 0.02 || (linkProgress > 0.02 && linkProgress < 0.98) ||
+      Math.abs((overText ? 1 : 0) - overTextValue) > 0.01 || Math.abs((pointerInside ? 1 : 0) - visible) > 0.01;
     if (pointerInside && busy) raf = requestAnimationFrame(frame);
   };
 
   const wake = () => {
     if (!raf && pointerInside && !document.hidden) raf = requestAnimationFrame(frame);
   };
+  /** True when (x, y) is over rendered text, not just inside a text element's padding. */
+  const pointOverText = (x: number, y: number, target: Element | null): boolean => {
+    const doc = document as Document & {
+      caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node } | null;
+      caretRangeFromPoint?: (x: number, y: number) => Range | null;
+    };
+    let node: Node | null = null;
+    if (doc.caretPositionFromPoint) node = doc.caretPositionFromPoint(x, y)?.offsetNode ?? null;
+    else if (doc.caretRangeFromPoint) node = doc.caretRangeFromPoint(x, y)?.startContainer ?? null;
+    else return !!target?.closest(TEXT_SELECTOR);
+    if (!node || node.nodeType !== Node.TEXT_NODE || !node.textContent?.trim()) return false;
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    for (const r of Array.from(range.getClientRects())) {
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return true;
+    }
+    return false;
+  };
+
+  /** Re-reads what is under the pointer: link, heading and month-square state. */
+  const evaluate = (target: Element | null) => {
+    overText = !!target && pointOverText(pointerClientX, pointerClientY, target);
+    const link = target?.closest('a,button,summary') ?? null;
+    onHeading = !!target?.closest('h1,h2');
+    const onSquare = !!target?.closest('[data-sq]');
+    // Pixel buttons draw their own hover; skip the underline there.
+    overLink = !!link && !onSquare && !link.hasAttribute('data-pixel-btn');
+    if (link && !onSquare && !link.hasAttribute('data-pixel-btn')) hoveredLink = link;
+    targetRadius = onSquare ? SQUARE_RADIUS : onHeading ? REST_RADIUS * HEADING_SCALE : REST_RADIUS;
+  };
 
   const onMove = (e: MouseEvent) => {
-    targetX = e.clientX;
-    targetY = e.clientY;
+    targetX = pointerClientX = e.clientX;
+    targetY = pointerClientY = e.clientY;
     if (!pointerInside) {
       cursorX = targetX;
       cursorY = targetY;
       pointerInside = true;
     }
-    const target = e.target instanceof Element ? e.target : null;
-    for (const canvas of blobCanvases) canvas.style.opacity = '1';
-    let nearestCanvas = Infinity;
-    document.querySelectorAll('canvas[data-px],canvas[data-cal]').forEach((canvas) => {
-      const box = canvas.getBoundingClientRect();
-      const gapX = Math.max(box.left - targetX, 0, targetX - box.right);
-      const gapY = Math.max(box.top - targetY, 0, targetY - box.bottom);
-      nearestCanvas = Math.min(nearestCanvas, Math.hypot(gapX, gapY));
-    });
-    targetWarmth = Number.isFinite(nearestCanvas) ? Math.max(0, Math.min(1, 1 - nearestCanvas / NEAR_CANVAS_PX)) : 0;
-    const link = target?.closest('a,button') ?? null, onHeading = !!target?.closest('h1,h2');
-    overLink = !!link;
-    if (link) hoveredLink = link;
-    targetRadius = onHeading ? 3.6 : 1.5;
+    evaluate(e.target instanceof Element ? e.target : null);
     wake();
   };
+  // Overlays are fixed, so scrolling moves content under a still pointer.
+  const onScroll = () => {
+    if (scrollRaf || !pointerInside) return;
+    scrollRaf = requestAnimationFrame(() => {
+      scrollRaf = 0;
+      if (!pointerInside) return;
+      targetX = pointerClientX;
+      targetY = pointerClientY;
+      evaluate(document.elementFromPoint(pointerClientX, pointerClientY));
+      wake();
+    });
+  };
   const onLeave = () => {
-    for (const canvas of blobCanvases) canvas.style.opacity = '0';
     pointerInside = false;
+    wake();
   };
   const onVisibility = () => {
     if (document.hidden) {
@@ -248,17 +285,19 @@ export function mountCursorTrail(hero: HeroField | null): () => void {
     } else wake();
   };
   document.addEventListener('mousemove', onMove);
+  window.addEventListener('scroll', onScroll, { passive: true });
   document.documentElement.addEventListener('mouseleave', onLeave);
   document.addEventListener('visibilitychange', onVisibility);
 
   return () => {
     document.removeEventListener('mousemove', onMove);
+    window.removeEventListener('scroll', onScroll);
+    cancelAnimationFrame(scrollRaf);
     document.documentElement.removeEventListener('mouseleave', onLeave);
     document.removeEventListener('visibilitychange', onVisibility);
     cancelAnimationFrame(raf);
-    lightCanvas.remove();
-    colorCanvas.remove();
+    blobCanvas.remove();
     trailCanvas.remove();
-    document.body.style.isolation = previousIsolation;
+    mono.canvas.remove();
   };
 }

@@ -3,6 +3,16 @@
 export const REDUCE_QUERY = '(prefers-reduced-motion: reduce)';
 export const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
 
+/** Runs cb once the page has loaded and the main thread is idle, so decorative setup stays out of the load path. */
+export function whenIdle(cb: () => void): void {
+  const run = () => {
+    if ('requestIdleCallback' in window) window.requestIdleCallback(() => cb(), { timeout: 1500 });
+    else setTimeout(cb, 200);
+  };
+  if (document.readyState === 'complete') run();
+  else window.addEventListener('load', run, { once: true });
+}
+
 export type MatchMedia = (query: string) => { matches: boolean };
 
 const none: MatchMedia = () => ({ matches: false });

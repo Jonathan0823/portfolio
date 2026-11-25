@@ -11,7 +11,15 @@ const links: { href: string; label: string; sec?: string }[] = [
 ---
 
 <nav aria-label="Main" class="sticky top-0 z-40 h-0">
-  <div class="flex items-start justify-between px-3 pt-3 md:items-center md:px-24 md:pt-4">
+  <div class="relative flex items-start justify-between px-3 pt-3 md:items-center md:px-24 md:pt-4">
+    <!-- Solid backdrop, faded in together with the progress bar once the hero is scrolled past. -->
+    <div
+      data-nav-bg
+      aria-hidden="true"
+      class="border-line pointer-events-none absolute inset-0 -z-10 border-b bg-paper/95 opacity-0 backdrop-blur-md transition-opacity duration-200 motion-reduce:transition-none"
+    >
+    </div>
+
     <a href="#top" class="bg-paper px-3.5 py-2.5 text-[17px] font-semibold tracking-[-0.03em] whitespace-nowrap text-ink no-underline">Eguin Jonathan</a>
 
     <div class="bg-paper hidden gap-0.5 p-1.5 font-mono text-[13px] md:flex">
@@ -22,12 +30,13 @@ const links: { href: string; label: string; sec?: string }[] = [
           class:list={[
             'px-3 py-1.5 text-ink no-underline decoration-accent decoration-2 underline-offset-[6px] aria-[current=true]:underline',
             l.sec === 'contact' && 'bg-ink text-paper',
-          ]}>{l.label}</a>
+          ]}
+          data-pixel-btn={l.sec === 'contact' ? 'dark' : undefined}>{l.label}</a>
       ))}
     </div>
 
     <details data-menu class="bg-paper font-mono text-[13px] md:hidden">
-      <summary class="cursor-pointer list-none px-4 py-3 [&::-webkit-details-marker]:hidden">
+      <summary data-pixel-btn class="cursor-pointer list-none px-4 py-3 [&::-webkit-details-marker]:hidden">
         <span class="in-open:hidden">Menu</span>
         <span class="hidden in-open:inline">Close</span>
       </summary>
@@ -40,10 +49,20 @@ const links: { href: string; label: string; sec?: string }[] = [
         ))}
       </div>
     </details>
+
+    <!-- Pixel scroll progress, filled in by the script below. Hidden while the hero is on screen. -->
+    <div
+      data-progress
+      aria-hidden="true"
+      class="pointer-events-none absolute top-full right-0 left-0 flex gap-px overflow-hidden opacity-0 transition-opacity duration-200 motion-reduce:transition-none"
+    >
+    </div>
   </div>
 </nav>
 
 <script>
+  import { HEAT_PALETTE, hash } from '../scripts/pixel-math';
+
   const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-sec]')];
   const sections = [...new Set(links.map((a) => a.dataset.sec!))]
     .map((id) => document.getElementById(id))
@@ -57,6 +76,48 @@ const links: { href: string; label: string; sec?: string }[] = [
   };
   addEventListener('scroll', mark, { passive: true });
   mark();
+
+  // Pixel progress bar: 9 x 4 px cells on a 10 px pitch, hot to cool; lit cells follow page scroll.
+  const bar = document.querySelector<HTMLElement>('[data-progress]');
+  const navBg = document.querySelector<HTMLElement>('[data-nav-bg]');
+  if (bar) {
+    const heat = [5, 4, 3, 2, 1].map((i) => HEAT_PALETTE[i]);
+    const hero = document.getElementById('top');
+    let cells: HTMLElement[] = [];
+    let lit = -1, frame = 0;
+
+    const build = () => {
+      const count = Math.ceil(innerWidth / 10);
+      if (count === cells.length) return;
+      bar.replaceChildren();
+      cells = [];
+      for (let i = 0; i < count; i++) {
+        const cell = document.createElement('span');
+        cell.style.cssText = `width:9px;height:4px;flex:none;background:${heat[Math.floor(i / 3 + hash(i, 7) * 2) % 5]}`;
+        cell.className = 'opacity-0 transition-opacity duration-200 motion-reduce:transition-none';
+        bar.appendChild(cell);
+        cells.push(cell);
+      }
+      lit = -1;
+    };
+    const update = () => {
+      frame = 0;
+      const pastHero = scrollY > (hero ? hero.offsetHeight - 80 : 40);
+      bar.style.opacity = pastHero ? '1' : '0';
+      if (navBg) navBg.style.opacity = pastHero ? '1' : '0';
+      const max = document.documentElement.scrollHeight - innerHeight;
+      const progress = max > 0 ? Math.min(1, Math.max(0, scrollY / max)) : 0;
+      const count = Math.round(progress * cells.length);
+      if (count === lit) return;
+      cells.forEach((cell, i) => cell.classList.toggle('opacity-0', i >= count));
+      lit = count;
+    };
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
+    addEventListener('scroll', schedule, { passive: true });
+    addEventListener('resize', () => { build(); schedule(); });
+    build();
+    update();
+  }
 
   // Picking a mobile menu entry closes the menu.
   const menu = document.querySelector<HTMLDetailsElement>('details[data-menu]');
