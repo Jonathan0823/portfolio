@@ -23,11 +23,11 @@ describe('noise helpers', () => {
 });
 
 describe('createField', () => {
-  it('uses 14px cells on wide canvases and 10px cells below 700px', () => {
+  it('uses 10px cells on wide canvases and 8px cells below 700px', () => {
     const wide = createField(1440, 336);
-    expect([wide.cellSize, wide.columns, wide.rows, wide.horizonRow]).toEqual([14, 103, 24, 16]);
+    expect([wide.cellSize, wide.columns, wide.rows, wide.horizonRow]).toEqual([10, 144, 34, 23]);
     const narrow = createField(390, 300);
-    expect([narrow.cellSize, narrow.columns, narrow.rows, narrow.horizonRow]).toEqual([10, 39, 30, 20]);
+    expect([narrow.cellSize, narrow.columns, narrow.rows, narrow.horizonRow]).toEqual([8, 49, 38, 25]);
   });
 });
 
