@@ -1,0 +1,25 @@
+---
+import '../styles/global.css';
+import geistWoff2 from '@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url';
+import geistMonoWoff2 from '@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2?url';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preload" href={geistWoff2} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={geistMonoWoff2} as="font" type="font/woff2" crossorigin />
+    <title>{title}</title>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
