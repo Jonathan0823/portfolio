@@ -2,11 +2,12 @@
 import Section from './Section.astro';
 import Visual from './Visual.astro';
 import { cvAvailable } from '../lib/site-data';
-import { getRoles } from '../lib/content';
-import { formatDuration, formatRange, roleSquares } from '../lib/role-timeline';
+import { getProjects, getRoles } from '../lib/content';
+import { projectAnchor, projectForAchievement } from '../lib/projects';
+import { formatDuration, formatRange, monthOf, roleSquares } from '../lib/role-timeline';
 
-const now = new Date();
-const currentMonth = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+const currentMonth = monthOf(new Date());
+const projects = await getProjects();
 
 const work = (await getRoles('work')).map((role) => {
   const squares = roleSquares(role, currentMonth);
@@ -45,7 +46,10 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
           .map((a) => (
             <div id={a.id} class="border-t border-line-soft py-3.5 md:-mx-3 md:px-3">
               <div class="md:grid md:grid-cols-[1fr_240px] md:items-baseline md:gap-6">
-                <p class="text-[17px] leading-[1.55] text-body text-pretty md:text-lg md:leading-relaxed">{a.text}</p>
+                <p class="text-[17px] leading-[1.55] text-body text-pretty md:text-lg md:leading-relaxed">{a.text}{(() => {
+                    const published = projectForAchievement(projects, a.id);
+                    return published && (<> I later rebuilt it as open source: <a href={`#${projectAnchor(published.id)}`} class="text-ink">{published.data.name} ↓</a></>);
+                  })()}</p>
                 <div class="mt-1.5 flex justify-between gap-3 md:mt-0 md:flex-col md:items-end md:gap-1 md:text-right">
                   {a.tags.length > 0 && <p class="font-mono text-[13px] leading-relaxed text-muted">{a.tags.join(' · ')}</p>}
                 </div>
@@ -90,8 +94,8 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
     </div>
   ))}
 
-  <div class="flex justify-between gap-6 border-t border-ink pt-5 font-mono text-[13px] leading-relaxed text-muted">
-    <p class="hidden md:block">Each square is a month in the role. Red months have a result listed.</p>
+  <div class="flex flex-col gap-3 border-t border-ink pt-5 md:flex-row md:justify-between md:gap-6 font-mono text-[13px] leading-relaxed text-muted">
+    <p>Each square is a month in the role. Red months have a result listed.</p>
     <a href="/story" class="text-ink">Read the full story →</a>
   </div>
 </Section>

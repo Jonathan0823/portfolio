@@ -19,6 +19,17 @@ export function splitProjectBody(body: string | undefined): { description: strin
 }
 
 /** The repo link first, then any extra repos; the first is labelled with the repo name. */
+/** The Project that was published from an Achievement, if any. */
+export function projectForAchievement<T extends { data: { fromAchievement?: string | undefined } }>(
+  projects: readonly T[],
+  achievementId: string,
+): T | undefined {
+  return projects.find((p) => p.data.fromAchievement === achievementId);
+}
+
+/** Element id of a Project row in #projects. */
+export const projectAnchor = (id: string): string => `project-${id}`;
+
 export function projectLinks(project: {
   repo: string;
   extraRepos: { text: string; href: string }[];

@@ -2,7 +2,8 @@
 import Section from './Section.astro';
 import Visual from './Visual.astro';
 import { getProjects } from '../lib/content';
-import { projectLinks, projectYear, splitProjectBody } from '../lib/projects';
+import { GITHUB_REPOS_URL } from '../lib/profile';
+import { projectAnchor, projectLinks, projectYear, splitProjectBody } from '../lib/projects';
 
 const projects = await Promise.all(
   (await getProjects()).map(async (p) => ({ p, links: projectLinks(p.data), year: projectYear(p.data.month), ...splitProjectBody(p.body) })),
@@ -10,11 +11,11 @@ const projects = await Promise.all(
 ---
 
 <Section id="projects" title="Projects.">
-  <a slot="aside" href="https://github.com/Jonathan0823?tab=repositories" class="text-ink">
+  <a slot="aside" href={GITHUB_REPOS_URL} class="text-ink">
     <span class="md:hidden">All repos ↗</span><span class="hidden md:inline">All repositories ↗</span>
   </a>
   {projects.map(({ p, links, year, description, sections }) => (
-    <article data-project class="border-t border-ink py-6 md:py-7">
+    <article id={projectAnchor(p.id)} data-project class="border-t border-ink py-6 md:py-7">
       <div class="md:grid md:grid-cols-12 md:items-baseline md:gap-x-6">
         <div class="flex items-baseline justify-between md:col-span-3 md:block">
           <h3 class="text-[28px] leading-[1.1] font-semibold tracking-[-0.03em] md:text-[32px]">{p.data.name}</h3>
@@ -39,13 +40,13 @@ const projects = await Promise.all(
               hidden
               data-toggle
               aria-expanded="true"
-              aria-controls={`project-${p.id}`}
+              aria-controls={`${projectAnchor(p.id)}-detail`}
               class="shrink-0 cursor-pointer font-mono text-[13px] leading-relaxed whitespace-nowrap text-ink"
             >Close −</button>
           </div>
         </div>
       </div>
-      <div id={`project-${p.id}`} data-detail class="grid grid-rows-[1fr] transition-[grid-template-rows] duration-[450ms] ease-[cubic-bezier(.2,.7,.2,1)] data-[collapsed]:grid-rows-[0fr] motion-reduce:transition-none">
+      <div id={`${projectAnchor(p.id)}-detail`} data-detail class="grid grid-rows-[1fr] transition-[grid-template-rows] duration-[450ms] ease-[cubic-bezier(.2,.7,.2,1)] data-[collapsed]:grid-rows-[0fr] motion-reduce:transition-none">
         <div class="min-h-0 overflow-hidden">
           <div class="grid gap-6 pt-5 pb-2 md:grid-cols-[1.1fr_1fr]">
             <Visual visual={p.data.visual} />
