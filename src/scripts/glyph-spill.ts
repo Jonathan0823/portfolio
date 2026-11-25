@@ -112,6 +112,8 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     canvas.style.top = layout.top + 'px';
     canvas.style.width = layout.width + 'px';
     canvas.style.height = layout.height + 'px';
+    // Shown only once it has its size and place, so its first paint is not a layout shift.
+    canvas.classList.remove('hidden');
     const ratio = Math.min(2, window.devicePixelRatio || 1);
     const key = [layout.width, layout.height, ratio].join('x');
     if (key !== sizeKey) {
@@ -338,5 +340,6 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     stopCycle();
     particles = [];
     ctx.clearRect(0, 0, layout.width, layout.height);
+    canvas.classList.add('hidden');
   };
 }
