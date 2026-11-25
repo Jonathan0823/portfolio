@@ -6,12 +6,12 @@ import { CONTACT_EMAIL, GITHUB_URL, LINKEDIN_URL, MAILTO_URL } from '../lib/prof
 
 <section id="top" class="relative flex h-svh min-h-[660px] flex-col md:min-h-[800px]">
   <div data-hero-canvas aria-hidden="true" class="h-[300px] w-full md:h-[336px]"></div>
-  <canvas data-glyph aria-hidden="true" class="pointer-events-none absolute top-[168px] left-[calc(100%-544px)] z-[5] hidden h-[532px] w-[448px] md:block"></canvas>
+  <canvas data-glyph aria-hidden="true" class="pointer-events-none absolute top-0 left-0 z-[5]"></canvas>
   <div class="flex flex-1 flex-col justify-end gap-6 px-5 pb-12 md:gap-7 md:px-24 md:pb-[72px]">
-    <h1 class="text-[84px] leading-[0.9] font-semibold tracking-[-0.06em] md:text-[168px]">
+    <h1 data-glyph-text class="text-[84px] leading-[0.9] font-semibold tracking-[-0.06em] md:text-[168px]">
       Hi, I’m<br />Eguin<span class="text-accent">.</span>
     </h1>
-    <div class="flex flex-col gap-1.5 md:gap-2.5">
+    <div data-glyph-text class="flex flex-col gap-1.5 md:gap-2.5">
       <p class="font-mono text-sm leading-normal text-ink md:text-[15px]">Backend engineer · open to remote roles · UTC+7</p>
       <p class="font-mono text-[13px] leading-relaxed text-muted md:text-sm">
         Latest: cut a 300M-point dashboard from 5 min to under 10 s.
@@ -26,7 +26,7 @@ import { CONTACT_EMAIL, GITHUB_URL, LINKEDIN_URL, MAILTO_URL } from '../lib/prof
       </span>
       <span class="hidden md:inline">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
       <span>
-        <a href={LINKEDIN_URL} class="text-ink">LinkedIn</a>
+        <a href={LINKEDIN_URL} data-glyph-for="linkedin" class="text-ink">LinkedIn</a>
       </span>
     </p>
   </div>
