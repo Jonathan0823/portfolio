@@ -1,0 +1,17 @@
+---
+// How a page ends, from the GitHub contributions down to the footer line. Home and story share
+// it, so a change here shows on both; only the headline differs.
+//   Contributions and numbers: Stats.astro
+//   Headline, text and links:  Closing.astro
+//   Pixel band and footer line: PixelFooter.astro
+import Stats from './Stats.astro';
+import Closing from './Closing.astro';
+
+interface Props {
+  headline: string;
+}
+const { headline } = Astro.props;
+---
+
+<Stats />
+<Closing {headline} />

@@ -9,6 +9,7 @@ const years = formatDuration(wholeYearsSince(CODING_SINCE, new Date()) * 12);
 const stats = [
   { value: calendar.total.toLocaleString('en-US'), label: 'contributions in the last 12 months' },
   { value: String(publicRepos), label: 'public repos' },
+  { value: 'Go · TS', label: 'what I write most, then Python and Rust' },
   { value: years, label: `writing code every day, since ${formatMonth(CODING_SINCE)}` },
 ];
 ---

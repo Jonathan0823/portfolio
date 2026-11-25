@@ -1,7 +1,6 @@
 ---
 import { render } from 'astro:content';
-import StoryClosing from '../components/story/StoryClosing.astro';
-import StoryStats from '../components/story/StoryStats.astro';
+import PageEnd from '../components/PageEnd.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getStoryYears } from '../lib/content';
 import { NOW_LABEL, NOW_YEAR } from '../lib/content-logic';
@@ -107,8 +106,7 @@ const groupsWithBodies = await Promise.all(
       ))
     }
 
-    <StoryStats />
-    <StoryClosing />
+    <PageEnd headline="That’s the story so far" />
   </main>
 </BaseLayout>
 
