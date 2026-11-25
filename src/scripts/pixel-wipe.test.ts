@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cellDelays, cellProgress, entrySide, SPREAD } from './pixel-wipe';
+import { cellDelays, cellProgress, entrySide, SPREAD, cellsPath } from './pixel-wipe';
 
 describe('entrySide', () => {
   it('picks the nearest edge', () => {
@@ -51,5 +51,14 @@ describe('coverLevel', () => {
     const { coverLevel } = await import('./pixel-wipe');
     expect(coverLevel(0)).toBe(5);
     expect(coverLevel(1)).toBe(0);
+  });
+});
+
+describe('cellsPath', () => {
+  it('merges runs within a row and does not carry a run onto the next row', () => {
+    expect(cellsPath(Uint8Array.from([0, 1, 1, 1, 0, 0]), 3, 10)).toBe('M10 0h20v10.5h-20zM0 10h10v10.5h-10z');
+  });
+  it('returns a bare move for an empty mask, which clips everything away', () => {
+    expect(cellsPath(new Uint8Array(4), 2, 10)).toBe('M0 0');
   });
 });

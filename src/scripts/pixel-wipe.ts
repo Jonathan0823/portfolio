@@ -37,6 +37,8 @@ export function cellDelays(columns: number, rows: number, side: Side): Float32Ar
 
 /** Local progress 0..1 of one cell at global progress t. 0 = absent, 1 = settled. */
 export function cellProgress(t: number, delay: number): number {
+  // The end is exact: rounding would otherwise leave the latest cells at 0.9999999, never finished.
+  if (t >= 1) return 1;
   return Math.min(1, Math.max(0, (t - delay) / (1 - SPREAD)));
 }
 
@@ -66,4 +68,21 @@ export function radialDelays(columns: number, rows: number, originX: number, ori
  */
 export function coverLevel(p: number): number {
   return Math.max(0, Math.min(5, Math.round((1 - p) * 5)));
+}
+
+/**
+ * SVG path covering every set cell of a row-major mask, for use as a clip-path. Runs of cells
+ * in a row are merged, and rows overlap by half a pixel so no seam shows. Empty mask: a bare move.
+ */
+export function cellsPath(mask: Uint8Array, columns: number, size: number): string {
+  let path = '';
+  for (let i = 0; i < mask.length; i++) {
+    if (!mask[i]) continue;
+    const x = i % columns, y = Math.floor(i / columns);
+    let run = 1;
+    while (x + run < columns && mask[i + run]) run++;
+    path += `M${x * size} ${y * size}h${run * size}v${size + 0.5}h-${run * size}z`;
+    i += run - 1;
+  }
+  return path || 'M0 0';
 }

@@ -67,7 +67,12 @@ const projects = await Promise.all(
       <div id={`${projectAnchor(p.id)}-detail`} data-detail class="grid grid-rows-[1fr] transition-[grid-template-rows] duration-[450ms] ease-[cubic-bezier(.2,.7,.2,1)] data-[collapsed]:grid-rows-[0fr] motion-reduce:transition-none">
         <div class="min-h-0 overflow-hidden">
           <div class="grid gap-6 pt-5 pb-2 md:grid-cols-[1.1fr_1fr]">
-            <Visual visual={p.data.visual} />
+            <div class="relative self-start">
+              <div data-assemble>
+                <Visual visual={p.data.visual} />
+              </div>
+              <canvas data-assemble-px aria-hidden="true" class="pointer-events-none absolute inset-0 size-full"></canvas>
+            </div>
             <dl>
               {sections.map((s) => (
                 <div class="grid grid-cols-[96px_1fr] gap-3 border-t border-line-soft py-2.5">
@@ -84,7 +89,8 @@ const projects = await Promise.all(
   <div class="border-t border-ink"></div>
 
   <!-- Hover preview: follows the pointer over a project row (fine pointers only, see scripts/project-peek.ts). -->
-  <div data-peek aria-hidden="true" class="pointer-events-none fixed top-0 left-0 z-[45] hidden aspect-[16/10] w-[min(380px,32vw)] overflow-hidden rounded-md opacity-0 shadow-[0_24px_60px_rgba(17,17,17,0.18)] transition-opacity duration-200">
+  <div data-peek aria-hidden="true" class="pointer-events-none fixed top-0 left-0 z-[45] hidden aspect-[16/10] w-[min(380px,32vw)] overflow-hidden">
+    <div data-peek-content class="absolute inset-0">
     {projects.map(({ p }, index) => (
       <div data-peek-item={p.id} hidden class="absolute inset-0">
         {p.data.visual.src ? (
@@ -94,18 +100,22 @@ const projects = await Promise.all(
         )}
       </div>
     ))}
+    </div>
     <canvas data-peek-px class="absolute inset-0 size-full"></canvas>
   </div>
 </Section>
 
 <script>
   import '../scripts/project-peek';
+  import { createAssembler } from '../scripts/pixel-assemble';
+  import { prefersReducedMotion } from '../scripts/motion';
 
   // Progressive enhancement: details are open without JS; with JS they start collapsed behind a real button.
   document.querySelectorAll<HTMLElement>('[data-project]').forEach((project) => {
     const button = project.querySelector<HTMLButtonElement>('[data-toggle]');
     const detail = project.querySelector<HTMLElement>('[data-detail]');
     if (!button || !detail) return;
+    const assembler = createAssembler([project.querySelector<HTMLElement>('[data-assemble]')!], project.querySelector<HTMLCanvasElement>('[data-assemble-px]')!);
     const set = (open: boolean) => {
       detail.toggleAttribute('data-collapsed', !open);
       detail.toggleAttribute('inert', !open);
@@ -115,6 +125,12 @@ const projects = await Promise.all(
     };
     button.hidden = false;
     set(false);
-    button.addEventListener('click', () => set(button.getAttribute('aria-expanded') !== 'true'));
+    button.addEventListener('click', () => {
+      const open = button.getAttribute('aria-expanded') !== 'true';
+      set(open);
+      // Opening a row builds its picture out of pixels.
+      assembler.reset();
+      if (open && !prefersReducedMotion()) assembler.show(0, 'left', 700, assembler.reset);
+    });
   });
 </script>
