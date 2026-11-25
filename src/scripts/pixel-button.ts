@@ -1,6 +1,7 @@
 // Pixel hover for buttons: [data-pixel-btn] gets a square-cell fill that dissolves in from the
 // pointer's entry side, heat colours first, then settles to a solid colour behind the label.
 // data-pixel-btn="dark" marks buttons that are dark at rest (they settle to indigo, not ink).
+import { whenIdle } from './motion';
 import { HEAT_PALETTE, hash } from './pixel-math';
 import { cellDelays, cellProgress, entrySide, type Side } from './pixel-wipe';
 import { REFERENCE_FRAME_MS, frameScale } from './timing';
@@ -110,4 +111,4 @@ function init() {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   document.querySelectorAll<HTMLElement>('[data-pixel-btn]').forEach((b) => setup(b, reduced));
 }
-init();
+whenIdle(init);
