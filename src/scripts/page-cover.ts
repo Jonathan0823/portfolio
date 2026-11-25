@@ -43,9 +43,9 @@ function play(delays: (columns: number, rows: number) => Float32Array, duration:
         const p = cellProgress(t, order[i]);
         const shown = covering ? p : 1 - p; // how much of the cell is there
         if (shown <= 0.01) continue;
-        const inset = ((1 - shown) * size) / 2;
         ctx.fillStyle = HEAT_PALETTE[coverLevel(covering ? p : 1 - p)];
-        ctx.fillRect((i % columns) * size + inset, Math.floor(i / columns) * size + inset, size - inset * 2 - 1, size - inset * 2 - 1);
+        // Cells are always full size, overlapping by half a pixel: the page only shows where a cell is gone.
+        ctx.fillRect((i % columns) * size, Math.floor(i / columns) * size, size + 0.5, size + 0.5);
       }
       if (t < 1) requestAnimationFrame(frame);
       else {
