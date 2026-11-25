@@ -1,5 +1,5 @@
 ---
-import { CONTACT_EMAIL, GITHUB_URL, MAILTO_URL } from '../lib/profile';
+import { CONTACT_EMAIL, GITHUB_URL, LINKEDIN_URL, MAILTO_URL } from '../lib/profile';
 import { cvAvailable } from '../lib/site-data';
 
 const cv = cvAvailable();
@@ -17,6 +17,7 @@ const pill = 'rounded-full border border-[#d4d4d4] px-[23px] py-[15px] text-base
   <div class="mt-6 flex flex-wrap gap-2.5 md:gap-3">
     <a href={MAILTO_URL} class="rounded-full bg-ink px-6 py-4 text-base font-medium text-paper no-underline">{CONTACT_EMAIL}</a>
     <a href={GITHUB_URL} class={pill}>GitHub</a>
+    <a href={LINKEDIN_URL} class={pill}>LinkedIn</a>
     {cv && <a href="/cv.pdf" class={pill}>Résumé</a>}
   </div>
 </section>

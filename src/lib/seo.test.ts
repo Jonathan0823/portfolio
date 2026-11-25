@@ -35,6 +35,7 @@ describe('personJsonLd', () => {
     expect(ld.sameAs).toEqual([
       'https://github.com/Jonathan0823',
       'https://www.npmjs.com/~jonathan0823',
+      'https://www.linkedin.com/in/eguin-jonathan-37a587290/',
     ]);
   });
   it('builds knowsAbout from the skills without duplicates', () => {

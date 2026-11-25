@@ -1,5 +1,5 @@
 ---
-import { CONTACT_EMAIL, GITHUB_URL, MAILTO_URL } from '../../lib/profile';
+import { CONTACT_EMAIL, GITHUB_URL, LINKEDIN_URL, MAILTO_URL } from '../../lib/profile';
 
 const pill = 'rounded-full px-6 py-4 text-base font-medium no-underline';
 ---
@@ -15,6 +15,7 @@ const pill = 'rounded-full px-6 py-4 text-base font-medium no-underline';
   <div class="mt-6 flex flex-wrap gap-3">
     <a href={MAILTO_URL} class={`bg-ink text-paper ${pill}`}>{CONTACT_EMAIL}</a>
     <a href={GITHUB_URL} class={`border-ink border ${pill}`}>GitHub</a>
+    <a href={LINKEDIN_URL} class={`border-ink border ${pill}`}>LinkedIn</a>
   </div>
 </section>
 <footer

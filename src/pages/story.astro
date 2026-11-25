@@ -5,7 +5,7 @@ import StoryStats from '../components/story/StoryStats.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getStoryYears } from '../lib/content';
 import { NOW_LABEL, NOW_YEAR } from '../lib/content-logic';
-import { CONTACT_EMAIL, GITHUB_URL, MAILTO_URL } from '../lib/profile';
+import { CONTACT_EMAIL, GITHUB_URL, LINKEDIN_URL, MAILTO_URL } from '../lib/profile';
 import { formatMonth } from '../lib/role-timeline';
 import { pageSeo } from '../lib/seo';
 
@@ -37,7 +37,8 @@ const groupsWithBodies = await Promise.all(
       </p>
       <p class="text-muted mt-6 font-mono text-[13px] leading-relaxed">
         <a href={MAILTO_URL} class="text-ink hover:text-muted">{CONTACT_EMAIL}</a> ·
-        <a href={GITHUB_URL} class="text-ink hover:text-muted">GitHub</a>
+        <a href={GITHUB_URL} class="text-ink hover:text-muted">GitHub</a> ·
+        <a href={LINKEDIN_URL} class="text-ink hover:text-muted">LinkedIn</a>
       </p>
     </section>
 
