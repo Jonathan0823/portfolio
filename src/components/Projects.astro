@@ -5,6 +5,16 @@ import { getProjects } from '../lib/content';
 import { GITHUB_REPOS_URL } from '../lib/profile';
 import { projectAnchor, projectLinks, projectYear, splitProjectBody } from '../lib/projects';
 
+// Colour of the status square, by status text.
+const STATUS_COLOR: Record<string, string> = { 'Open source': '#4338CA', 'On npm': '#E5484D', 'Daily use': '#FF7A28' };
+// Hover-preview backgrounds while a project has no screenshot yet.
+const PEEK_BG = [
+  'linear-gradient(160deg, #F4F1FF, #7C5CFA)',
+  'linear-gradient(200deg, #1E1B4B, #111111)',
+  'radial-gradient(90% 80% at 50% 30%, #7C5CFA, #4338CA 50%, #1E1B4B)',
+  'linear-gradient(160deg, #1E1B4B, #4338CA)',
+];
+
 const projects = await Promise.all(
   (await getProjects()).map(async (p) => ({ p, links: projectLinks(p.data), year: projectYear(p.data.month), ...splitProjectBody(p.body) })),
 );
@@ -15,19 +25,26 @@ const projects = await Promise.all(
     <span class="md:hidden">All repos ↗</span><span class="hidden md:inline">All repositories ↗</span>
   </a>
   {projects.map(({ p, links, year, description, sections }) => (
-    <article id={projectAnchor(p.id)} data-project class="border-t border-ink py-6 md:py-7">
-      <div class="md:grid md:grid-cols-12 md:items-baseline md:gap-x-6">
+    <article id={projectAnchor(p.id)} data-project={p.id} class="border-t border-ink py-6 md:py-7">
+      <div data-cursor="eye" class="md:grid md:grid-cols-12 md:items-baseline md:gap-x-6">
         <div class="flex items-baseline justify-between md:col-span-3 md:block">
           <h3 class="text-[28px] leading-[1.1] font-semibold tracking-[-0.03em] md:text-[32px]">{p.data.name}</h3>
           <p class="font-mono text-[13px] leading-relaxed text-muted md:hidden">{year}</p>
         </div>
         <div class="mt-2.5 flex flex-col gap-2 md:col-span-6 md:mt-0 md:gap-2.5">
+          {p.data.hook && <p class="text-[22px] leading-[1.25] font-medium tracking-[-0.02em] text-balance md:text-2xl">{p.data.hook}</p>}
           <p class="text-[17px] leading-[1.55] text-body text-pretty md:text-lg md:leading-relaxed">{description}</p>
           <p class="text-[15px] leading-normal text-ink md:text-base">
             <span class="font-mono text-[13px] leading-relaxed text-muted">Result&nbsp;&nbsp;</span>{p.data.result}
           </p>
         </div>
         <div class="mt-2.5 flex flex-col gap-1 md:col-span-3 md:mt-0 md:text-right">
+          {p.data.status && (
+            <p class="flex items-center gap-2 font-mono text-[13px] leading-relaxed text-ink md:justify-end">
+              <span aria-hidden="true" class="size-2" style={`background:${STATUS_COLOR[p.data.status] ?? '#7C5CFA'}`}></span>{p.data.status}
+            </p>
+          )}
+          {p.data.role && <p class="font-mono text-[13px] leading-relaxed text-muted">{p.data.role}</p>}
           <p class="font-mono text-[13px] leading-relaxed text-muted">
             {p.data.tags.join(' · ')}<span class="hidden md:inline"> · {year}</span>
           </p>
@@ -39,6 +56,7 @@ const projects = await Promise.all(
               type="button"
               hidden
               data-toggle
+              data-cursor="minus"
               aria-expanded="true"
               aria-controls={`${projectAnchor(p.id)}-detail`}
               class="shrink-0 cursor-pointer font-mono text-[13px] leading-relaxed whitespace-nowrap text-ink"
@@ -64,9 +82,25 @@ const projects = await Promise.all(
     </article>
   ))}
   <div class="border-t border-ink"></div>
+
+  <!-- Hover preview: follows the pointer over a project row (fine pointers only, see scripts/project-peek.ts). -->
+  <div data-peek aria-hidden="true" class="pointer-events-none fixed top-0 left-0 z-[45] hidden aspect-[16/10] w-[min(380px,32vw)] overflow-hidden rounded-md opacity-0 shadow-[0_24px_60px_rgba(17,17,17,0.18)] transition-opacity duration-200">
+    {projects.map(({ p }, index) => (
+      <div data-peek-item={p.id} hidden class="absolute inset-0">
+        {p.data.visual.src ? (
+          <img src={p.data.visual.src} alt="" loading="lazy" class="size-full object-cover" />
+        ) : (
+          <div class="flex size-full items-end p-4 font-mono text-xs text-white" style={`background:${PEEK_BG[index % PEEK_BG.length]}`}>{p.data.visual.label}</div>
+        )}
+      </div>
+    ))}
+    <canvas data-peek-px class="absolute inset-0 size-full"></canvas>
+  </div>
 </Section>
 
 <script>
+  import '../scripts/project-peek';
+
   // Progressive enhancement: details are open without JS; with JS they start collapsed behind a real button.
   document.querySelectorAll<HTMLElement>('[data-project]').forEach((project) => {
     const button = project.querySelector<HTMLButtonElement>('[data-toggle]');
@@ -77,6 +111,7 @@ const projects = await Promise.all(
       detail.toggleAttribute('inert', !open);
       button.setAttribute('aria-expanded', String(open));
       button.textContent = open ? 'Close −' : 'Open +';
+      button.dataset.cursor = open ? 'minus' : 'plus';
     };
     button.hidden = false;
     set(false);

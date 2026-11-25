@@ -1,4 +1,5 @@
 ---
+import PixelFooter from '../PixelFooter.astro';
 import { CONTACT_EMAIL, GITHUB_URL, LINKEDIN_URL, MAILTO_URL } from '../../lib/profile';
 
 const pill = 'rounded-full px-6 py-4 text-base font-medium no-underline';
@@ -18,9 +19,4 @@ const pill = 'rounded-full px-6 py-4 text-base font-medium no-underline';
     <a href={LINKEDIN_URL} class={`border-ink border ${pill}`}>LinkedIn</a>
   </div>
 </section>
-<footer
-  class="text-muted flex flex-col gap-2 px-5 pt-24 pb-12 font-mono text-[13px] leading-relaxed md:flex-row md:justify-between md:px-24"
->
-  <p>Eguin Jonathan · Karawang, Indonesia · UTC+7</p>
-  <p>Indonesian · English · a little Japanese</p>
-</footer>
+<PixelFooter />

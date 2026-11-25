@@ -36,3 +36,20 @@ describe('cellProgress', () => {
     expect(cellProgress(1, 0)).toBe(1);
   });
 });
+
+describe('radialDelays', () => {
+  it('starts cells near the origin first', async () => {
+    const { radialDelays } = await import('./pixel-wipe');
+    const d = radialDelays(20, 10, 0, 0);
+    expect(d[0]).toBeLessThan(d[9 * 20 + 19]);
+    expect(Math.max(...d)).toBeLessThanOrEqual(SPREAD);
+  });
+});
+
+describe('coverLevel', () => {
+  it('lands hot and settles on the darkest level', async () => {
+    const { coverLevel } = await import('./pixel-wipe');
+    expect(coverLevel(0)).toBe(5);
+    expect(coverLevel(1)).toBe(0);
+  });
+});

@@ -52,6 +52,24 @@
   background-color: var(--color-line);
 }
 
+/* Pixel cover (scripts/page-cover.ts): a flat night layer set before first paint, dissolved by the script. */
+html.px-covered body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--color-pixel-night);
+}
+/* First-visit intro: the headline rises as the cover dissolves. Transform only, so it paints at once. */
+@keyframes px-rise {
+  from {
+    transform: translateY(0.22em);
+  }
+}
+html[data-cover] [data-intro-rise] {
+  animation: px-rise 0.9s 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
 /* Smooth in-page anchor jumps; sections carry their own top padding, which clears the sticky nav. */
 @media (prefers-reduced-motion: no-preference) {
   html {

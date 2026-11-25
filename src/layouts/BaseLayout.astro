@@ -26,6 +26,25 @@ const { title, description, image, jsonLd, noindex } = Astro.props;
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <SEO {title} {description} {image} {jsonLd} {noindex} />
+    <script is:inline>
+      // Decides before first paint whether this page arrives under the pixel cover: once per
+      // session on the home page (the intro), and after an internal link played the cover.
+      // scripts/page-cover.ts dissolves it; the timeout is a safety net if that never runs.
+      (function () {
+        try {
+          if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+          var root = document.documentElement, store = sessionStorage;
+          var arrive = store.getItem('px-arrive');
+          store.removeItem('px-arrive');
+          var intro = location.pathname === '/' && !store.getItem('px-intro');
+          store.setItem('px-intro', '1');
+          if (!arrive && !intro) return;
+          root.dataset.cover = arrive ? 'arrive' : 'intro';
+          root.classList.add('px-covered');
+          setTimeout(function () { root.classList.remove('px-covered'); }, 2500);
+        } catch (e) {}
+      })();
+    </script>
     {
       import.meta.env.PROD && (
         <script
@@ -40,7 +59,10 @@ const { title, description, image, jsonLd, noindex } = Astro.props;
   <body>
     <slot />
     <script>
+      import '../scripts/page-cover-init';
       import '../scripts/pixel-button';
+      import '../scripts/canvas-effects';
+      import '../scripts/smooth-scroll';
     </script>
   </body>
 </html>

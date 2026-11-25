@@ -1,5 +1,8 @@
 ---
 name: "auth-go"
+hook: "The login service I drop into every new project, with safe defaults."
+status: "Open source"
+role: "Solo"
 order: 2
 month: "2024-01"
 result: "The login service I drop into every new project."

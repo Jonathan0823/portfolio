@@ -22,13 +22,15 @@ const groupsWithBodies = await Promise.all(
 
 <BaseLayout title={seo.title} description={seo.description} image={seo.ogPath}>
   <div class="text-muted flex justify-between px-5 py-7 font-mono text-[13px] leading-relaxed md:px-24">
-    <a href="/" class="text-ink hover:text-muted">← Eguin Jonathan</a>
+    <a href="/" data-cursor="back" class="text-ink hover:text-muted">← Eguin Jonathan</a>
     <p>The full story</p>
   </div>
 
+  <div data-pixel-field="strip" aria-hidden="true" class="h-[120px] w-full md:h-[150px]"></div>
+
   <main>
     <section class="px-5 pt-10 md:px-24 md:pt-14">
-      <h1 class="text-[56px] leading-[0.9] font-semibold tracking-[-0.06em] md:text-[168px] md:whitespace-nowrap">
+      <h1 data-intro-rise class="text-[56px] leading-[0.9] font-semibold tracking-[-0.06em] md:text-[168px] md:whitespace-nowrap">
         How I got here<span class="text-accent">.</span>
       </h1>
       <p class="mt-8 max-w-[34ch] text-xl leading-[1.45] tracking-[-0.01em] text-pretty md:text-[26px]">
@@ -59,7 +61,8 @@ const groupsWithBodies = await Promise.all(
                   {g.months.map((m) => (
                     <li
                       title={formatMonth(m.month)}
-                      class:list={['h-3.5 w-3.5', m.count > 0 ? 'bg-accent' : 'bg-line']}
+                      data-sq
+                      class:list={['sq h-3.5 w-3.5', m.count > 0 ? 'bg-accent' : 'bg-square']}
                     />
                   ))}
                 </ol>
@@ -108,6 +111,22 @@ const groupsWithBodies = await Promise.all(
     <StoryClosing />
   </main>
 </BaseLayout>
+
+<script>
+  // Month squares fill in as each year scrolls into view (same as Experience). Without JS they show filled.
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
+    const lists = document.querySelectorAll<HTMLElement>('main ol[aria-hidden]');
+    lists.forEach((l) => l.querySelectorAll('[data-sq]').forEach((s) => s.classList.add('sq-hidden')));
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        io.unobserve(e.target);
+        e.target.querySelectorAll<HTMLElement>('[data-sq]').forEach((s, i) => setTimeout(() => s.classList.remove('sq-hidden'), i * 45));
+      }
+    }, { threshold: 0.5 });
+    lists.forEach((l) => io.observe(l));
+  }
+</script>
 
 <style is:global>
   .milestone-body > * + * {
