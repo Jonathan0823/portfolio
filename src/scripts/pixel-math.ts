@@ -91,8 +91,8 @@ export function createField(width: number, height: number): Field {
   };
 }
 
-/** Advance heat decay and recompute which cells are painted, and in which bucket. */
-export function stepField(field: Field, time: number, seed: number, density = 1): void {
+/** Advance heat decay (by `decay` per call) and recompute which cells are painted, and in which bucket. */
+export function stepField(field: Field, time: number, seed: number, density = 1, decay = 0.94): void {
   const { columns, rows, horizonRow, heat, bucket, lowestRow, lowestBucket } = field;
   bucket.fill(-1);
   lowestRow.fill(-1);
@@ -105,7 +105,7 @@ export function stepField(field: Field, time: number, seed: number, density = 1)
     );
     for (let y = 0; y < rows; y++) {
       const i = y * columns + x;
-      heat[i] *= 0.94;
+      heat[i] *= decay;
       hottest = Math.max(hottest, heat[i]);
       if (heat[i] < 0.3) {
         if (y >= horizonRow + drip) continue;
