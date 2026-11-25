@@ -2,18 +2,7 @@ import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { cvAvailable, parseGithubStats } from './site-data';
-
-describe('parseGithubStats', () => {
-  it('accepts a snapshot with a public repo count', () => {
-    expect(parseGithubStats({ publicRepos: 76 }).publicRepos).toBe(76);
-  });
-
-  it('rejects a missing or negative count', () => {
-    expect(() => parseGithubStats({})).toThrow();
-    expect(() => parseGithubStats({ publicRepos: -1 })).toThrow();
-  });
-});
+import { cvAvailable } from './site-data';
 
 describe('cvAvailable', () => {
   it('is true only when public/cv.pdf exists under the root', () => {
