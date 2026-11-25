@@ -39,5 +39,8 @@ const { title, description, image, jsonLd, noindex } = Astro.props;
   </head>
   <body>
     <slot />
+    <script>
+      import '../scripts/pixel-button';
+    </script>
   </body>
 </html>

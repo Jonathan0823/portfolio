@@ -245,8 +245,9 @@ export function mountCursorTrail(hero: HeroField | null): () => void {
     const link = target?.closest('a,button,summary') ?? null;
     onHeading = !!target?.closest('h1,h2');
     const onSquare = !!target?.closest('[data-sq]');
-    overLink = !!link && !onSquare;
-    if (link && !onSquare) hoveredLink = link;
+    // Pixel buttons draw their own hover; skip the underline there.
+    overLink = !!link && !onSquare && !link.hasAttribute('data-pixel-btn');
+    if (link && !onSquare && !link.hasAttribute('data-pixel-btn')) hoveredLink = link;
     targetRadius = onSquare ? SQUARE_RADIUS : onHeading ? REST_RADIUS * HEADING_SCALE : REST_RADIUS;
   };
 

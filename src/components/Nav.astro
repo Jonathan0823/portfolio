@@ -30,12 +30,13 @@ const links: { href: string; label: string; sec?: string }[] = [
           class:list={[
             'px-3 py-1.5 text-ink no-underline decoration-accent decoration-2 underline-offset-[6px] aria-[current=true]:underline',
             l.sec === 'contact' && 'bg-ink text-paper',
-          ]}>{l.label}</a>
+          ]}
+          data-pixel-btn={l.sec === 'contact' ? 'dark' : undefined}>{l.label}</a>
       ))}
     </div>
 
     <details data-menu class="bg-paper font-mono text-[13px] md:hidden">
-      <summary class="cursor-pointer list-none px-4 py-3 [&::-webkit-details-marker]:hidden">
+      <summary data-pixel-btn class="cursor-pointer list-none px-4 py-3 [&::-webkit-details-marker]:hidden">
         <span class="in-open:hidden">Menu</span>
         <span class="hidden in-open:inline">Close</span>
       </summary>
