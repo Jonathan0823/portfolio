@@ -74,7 +74,7 @@ export interface Field {
 }
 
 export function createField(width: number, height: number): Field {
-  const cellSize = width < 700 ? 10 : 14;
+  const cellSize = width < 700 ? 8 : 10;
   const columns = Math.ceil(width / cellSize), rows = Math.ceil(height / cellSize);
   return {
     width,
@@ -91,7 +91,7 @@ export function createField(width: number, height: number): Field {
   };
 }
 
-/** Advance heat decay (by `decay` per call) and recompute which cells are painted, and in which bucket. */
+/** Advance heat decay (by \`decay\` per call) and recompute which cells are painted, and in which bucket. */
 export function stepField(field: Field, time: number, seed: number, density = 1, decay = 0.94): void {
   const { columns, rows, horizonRow, heat, bucket, lowestRow, lowestBucket } = field;
   bucket.fill(-1);
@@ -116,9 +116,10 @@ export function stepField(field: Field, time: number, seed: number, density = 1,
       const ridgeLine = 0.42 + 0.2 * Math.sin(across * 6.2 + time * 0.6 + seed) + 0.08 * Math.sin(across * 17 - time);
       const ridge = Math.exp(-Math.pow(depth - ridgeLine, 2) / 0.018);
       const grain = hash(x, y) - 0.5;
-      const value = 0.1 + 0.5 * base + 0.42 * ridge * density + 0.18 * density + heat[i] + grain * 0.2;
+      const value = 0.1 + 0.5 * base + 0.42 * ridge * density + 0.18 * density + (heat[i] < 0.3 ? heat[i] : 0) + grain * 0.2;
       if (base + grain * 0.25 < 0.36 + (1 - density) * 0.38 && ridge * density < 0.35 && heat[i] < 0.25) continue;
-      const level = bucketFor(value);
+      // Cursor heat (>= 0.3) reads as its own rings: dark rim up to a hot core, merging into the field as it cools.
+      const level = bucketFor(heat[i] >= 0.3 ? Math.max(value, 0.1 + heat[i] + grain * 0.1) : value);
       bucket[i] = level;
       if (y > lowestRow[x]) {
         lowestRow[x] = y;

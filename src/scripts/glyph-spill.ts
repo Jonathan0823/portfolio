@@ -2,7 +2,7 @@ import { HEAT_PALETTE, fbm, hash } from './pixel-math';
 import { BITMAPS, assignPixels, pickSourceColumns, type GlyphName } from './glyph-model';
 import type { HeroField } from './hero-field';
 
-const CELL = 14; // cell size in CSS px
+const CELL = 10; // cell size in CSS px
 const GLYPH_COLUMNS = 32;
 const GLYPH_ROWS = 38;
 const RISE_ROWS = 12; // how far above the field's lowest row a particle starts
