@@ -1,11 +1,11 @@
 ---
 // Top navigation. Desktop: a row of links. Mobile: a <details> menu that works without JS.
 // The link for the section on screen gets aria-current="true" (set by the script below).
-const links = [
+const links: { href: string; label: string; sec?: string }[] = [
   { href: '#experience', label: 'Experience', sec: 'experience' },
   { href: '#skills', label: 'Skills', sec: 'skills' },
   { href: '#projects', label: 'Projects', sec: 'projects' },
-  { href: '#github', label: 'GitHub', sec: 'github' },
+  { href: '/story', label: 'Story' },
   { href: '#contact', label: 'Contact', sec: 'contact' },
 ];
 ---
