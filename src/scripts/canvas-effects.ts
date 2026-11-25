@@ -1,5 +1,5 @@
 // Entry point for the decorative canvases. Everything here is aria-hidden and ignores pointer events.
-import { FINE_POINTER_QUERY, REDUCE_QUERY, canRunTrail, prefersReducedMotion, watchPixelRatio } from './motion';
+import { FINE_POINTER_QUERY, REDUCE_QUERY, canRunTrail, prefersReducedMotion, watchPixelRatio, whenIdle } from './motion';
 import { mountHeroField } from './hero-field';
 import { mountCursorTrail } from './cursor-trail';
 import { mountGlyphSpill } from './glyph-spill';
@@ -27,7 +27,8 @@ if (host && typeof window.matchMedia === 'function') {
       glyphReduced = reduced;
     }
   };
-  sync();
+  // The cursor trail and glyph need layout reads and timers; start them after load, not during it.
+  whenIdle(sync);
   for (const q of [REDUCE_QUERY, FINE_POINTER_QUERY]) window.matchMedia(q).addEventListener('change', sync);
   watchPixelRatio(() => hero.resize());
 }
