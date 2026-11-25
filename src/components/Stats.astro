@@ -1,0 +1,29 @@
+---
+import ContributionCalendar from './ContributionCalendar.astro';
+import { getGithubStats } from '../lib/github-stats';
+import { CODING_SINCE } from '../lib/profile';
+import { formatDuration, formatMonth, wholeYearsSince } from '../lib/role-timeline';
+
+const { publicRepos, calendar } = await getGithubStats();
+const years = formatDuration(wholeYearsSince(CODING_SINCE, new Date()) * 12);
+const stats = [
+  { value: calendar.total.toLocaleString('en-US'), label: 'contributions in the last 12 months' },
+  { value: String(publicRepos), label: 'public repos' },
+  { value: years, label: `writing code every day, since ${formatMonth(CODING_SINCE)}` },
+];
+---
+
+<section id="github" class="px-5 pt-[120px] md:px-24 md:pt-[176px]">
+  <h2 class="sr-only">Stats</h2>
+  <div data-calendar-slot class="mb-10 md:mb-14">
+    <ContributionCalendar calendar={calendar} />
+  </div>
+  <dl class="grid grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-4 md:gap-x-6 md:gap-y-8">
+    {stats.map((s) => (
+      <div class="flex flex-col-reverse gap-1.5 border-t border-ink pt-4">
+        <dt class="text-base text-muted-strong">{s.label}</dt>
+        <dd class="text-4xl leading-none font-semibold tracking-[-0.05em] md:text-[56px]">{s.value}</dd>
+      </div>
+    ))}
+  </dl>
+</section>
