@@ -1,0 +1,23 @@
+---
+name: "auth-go"
+order: 2
+month: "2024-01"
+result: "The login service I drop into every new project."
+repo: "https://github.com/Jonathan0823/auth-go"
+tags:
+  - "Go"
+  - "Gin"
+visual:
+  kind: "diagram"
+  label: "login → access + refresh token → rotation → replay detection"
+---
+
+The auth service I reuse everywhere: Argon2id passwords, short-lived JWTs, rotating refresh tokens with replay detection, OAuth and rate limiting.
+
+## Problem
+
+Every new project needed login, and copying it each time led to mistakes.
+
+## What I did
+
+One service with safe defaults that I drop into new projects.
