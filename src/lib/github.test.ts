@@ -96,7 +96,7 @@ describe('loadGithubStats', () => {
 });
 
 describe('calendar presentation', () => {
-  it('buckets counts into levels like the mock', () => {
+  it('buckets counts into levels like the original design', () => {
     expect([0, 1, 2, 3, 5, 6, 9, 10, 13, 14, 17, 18, 40].map(contributionLevel)).toEqual([
       -1, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5,
     ]);

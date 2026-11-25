@@ -102,10 +102,10 @@ export async function loadGithubStats(opts: LoadOptions): Promise<GithubStats> {
   }
 }
 
-/** The mock's heat palette, dark to hot. */
+/** The heat palette, dark to hot. */
 export const COL = ['#1E1B4B', '#4338CA', '#7C5CFA', '#E5484D', '#FF7A28', '#FFC43C'] as const;
 
-/** -1 for an empty day, then 0..5 using the mock's thresholds. */
+/** -1 for an empty day, then 0..5 using fixed thresholds. */
 export function contributionLevel(count: number): number {
   if (count <= 0) return -1;
   if (count < 3) return 0;

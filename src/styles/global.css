@@ -2,7 +2,7 @@
 @import '@fontsource-variable/geist';
 @import '@fontsource-variable/geist-mono';
 
-/* Design tokens, taken from mock/. Use them as utilities: text-ink, bg-accent, border-line, ... */
+/* Design tokens, from the original design. Use them as utilities: text-ink, bg-accent, border-line, ... */
 @theme {
   --font-sans: 'Geist Variable', system-ui, sans-serif;
   --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
