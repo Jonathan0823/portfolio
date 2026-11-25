@@ -2,8 +2,10 @@
 // Top of the page. The empty <div data-hero-canvas> is where the canvas issue draws the pixel field.
 ---
 
-<section id="top" class="flex min-h-[660px] flex-col md:h-[800px]">
+
+<section id="top" class="relative flex min-h-[660px] flex-col md:h-[800px]">
   <div data-hero-canvas aria-hidden="true" class="h-[300px] w-full md:h-[336px]"></div>
+  <canvas data-glyph aria-hidden="true" class="pointer-events-none absolute top-[168px] left-[calc(100%-544px)] z-[5] hidden h-[532px] w-[448px] md:block"></canvas>
   <div class="flex flex-1 flex-col justify-end gap-6 px-5 pb-12 md:gap-7 md:px-24 md:pb-[72px]">
     <h1 class="text-[84px] leading-[0.9] font-semibold tracking-[-0.06em] md:text-[168px]">
       Hi, I’m<br />Eguin<span class="text-accent">.</span>
@@ -16,10 +18,10 @@
       </p>
     </div>
     <p class="flex flex-col gap-2 font-mono text-sm leading-relaxed text-muted md:flex-row md:gap-0">
-      <a href="mailto:eguinjonathan77@gmail.com" class="text-ink">eguinjonathan77@gmail.com</a>
+      <a href="mailto:eguinjonathan77@gmail.com" data-glyph-for="mail" class="text-ink">eguinjonathan77@gmail.com</a>
       <span class="hidden md:inline">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
       <span>
-        <a href="https://github.com/Jonathan0823" class="text-ink">GitHub</a>
+        <a href="https://github.com/Jonathan0823" data-glyph-for="git" class="text-ink">GitHub</a>
       </span>
     </p>
   </div>
@@ -31,3 +33,7 @@
   </p>
   <p class="mt-6 font-mono text-[13px] leading-relaxed text-muted md:mt-8">Backend, IoT and full-stack · Go, Python, TypeScript, Rust</p>
 </section>
+
+<script>
+  import '../scripts/canvas-effects';
+</script>
