@@ -78,6 +78,9 @@ export function mountHeroHint(spill: () => GlyphSpill | null): void {
     timer = window.setTimeout(() => {
       const glyph = spill();
       if (over || !glyph) return;
+      // the motion preference or pointer may have changed while the page settled
+      const fineNow = window.matchMedia(FINE_POINTER_QUERY).matches;
+      if (!shouldPlayHint({ fine: fineNow, reduced: prefersReducedMotion(), seen: false })) return;
       // scrolled away already: an off-screen demo teaches nothing, so keep it for a later visit
       const box = github.getBoundingClientRect();
       if (box.bottom < 0 || box.top > window.innerHeight) return;
