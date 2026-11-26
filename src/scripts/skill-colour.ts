@@ -169,12 +169,14 @@ export function mountSkillColour(section: HTMLElement): SkillColour {
         window.removeEventListener('resize', queue);
       });
     }
+    const bursts = createBursts();
+    cleanups.push(bursts.stop);
     const tap = (e: MouseEvent) => {
       const tile = (e.target as Element).closest<HTMLElement>('.skill-tile');
       if (!tile) return;
       const lit = tile.toggleAttribute('data-lit');
       queue();
-      if (lit && !reduced) burst(tile);
+      if (lit && !reduced) bursts.fire(tile);
     };
     section.addEventListener('click', tap);
     cleanups.push(() => section.removeEventListener('click', tap));
@@ -235,51 +237,82 @@ interface Burst {
   y: number;
   start: number;
 }
-const bursts = new Set<Burst>();
-let burstFrame = 0;
 
-function drawBursts(now: number) {
-  burstFrame = 0;
-  const done = [...bursts].filter((b) => (now - b.start) / BURST_STEP_MS >= BURST_STEPS);
-  for (const b of bursts) {
-    b.ctx.save();
-    b.ctx.setTransform(1, 0, 0, 1, 0, 0);
-    b.ctx.clearRect(0, 0, b.canvas.width, b.canvas.height);
-    b.ctx.restore();
-  }
-  done.forEach((b) => bursts.delete(b));
-  for (const b of bursts) {
-    const step = Math.floor((now - b.start) / BURST_STEP_MS);
-    b.ctx.fillStyle = HEAT_PALETTE[5 - step];
-    for (let i = 0; i < BURST_COUNT; i++) {
-      const { dx, dy } = burstCell(i, BURST_COUNT, step);
-      b.ctx.fillRect(b.x + dx * BURST_CELL, b.y + dy * BURST_CELL, BURST_CELL - 1, BURST_CELL - 1);
+/**
+ * A ring of heat-palette cells flies out of a tapped tile. Bursts draw on their own overlay per row:
+ * the entrance clears the whole row canvas every frame, as the bursts do theirs.
+ */
+function createBursts() {
+  const bursts = new Set<Burst>();
+  const overlays = new Map<HTMLCanvasElement, HTMLCanvasElement>();
+  let frame = 0;
+
+  const draw = (now: number) => {
+    frame = 0;
+    const done = [...bursts].filter((b) => (now - b.start) / BURST_STEP_MS >= BURST_STEPS);
+    for (const b of bursts) {
+      b.ctx.save();
+      b.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      b.ctx.clearRect(0, 0, b.canvas.width, b.canvas.height);
+      b.ctx.restore();
     }
-  }
-  if (bursts.size) burstFrame = requestAnimationFrame(drawBursts);
-}
+    done.forEach((b) => bursts.delete(b));
+    for (const b of bursts) {
+      const step = Math.floor((now - b.start) / BURST_STEP_MS);
+      b.ctx.fillStyle = HEAT_PALETTE[5 - step];
+      for (let i = 0; i < BURST_COUNT; i++) {
+        const { dx, dy } = burstCell(i, BURST_COUNT, step);
+        b.ctx.fillRect(b.x + dx * BURST_CELL, b.y + dy * BURST_CELL, BURST_CELL - 1, BURST_CELL - 1);
+      }
+    }
+    if (bursts.size) frame = requestAnimationFrame(draw);
+  };
 
-/** A ring of heat-palette cells flies out of the tile, drawn on its row's canvas. */
-function burst(tile: HTMLElement) {
-  const canvas = tile.closest('[data-skill-row]')?.querySelector<HTMLCanvasElement>('[data-skill-canvas]');
-  const ctx = canvas?.getContext('2d');
-  const icon = tile.querySelector('svg');
-  if (!canvas || !ctx || !icon) return;
-  const box = canvas.getBoundingClientRect();
-  const dpr = Math.min(2, devicePixelRatio || 1);
-  if (canvas.width !== Math.round(box.width * dpr)) {
-    canvas.width = Math.round(box.width * dpr);
-    canvas.height = Math.round(box.height * dpr);
-  }
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const at = icon.getBoundingClientRect();
-  const snap = (v: number) => Math.round(v / BURST_CELL) * BURST_CELL;
-  bursts.add({
-    canvas,
-    ctx,
-    x: snap(at.left + at.width / 2 - box.left),
-    y: snap(at.top + at.height / 2 - box.top),
-    start: performance.now(),
-  });
-  if (!burstFrame) burstFrame = requestAnimationFrame(drawBursts);
+  const overlayOf = (base: HTMLCanvasElement) => {
+    let overlay = overlays.get(base);
+    if (!overlay) {
+      overlay = base.cloneNode() as HTMLCanvasElement;
+      overlay.removeAttribute('data-skill-canvas');
+      base.after(overlay);
+      overlays.set(base, overlay);
+    }
+    return overlay;
+  };
+
+  return {
+    fire(tile: HTMLElement) {
+      const base = tile.closest('[data-skill-row]')?.querySelector<HTMLCanvasElement>('[data-skill-canvas]');
+      const icon = tile.querySelector('svg');
+      if (!base || !icon) return;
+      const canvas = overlayOf(base);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      const box = canvas.getBoundingClientRect();
+      const dpr = Math.min(2, devicePixelRatio || 1);
+      const width = Math.round(box.width * dpr);
+      const height = Math.round(box.height * dpr);
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const at = icon.getBoundingClientRect();
+      const snap = (v: number) => Math.round(v / BURST_CELL) * BURST_CELL;
+      bursts.add({
+        canvas,
+        ctx,
+        x: snap(at.left + at.width / 2 - box.left),
+        y: snap(at.top + at.height / 2 - box.top),
+        start: performance.now(),
+      });
+      if (!frame) frame = requestAnimationFrame(draw);
+    },
+    stop() {
+      cancelAnimationFrame(frame);
+      frame = 0;
+      bursts.clear();
+      overlays.forEach((overlay) => overlay.remove());
+      overlays.clear();
+    },
+  };
 }
