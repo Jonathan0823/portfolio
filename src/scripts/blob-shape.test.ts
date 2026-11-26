@@ -41,11 +41,12 @@ describe('levelForValue', () => {
     }
   });
   it('flicker never leaves 0..5', () => {
-    for (const j of [-1, 1]) for (let v = 0; v <= 1; v += 0.1) {
-      const l = levelForValue(v, j);
-      expect(l).toBeGreaterThanOrEqual(0);
-      expect(l).toBeLessThanOrEqual(5);
-    }
+    for (const j of [-1, 1])
+      for (let v = 0; v <= 1; v += 0.1) {
+        const l = levelForValue(v, j);
+        expect(l).toBeGreaterThanOrEqual(0);
+        expect(l).toBeLessThanOrEqual(5);
+      }
   });
 });
 

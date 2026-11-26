@@ -1,4 +1,3 @@
-
 export const NONE = -1;
 
 export interface Cells {

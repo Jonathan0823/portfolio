@@ -1,5 +1,5 @@
 ---
-import { canonicalUrl } from '../lib/seo';
+import { canonicalUrl } from '@/lib/seo';
 
 interface Props {
   title: string;
@@ -25,19 +25,19 @@ const imageUrl = image ? canonicalUrl(site, image) : undefined;
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
 <meta property="og:url" content={canonical} />
-{
-  imageUrl && (
-    <>
-      <meta property="og:image" content={imageUrl} />
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
-      <meta property="og:image:alt" content={imageAlt ?? title} />
-    </>
-  )
-}
+{imageUrl && (
+  <>
+    <meta property="og:image" content={imageUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={imageAlt ?? title} />
+  </>
+)}
 <meta name="twitter:card" content={imageUrl ? 'summary_large_image' : 'summary'} />
 <meta name="twitter:title" content={title} />
 <meta name="twitter:description" content={description} />
 {imageUrl && <meta name="twitter:image" content={imageUrl} />}
 {imageUrl && <meta name="twitter:image:alt" content={imageAlt ?? title} />}
-{[jsonLd ?? []].flat().map((block) => <script type="application/ld+json" set:html={JSON.stringify(block)} />)}
+{[jsonLd ?? []].flat().map((block) => (
+  <script type="application/ld+json" set:html={JSON.stringify(block)} />
+))}

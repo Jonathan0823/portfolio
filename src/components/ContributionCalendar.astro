@@ -1,6 +1,13 @@
 ---
-import { HEAT_PALETTE } from '../lib/palette';
-import { calendarLabel, cellPosition, dayTooltip, levelThresholds, relativeLevel, type GithubStats } from '../lib/github';
+import { HEAT_PALETTE } from '@/lib/palette';
+import {
+  calendarLabel,
+  cellPosition,
+  dayTooltip,
+  levelThresholds,
+  relativeLevel,
+  type GithubStats,
+} from '@/lib/github';
 
 interface Props {
   calendar: GithubStats['calendar'];
@@ -14,7 +21,15 @@ const cells = calendar.weeks.flatMap((w, i) =>
   w.days.map((d) => {
     const { col, row } = cellPosition(d.date, i);
     const level = relativeLevel(d.count, thresholds);
-    return { x: col * cell + 1, y: row * cell + 1, col, row, level, fill: level < 0 ? EMPTY : HEAT_PALETTE[level], tip: dayTooltip(d.date, d.count) };
+    return {
+      x: col * cell + 1,
+      y: row * cell + 1,
+      col,
+      row,
+      level,
+      fill: level < 0 ? EMPTY : HEAT_PALETTE[level],
+      tip: dayTooltip(d.date, d.count),
+    };
   }),
 );
 ---
@@ -27,20 +42,41 @@ const cells = calendar.weeks.flatMap((w, i) =>
     class="block h-auto w-full overflow-visible"
   >
     {cells.map((c) => (
-      <rect x={c.x} y={c.y} width={cell - 2} height={cell - 2} fill={c.fill} data-tip={c.tip} data-col={c.col} data-row={c.row} data-level={c.level} />
+      <rect
+        x={c.x}
+        y={c.y}
+        width={cell - 2}
+        height={cell - 2}
+        fill={c.fill}
+        data-tip={c.tip}
+        data-col={c.col}
+        data-row={c.row}
+        data-level={c.level}
+      />
     ))}
   </svg>
   <div
     data-calendar-tip
     class="pointer-events-none absolute top-0 left-0 rounded-lg bg-ink px-3 py-2 font-mono text-xs whitespace-nowrap text-white opacity-0 transition-opacity duration-150"
     aria-hidden="true"
+  ></div>
+  <figcaption
+    class="mt-3 flex items-center justify-end gap-0 font-mono text-[13px] leading-relaxed text-muted"
+    data-legend
   >
-  </div>
-  <figcaption class="mt-3 flex items-center justify-end gap-0 font-mono text-[13px] leading-relaxed text-muted" data-legend>
     <span class="mr-1">Less</span>
     {HEAT_PALETTE.map((color, level) => (
-      <button type="button" data-legend-level={level} aria-pressed="false" aria-label={`Show only level ${level + 1} of 6`} class="group grid size-6 cursor-pointer place-items-center">
-        <span class="size-3.5 group-aria-pressed:outline-2 group-aria-pressed:outline-offset-1 group-aria-pressed:outline-ink" style={`background:${color}`}></span>
+      <button
+        type="button"
+        data-legend-level={level}
+        aria-pressed="false"
+        aria-label={`Show only level ${level + 1} of 6`}
+        class="group grid size-6 cursor-pointer place-items-center"
+      >
+        <span
+          class="size-3.5 group-aria-pressed:outline-2 group-aria-pressed:outline-offset-1 group-aria-pressed:outline-ink"
+          style={`background:${color}`}
+        ></span>
       </button>
     ))}
     <span class="ml-1">More</span>
@@ -57,7 +93,10 @@ const cells = calendar.weeks.flatMap((w, i) =>
       fill 600ms;
   }
   [data-calendar] rect.is-hot {
-    transition: transform 160ms cubic-bezier(0.2, 0.7, 0.2, 1), opacity 300ms, fill 0ms;
+    transition:
+      transform 160ms cubic-bezier(0.2, 0.7, 0.2, 1),
+      opacity 300ms,
+      fill 0ms;
   }
   @media (prefers-reduced-motion: reduce) {
     [data-calendar] rect {
@@ -67,8 +106,8 @@ const cells = calendar.weeks.flatMap((w, i) =>
 </style>
 
 <script>
-  import { HEAT_PALETTE } from '../lib/palette';
-  import { canRunTrail, prefersReducedMotion } from '../scripts/motion';
+  import { HEAT_PALETTE } from '@/lib/palette';
+  import { canRunTrail, prefersReducedMotion } from '@/scripts/motion';
 
   const LENS = 3;
   const COOL_MS = 900;
@@ -87,11 +126,14 @@ const cells = calendar.weeks.flatMap((w, i) =>
 
     if (!prefersReducedMotion() && 'IntersectionObserver' in window) {
       rects.forEach((r) => (r.style.opacity = '0'));
-      const io = new IntersectionObserver((entries) => {
-        if (!entries.some((e) => e.isIntersecting)) return;
-        io.disconnect();
-        rects.forEach((r, i) => setTimeout(() => (r.style.opacity = ''), (i / rects.length) * 1100));
-      }, { threshold: 0.4 });
+      const io = new IntersectionObserver(
+        (entries) => {
+          if (!entries.some((e) => e.isIntersecting)) return;
+          io.disconnect();
+          rects.forEach((r, i) => setTimeout(() => (r.style.opacity = ''), (i / rects.length) * 1100));
+        },
+        { threshold: 0.4 },
+      );
       io.observe(svg);
     }
 
@@ -100,10 +142,13 @@ const cells = calendar.weeks.flatMap((w, i) =>
       rect.classList.add('is-hot');
       rect.setAttribute('fill', HEAT_PALETTE[Math.min(5, Math.max(1, level + 2))]);
       clearTimeout(cooling.get(rect));
-      cooling.set(rect, window.setTimeout(() => {
-        rect.classList.remove('is-hot');
-        rect.setAttribute('fill', baseFill.get(rect)!);
-      }, COOL_MS));
+      cooling.set(
+        rect,
+        window.setTimeout(() => {
+          rect.classList.remove('is-hot');
+          rect.setAttribute('fill', baseFill.get(rect)!);
+        }, COOL_MS),
+      );
     };
 
     const onMove = (e: PointerEvent) => {
@@ -118,7 +163,8 @@ const cells = calendar.weeks.flatMap((w, i) =>
       if (!lens) return;
       const svgBox = svg.getBoundingClientRect();
       const size = svgBox.width / columns;
-      const px = (e.clientX - svgBox.left) / size, py = (e.clientY - svgBox.top) / size;
+      const px = (e.clientX - svgBox.left) / size,
+        py = (e.clientY - svgBox.top) / size;
       lifted.forEach((r) => (r.style.transform = ''));
       lifted = [];
       for (let c = Math.floor(px - LENS); c <= px + LENS; c++) {

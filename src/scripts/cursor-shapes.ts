@@ -107,7 +107,8 @@ export function shapeCells(name: ShapeName): { dx: number; dy: number; distance:
   SHAPES[name].forEach((line, y) => {
     for (let x = 0; x < line.length; x++) {
       if (line[x] !== '#') continue;
-      const dx = x - HALF, dy = y - HALF;
+      const dx = x - HALF,
+        dy = y - HALF;
       cells.push({ dx, dy, distance: Math.min(1, Math.hypot(dx, dy) / (HALF * Math.SQRT2)) });
     }
   });

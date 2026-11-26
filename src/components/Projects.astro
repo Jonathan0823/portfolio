@@ -1,9 +1,9 @@
 ---
 import Section from './Section.astro';
 import Visual from './Visual.astro';
-import { getProjects } from '../lib/content';
-import { GITHUB_REPOS_URL } from '../lib/profile';
-import { projectAnchor, projectLinks, projectYear, splitProjectBody } from '../lib/projects';
+import { getProjects } from '@/lib/content';
+import { GITHUB_REPOS_URL } from '@/lib/profile';
+import { projectAnchor, projectLinks, projectYear, splitProjectBody } from '@/lib/projects';
 
 const STATUS_COLOR: Record<string, string> = { 'Open source': '#4338CA', 'On npm': '#E5484D', 'Daily use': '#FF7A28' };
 const PEEK_BG = [
@@ -14,13 +14,19 @@ const PEEK_BG = [
 ];
 
 const projects = await Promise.all(
-  (await getProjects()).map(async (p) => ({ p, links: projectLinks(p.data), year: projectYear(p.data.month), ...splitProjectBody(p.body) })),
+  (await getProjects()).map(async (p) => ({
+    p,
+    links: projectLinks(p.data),
+    year: projectYear(p.data.month),
+    ...splitProjectBody(p.body),
+  })),
 );
 ---
 
 <Section id="projects" title="Projects.">
   <a slot="aside" href={GITHUB_REPOS_URL} class="text-ink">
-    <span class="md:hidden">All repos ↗</span><span class="hidden md:inline">All repositories ↗</span>
+    <span class="md:hidden">All repos ↗</span>
+    <span class="hidden md:inline">All repositories ↗</span>
   </a>
   {projects.map(({ p, links, year, description, sections }) => (
     <article id={projectAnchor(p.id)} data-project={p.id} class="border-t border-ink py-6 md:py-7">
@@ -30,25 +36,43 @@ const projects = await Promise.all(
           <p class="font-mono text-[13px] leading-relaxed text-muted md:hidden">{year}</p>
         </div>
         <div class="mt-2.5 flex flex-col gap-2 md:col-span-6 md:mt-0 md:gap-2.5">
-          {p.data.hook && <p class="text-[22px] leading-[1.25] font-medium tracking-[-0.02em] text-balance md:text-2xl">{p.data.hook}</p>}
+          {p.data.hook && (
+            <p class="text-[22px] leading-[1.25] font-medium tracking-[-0.02em] text-balance md:text-2xl">
+              {p.data.hook}
+            </p>
+          )}
           <p class="text-[17px] leading-[1.55] text-body text-pretty md:text-lg md:leading-relaxed">{description}</p>
           <p class="text-[15px] leading-normal text-ink md:text-base">
-            <span class="font-mono text-[13px] leading-relaxed text-muted">Result&nbsp;&nbsp;</span>{p.data.result}
+            <span class="font-mono text-[13px] leading-relaxed text-muted">Result&nbsp;&nbsp;</span>
+            {p.data.result}
           </p>
         </div>
         <div class="mt-2.5 flex flex-col gap-1 md:col-span-3 md:mt-0 md:text-right">
           {p.data.status && (
             <p class="flex items-center gap-2 font-mono text-[13px] leading-relaxed text-ink md:justify-end">
-              <span aria-hidden="true" class="size-2" style={`background:${STATUS_COLOR[p.data.status] ?? '#7C5CFA'}`}></span>{p.data.status}
+              <span
+                aria-hidden="true"
+                class="size-2"
+                style={`background:${STATUS_COLOR[p.data.status] ?? '#7C5CFA'}`}
+              ></span>
+              {p.data.status}
             </p>
           )}
           {p.data.role && <p class="font-mono text-[13px] leading-relaxed text-muted">{p.data.role}</p>}
           <p class="font-mono text-[13px] leading-relaxed text-muted">
-            {p.data.tags.join(' · ')}<span class="hidden md:inline"> · {year}</span>
+            {p.data.tags.join(' · ')}
+            <span class="hidden md:inline"> · {year}</span>
           </p>
           <div class="flex items-baseline justify-between gap-3 md:flex-col md:items-end md:gap-1">
             <p class="font-mono text-[13px] leading-relaxed text-muted">
-              {links.map((l, i) => (<>{i > 0 && ' · '}<a href={l.href} class="text-ink">{l.text} ↗</a></>))}
+              {links.map((l, i) => (
+                <>
+                  {i > 0 && ' · '}
+                  <a href={l.href} class="text-ink">
+                    {l.text} ↗
+                  </a>
+                </>
+              ))}
             </p>
             <button
               type="button"
@@ -58,18 +82,28 @@ const projects = await Promise.all(
               aria-expanded="true"
               aria-controls={`${projectAnchor(p.id)}-detail`}
               class="shrink-0 cursor-pointer font-mono text-[13px] leading-relaxed whitespace-nowrap text-ink"
-            >Close −</button>
+            >
+              Close −
+            </button>
           </div>
         </div>
       </div>
-      <div id={`${projectAnchor(p.id)}-detail`} data-detail class="grid grid-rows-[1fr] transition-[grid-template-rows] duration-[450ms] ease-[cubic-bezier(.2,.7,.2,1)] data-[collapsed]:grid-rows-[0fr] motion-reduce:transition-none">
+      <div
+        id={`${projectAnchor(p.id)}-detail`}
+        data-detail
+        class="grid grid-rows-[1fr] transition-[grid-template-rows] duration-[450ms] ease-[cubic-bezier(.2,.7,.2,1)] data-[collapsed]:grid-rows-[0fr] motion-reduce:transition-none"
+      >
         <div class="min-h-0 overflow-hidden">
           <div class="grid gap-6 pt-5 pb-2 md:grid-cols-[1.1fr_1fr]">
             <div class="relative self-start">
               <div data-assemble>
                 <Visual visual={p.data.visual} />
               </div>
-              <canvas data-assemble-px aria-hidden="true" class="pointer-events-none absolute inset-0 size-full"></canvas>
+              <canvas
+                data-assemble-px
+                aria-hidden="true"
+                class="pointer-events-none absolute inset-0 size-full"
+              ></canvas>
             </div>
             <dl>
               {sections.map((s) => (
@@ -86,32 +120,44 @@ const projects = await Promise.all(
   ))}
   <div class="border-t border-ink"></div>
 
-  <div data-peek aria-hidden="true" class="pointer-events-none fixed top-0 left-0 z-[45] hidden aspect-[16/10] w-[min(380px,32vw)] overflow-hidden">
+  <div
+    data-peek
+    aria-hidden="true"
+    class="pointer-events-none fixed top-0 left-0 z-[45] hidden aspect-[16/10] w-[min(380px,32vw)] overflow-hidden"
+  >
     <div data-peek-content class="absolute inset-0">
-    {projects.map(({ p }, index) => (
-      <div data-peek-item={p.id} hidden class="absolute inset-0">
-        {p.data.visual.src ? (
-          <img src={p.data.visual.src} alt="" loading="lazy" class="size-full object-cover" />
-        ) : (
-          <div class="flex size-full items-end p-4 font-mono text-xs text-white" style={`background:${PEEK_BG[index % PEEK_BG.length]}`}>{p.data.visual.label}</div>
-        )}
-      </div>
-    ))}
+      {projects.map(({ p }, index) => (
+        <div data-peek-item={p.id} hidden class="absolute inset-0">
+          {p.data.visual.src ? (
+            <img src={p.data.visual.src} alt="" loading="lazy" class="size-full object-cover" />
+          ) : (
+            <div
+              class="flex size-full items-end p-4 font-mono text-xs text-white"
+              style={`background:${PEEK_BG[index % PEEK_BG.length]}`}
+            >
+              {p.data.visual.label}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
     <canvas data-peek-px class="absolute inset-0 size-full"></canvas>
   </div>
 </Section>
 
 <script>
-  import '../scripts/project-peek';
-  import { createAssembler } from '../scripts/pixel-assemble';
-  import { prefersReducedMotion } from '../scripts/motion';
+  import '@/scripts/project-peek';
+  import { createAssembler } from '@/scripts/pixel-assemble';
+  import { prefersReducedMotion } from '@/scripts/motion';
 
   document.querySelectorAll<HTMLElement>('[data-project]').forEach((project) => {
     const button = project.querySelector<HTMLButtonElement>('[data-toggle]');
     const detail = project.querySelector<HTMLElement>('[data-detail]');
     if (!button || !detail) return;
-    const assembler = createAssembler([project.querySelector<HTMLElement>('[data-assemble]')!], project.querySelector<HTMLCanvasElement>('[data-assemble-px]')!);
+    const assembler = createAssembler(
+      [project.querySelector<HTMLElement>('[data-assemble]')!],
+      project.querySelector<HTMLCanvasElement>('[data-assemble-px]')!,
+    );
     const set = (open: boolean) => {
       detail.toggleAttribute('data-collapsed', !open);
       detail.toggleAttribute('inert', !open);

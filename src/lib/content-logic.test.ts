@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  achievementMonths,
-  assertContentIntegrity,
-  sortRoles,
-  type RoleEntry,
-} from './content-logic';
+import { achievementMonths, assertContentIntegrity, sortRoles, type RoleEntry } from './content-logic';
 
 const mkRole = (id: string, start: string, ids: [string, string][] = []): RoleEntry => ({
   id,
@@ -44,7 +39,11 @@ describe('sortRoles', () => {
 
 describe('achievementMonths', () => {
   it('lists the distinct months that have an achievement', () => {
-    const r = mkRole('r', '2025-07', [['a', '2025-10'], ['b', '2025-08'], ['c', '2025-10']]);
+    const r = mkRole('r', '2025-07', [
+      ['a', '2025-10'],
+      ['b', '2025-08'],
+      ['c', '2025-10'],
+    ]);
     expect(achievementMonths(r)).toEqual(['2025-08', '2025-10']);
   });
 });

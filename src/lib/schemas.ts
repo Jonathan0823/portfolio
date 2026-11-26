@@ -77,9 +77,7 @@ export const milestoneSchema = z.object({
   title: copy,
   tags: z.array(copy).default([]),
   link: z.object({ href: url, text: copy }).optional(),
-  refs: z
-    .array(z.object({ kind: z.enum(['role', 'achievement', 'project']), id: z.string() }))
-    .default([]),
+  refs: z.array(z.object({ kind: z.enum(['role', 'achievement', 'project']), id: z.string() })).default([]),
 });
 
 export const skillGroupSchema = z.object({

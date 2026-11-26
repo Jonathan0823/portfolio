@@ -1,24 +1,24 @@
 ---
-name: "NexusBus"
-hook: "The Modbus gateway I built for a battery factory, rebuilt in the open."
-status: "Open source"
-role: "Solo, built at work first"
+name: 'NexusBus'
+hook: 'The Modbus gateway I built for a battery factory, rebuilt in the open.'
+status: 'Open source'
+role: 'Solo, built at work first'
 order: 1
-month: "2025-08"
-result: "The same design runs the gateway on the factory floor at Century Batteries."
-repo: "https://github.com/Jonathan0823/nexusbus"
+month: '2025-08'
+result: 'The same design runs the gateway on the factory floor at Century Batteries.'
+repo: 'https://github.com/Jonathan0823/nexusbus'
 extraRepos:
-  - text: "nexusbus-mqtt-consumer"
-    href: "https://github.com/Jonathan0823/nexusbus-mqtt-consumer"
+  - text: 'nexusbus-mqtt-consumer'
+    href: 'https://github.com/Jonathan0823/nexusbus-mqtt-consumer'
 tags:
-  - "Python"
-  - "FastAPI"
-  - "Go"
-  - "Redis"
+  - 'Python'
+  - 'FastAPI'
+  - 'Go'
+  - 'Redis'
 visual:
-  kind: "diagram"
-  label: "Modbus devices → gateway → MQTT → Redis Streams → consumer"
-fromAchievement: "modbus-mqtt-gateway"
+  kind: 'diagram'
+  label: 'Modbus devices → gateway → MQTT → Redis Streams → consumer'
+fromAchievement: 'modbus-mqtt-gateway'
 ---
 
 The open-source version of the gateway I run at work. It polls Modbus TCP and RTU devices, caches values and publishes them over MQTT, and a Go consumer keeps every reading through network drops.

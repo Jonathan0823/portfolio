@@ -1,5 +1,12 @@
 import { HEAT_PALETTE, fbm, hash } from './pixel-math';
-import { BITMAPS, assignPixels, glyphCanvasLayout, pickSourceColumns, type GlyphCanvasLayout, type GlyphName } from './glyph-model';
+import {
+  BITMAPS,
+  assignPixels,
+  glyphCanvasLayout,
+  pickSourceColumns,
+  type GlyphCanvasLayout,
+  type GlyphName,
+} from './glyph-model';
 import { FINE_POINTER_QUERY } from './motion';
 import type { HeroField } from './hero-field';
 
@@ -44,12 +51,17 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
   const fineQuery = window.matchMedia(FINE_POINTER_QUERY);
   let particles: Particle[] = [];
   let sources: Source[] = [];
-  let raf = 0, timer = 0, cycleTimer = 0, fallbackTime = 0, sizeKey = '';
+  let raf = 0,
+    timer = 0,
+    cycleTimer = 0,
+    fallbackTime = 0,
+    sizeKey = '';
   let onScreen = true;
   let current: GlyphName | null = null;
   let cycleIndex = -1;
   let layout: GlyphCanvasLayout;
-  let cell = 10, fieldCell = 10;
+  let cell = 10,
+    fieldCell = 10;
   let overField = false;
 
   const canRun = () => onScreen && !document.hidden;
@@ -58,7 +70,9 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
   const autoCycle = () => autoShow() && !reduced;
 
   const measureText = (heroRect: DOMRect, blocks: HTMLElement[]) => {
-    let right = 0, top = Infinity, bottom = 0;
+    let right = 0,
+      top = Infinity,
+      bottom = 0;
     for (const block of blocks) {
       const box = block.getBoundingClientRect();
       top = Math.min(top, box.top - heroRect.top);
@@ -142,7 +156,13 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     }
     if (name) {
       sources = pickSources();
-      const pixelsBySource = assignPixels(BITMAPS[name], GLYPH_COLUMNS, layout.rows, sources.map((s) => s.column), layout.rising);
+      const pixelsBySource = assignPixels(
+        BITMAPS[name],
+        GLYPH_COLUMNS,
+        layout.rows,
+        sources.map((s) => s.column),
+        layout.rising,
+      );
       pixelsBySource.forEach((pixels, sourceIndex) => {
         const source = sources[sourceIndex];
         pixels.forEach((pixel, order) => {
@@ -172,7 +192,9 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     distance < p.verticalLength
       ? [p.sourceColumn, p.sourceRow + Math.sign(p.targetRow - p.sourceRow) * distance]
       : [
-          p.sourceColumn + Math.sign(p.targetColumn - p.sourceColumn) * Math.min(Math.abs(p.targetColumn - p.sourceColumn), distance - p.verticalLength),
+          p.sourceColumn +
+            Math.sign(p.targetColumn - p.sourceColumn) *
+              Math.min(Math.abs(p.targetColumn - p.sourceColumn), distance - p.verticalLength),
           p.targetRow,
         ];
 
@@ -183,10 +205,13 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     const fieldTime = hero.time() || fallbackTime;
     ctx.clearRect(0, 0, layout.width, layout.height);
     let moving = false;
-    const draws: Array<{ column: number; row: number; alpha: number; level: number; trail: [number, number] | null }> = [];
+    const draws: Array<{ column: number; row: number; alpha: number; level: number; trail: [number, number] | null }> =
+      [];
     particles = particles.filter((p) => {
       const elapsed = ((now - p.startedAt) / 1000) * SPILL_SPEED - p.delay;
-      let alpha = 1, inMotion = false, trailPos: [number, number] | null = null;
+      let alpha = 1,
+        inMotion = false,
+        trailPos: [number, number] | null = null;
       if (!p.fadingOut) {
         if (elapsed < 0) return true;
         const distance = Math.min(p.pathLength, (fieldCell / cell) * (26 * elapsed + 30 * elapsed * elapsed));
@@ -205,7 +230,13 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
       if (inMotion) moving = true;
       const bucket = sources[p.sourceIndex] ? sources[p.sourceIndex].bucket : (p.level ?? 1);
       p.level = bucket;
-      const level = Math.max(0, Math.min(5, bucket - (fbm(Math.round(p.column) * 0.3 - fieldTime * 0.9, Math.floor(p.row) * 0.3) < 0.45 ? 1 : 0)));
+      const level = Math.max(
+        0,
+        Math.min(
+          5,
+          bucket - (fbm(Math.round(p.column) * 0.3 - fieldTime * 0.9, Math.floor(p.row) * 0.3) < 0.45 ? 1 : 0),
+        ),
+      );
       draws.push({ column: Math.round(p.column), row: Math.floor(p.row), alpha, level, trail: trailPos });
       return true;
     });
@@ -227,10 +258,17 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     }
     ctx.globalAlpha = 1;
     if (moving) raf = requestAnimationFrame(loop);
-    else if (particles.length && !reduced) timer = window.setTimeout(() => { timer = 0; kick(); }, SHIMMER_INTERVAL_MS);
+    else if (particles.length && !reduced)
+      timer = window.setTimeout(() => {
+        timer = 0;
+        kick();
+      }, SHIMMER_INTERVAL_MS);
   };
   const kick = () => {
-    if (timer) { clearTimeout(timer); timer = 0; }
+    if (timer) {
+      clearTimeout(timer);
+      timer = 0;
+    }
     if (!raf && canRun()) raf = requestAnimationFrame(loop);
   };
   const halt = () => {
@@ -240,7 +278,10 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     timer = 0;
   };
 
-  const stopCycle = () => { clearTimeout(cycleTimer); cycleTimer = 0; };
+  const stopCycle = () => {
+    clearTimeout(cycleTimer);
+    cycleTimer = 0;
+  };
   const armCycle = (delay: number) => {
     stopCycle();
     if (!autoCycle() || !canRun()) return;
@@ -254,8 +295,19 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
   };
   const settleMode = () => {
     if (autoCycle()) armCycle(current ? CYCLE_MS : 300);
-    else if (autoShow()) { if (!current) { cycleIndex = 0; current = NAMES[0]; } spill(current); }
-    else { stopCycle(); if (current && !hovered) { current = null; spill(null); } }
+    else if (autoShow()) {
+      if (!current) {
+        cycleIndex = 0;
+        current = NAMES[0];
+      }
+      spill(current);
+    } else {
+      stopCycle();
+      if (current && !hovered) {
+        current = null;
+        spill(null);
+      }
+    }
   };
   let hovered: GlyphName | null = null;
 
@@ -285,17 +337,28 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
   };
   window.addEventListener('resize', onResize);
   const onVisibility = () => {
-    if (document.hidden) { halt(); stopCycle(); }
-    else { kick(); settleMode(); }
+    if (document.hidden) {
+      halt();
+      stopCycle();
+    } else {
+      kick();
+      settleMode();
+    }
   };
   document.addEventListener('visibilitychange', onVisibility);
-  const io = 'IntersectionObserver' in window
-    ? new IntersectionObserver((entries) => {
-        onScreen = entries[entries.length - 1].isIntersecting;
-        if (onScreen) { kick(); settleMode(); }
-        else { halt(); stopCycle(); }
-      })
-    : null;
+  const io =
+    'IntersectionObserver' in window
+      ? new IntersectionObserver((entries) => {
+          onScreen = entries[entries.length - 1].isIntersecting;
+          if (onScreen) {
+            kick();
+            settleMode();
+          } else {
+            halt();
+            stopCycle();
+          }
+        })
+      : null;
   io?.observe(section);
   if (!io) settleMode();
 
@@ -304,7 +367,13 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     const name = link.dataset.glyphFor as GlyphName;
     if (!(name in BITMAPS)) return;
     const on = () => show(name);
-    const events: Array<[string, () => void]> = [['mouseenter', on], ['mouseleave', hide], ['focus', on], ['blur', hide], ['touchstart', on]];
+    const events: Array<[string, () => void]> = [
+      ['mouseenter', on],
+      ['mouseleave', hide],
+      ['focus', on],
+      ['blur', hide],
+      ['touchstart', on],
+    ];
     events.forEach(([type, handler]) => link.addEventListener(type, handler, { passive: true }));
     removers.push(() => events.forEach(([type, handler]) => link.removeEventListener(type, handler)));
   });

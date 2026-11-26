@@ -32,12 +32,16 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     return cells;
   };
   const pickField = (y: number): { field: HeroField; rect: DOMRect } | null => {
-    let best: { field: HeroField; rect: DOMRect } | null = null, bestDistance = Infinity;
+    let best: { field: HeroField; rect: DOMRect } | null = null,
+      bestDistance = Infinity;
     for (const field of fields) {
       const rect = field.rect();
       if (!rect.width || rect.bottom < -200 || rect.top > window.innerHeight + 200) continue;
       const distance = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0;
-      if (distance < bestDistance) { best = { field, rect }; bestDistance = distance; }
+      if (distance < bestDistance) {
+        best = { field, rect };
+        bestDistance = distance;
+      }
     }
     return best;
   };
@@ -56,7 +60,8 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
   };
   const heat = makeBlobCanvas(50);
   const mono = makeBlobCanvas(-1);
-  const blobCanvas = heat.canvas, blobCtx = heat.ctx;
+  const blobCanvas = heat.canvas,
+    blobCtx = heat.ctx;
 
   const trailCanvas = document.createElement('canvas');
   trailCanvas.setAttribute('aria-hidden', 'true');
@@ -67,20 +72,45 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
   document.body.insertBefore(trailCanvas, document.body.firstChild);
 
   const trail = new Map<string, TrailCell>();
-  let targetX = 0, targetY = 0;
-  let cursorX = 0, cursorY = 0;
-  let speed = 0, heading = 0, clock = 0;
-  let radius = REST_RADIUS, targetRadius = REST_RADIUS;
-  let raf = 0, pointerInside = false;
+  let targetX = 0,
+    targetY = 0;
+  let cursorX = 0,
+    cursorY = 0;
+  let speed = 0,
+    heading = 0,
+    clock = 0;
+  let radius = REST_RADIUS,
+    targetRadius = REST_RADIUS;
+  let raf = 0,
+    pointerInside = false;
   let heroContact = 0;
-  let smoothDx = 0, smoothDy = 0, lastFrameTime = 0;
-  let pointerClientX = 0, pointerClientY = 0, scrollRaf = 0;
-  let hoveredLink: Element | null = null, linkProgress = 0, overLink = false;
-  let onHeading = false, overText = false, overTextValue = 0, visible = 0, cell = MAX_CELL;
-  let shapeTarget: ShapeName | null = null, shape: ShapeName | null = null, shapeProgress = 0;
+  let smoothDx = 0,
+    smoothDy = 0,
+    lastFrameTime = 0;
+  let pointerClientX = 0,
+    pointerClientY = 0,
+    scrollRaf = 0;
+  let hoveredLink: Element | null = null,
+    linkProgress = 0,
+    overLink = false;
+  let onHeading = false,
+    overText = false,
+    overTextValue = 0,
+    visible = 0,
+    cell = MAX_CELL;
+  let shapeTarget: ShapeName | null = null,
+    shape: ShapeName | null = null,
+    shapeProgress = 0;
 
-  const fillCell = (cellX: number, cellY: number, originX: number, originY: number, offsetX: number, offsetY: number, ctx: CanvasRenderingContext2D) =>
-    ctx.fillRect((cellX - originX) * cell + offsetX + 1, (cellY - originY) * cell + offsetY + 1, cell - 1, cell - 1);
+  const fillCell = (
+    cellX: number,
+    cellY: number,
+    originX: number,
+    originY: number,
+    offsetX: number,
+    offsetY: number,
+    ctx: CanvasRenderingContext2D,
+  ) => ctx.fillRect((cellX - originX) * cell + offsetX + 1, (cellY - originY) * cell + offsetY + 1, cell - 1, cell - 1);
 
   const frame = (now: number) => {
     raf = 0;
@@ -90,13 +120,16 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     const picked = pickField(targetY);
     const hero = picked?.field ?? null;
     cell = hero ? hero.field().cellSize : window.innerWidth < 700 ? 8 : MAX_CELL;
-    const prevX = cursorX, prevY = cursorY;
+    const prevX = cursorX,
+      prevY = cursorY;
     const follow = easeFactor(0.35, scale);
     cursorX += (targetX - cursorX) * follow;
     cursorY += (targetY - cursorY) * follow;
     clock += 0.12 * scale;
     radius += (targetRadius - radius) * easeFactor(0.25, scale);
-    const dx = cursorX - prevX, dy = cursorY - prevY, stepLength = Math.hypot(dx, dy);
+    const dx = cursorX - prevX,
+      dy = cursorY - prevY,
+      stepLength = Math.hypot(dx, dy);
     const perFrame = scale > 0 ? 1 / scale : 0;
     const smooth = smoothVelocity({ x: smoothDx, y: smoothDy }, { x: dx * perFrame, y: dy * perFrame }, 0.18, scale);
     smoothDx = smooth.x;
@@ -113,7 +146,10 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     if (!pointerInside && visible < 0.02) visible = 0;
     if (shapeTarget !== shape) {
       shapeProgress -= shapeProgress * easeFactor(0.3, scale);
-      if (shapeProgress < 0.04) { shape = shapeTarget; shapeProgress = 0; }
+      if (shapeProgress < 0.04) {
+        shape = shapeTarget;
+        shapeProgress = 0;
+      }
     } else if (shape) {
       shapeProgress += (1 - shapeProgress) * easeFactor(0.2, scale);
     }
@@ -124,26 +160,36 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     const flipped = !!hero?.flipped;
     const offsetX = heroRect ? ((heroRect.left % cell) + cell) % cell : 0;
     const offsetY = heroRect ? (((flipped ? heroRect.bottom : heroRect.top) % cell) + cell) % cell : 0;
-    const cursorCellX = Math.floor((cursorX - offsetX) / cell), cursorCellY = Math.floor((cursorY - offsetY) / cell);
-    const originX = cursorCellX - BLOB_CENTER, originY = cursorCellY - BLOB_CENTER;
+    const cursorCellX = Math.floor((cursorX - offsetX) / cell),
+      cursorCellY = Math.floor((cursorY - offsetY) / cell);
+    const originX = cursorCellX - BLOB_CENTER,
+      originY = cursorCellY - BLOB_CENTER;
     const blobTransform = `translate(${originX * cell}px,${originY * cell}px)`;
     heat.canvas.style.transform = blobTransform;
     mono.canvas.style.transform = blobTransform;
     blobCtx.clearRect(0, 0, BLOB_SIZE, BLOB_SIZE);
     mono.ctx.clearRect(0, 0, BLOB_SIZE, BLOB_SIZE);
 
-    const insideHero = !!heroRect && pointerInside &&
-      cursorX >= heroRect.left && cursorX <= heroRect.right && cursorY >= heroRect.top && cursorY <= heroRect.bottom;
+    const insideHero =
+      !!heroRect &&
+      pointerInside &&
+      cursorX >= heroRect.left &&
+      cursorX <= heroRect.right &&
+      cursorY >= heroRect.top &&
+      cursorY <= heroRect.bottom;
     const flickerTime = Math.floor(clock * 2);
 
     if (linkProgress > 0.02 && hoveredLink && hoveredLink.isConnected) {
       const rect = hoveredLink.getBoundingClientRect();
       const row = Math.floor((rect.bottom + 5 - offsetY) / cell);
-      const firstCell = Math.floor((rect.left - offsetX) / cell), lastCell = Math.floor((rect.right - 1 - offsetX) / cell);
-      const half = (lastCell - firstCell + 1) / 2 + 0.5, middle = (firstCell + lastCell + 1) / 2;
+      const firstCell = Math.floor((rect.left - offsetX) / cell),
+        lastCell = Math.floor((rect.right - 1 - offsetX) / cell);
+      const half = (lastCell - firstCell + 1) / 2 + 0.5,
+        middle = (firstCell + lastCell + 1) / 2;
       blobCtx.fillStyle = HEAT_PALETTE[UNDERLINE_LEVEL];
       for (let cell = firstCell; cell <= lastCell; cell++) {
-        if (Math.abs(cell + 0.5 - middle) <= half * linkProgress) fillCell(cell, row, originX, originY, offsetX, offsetY, blobCtx);
+        if (Math.abs(cell + 0.5 - middle) <= half * linkProgress)
+          fillCell(cell, row, originX, originY, offsetX, offsetY, blobCtx);
       }
     }
     const blobAlpha = linkProgress < 0.5 ? 1 - linkProgress / 0.5 : 0;
@@ -165,7 +211,12 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
       const reach = Math.ceil(shaped.longRadius + shaped.shift) + 1;
       for (let cellY = cursorCellY - reach; cellY <= cursorCellY + reach; cellY++) {
         for (let cellX = cursorCellX - reach; cellX <= cursorCellX + reach; cellX++) {
-          const value = blobValue(cellX + 0.5 - (cursorX - offsetX) / cell, cellY + 0.5 - (cursorY - offsetY) / cell, heading, shaped);
+          const value = blobValue(
+            cellX + 0.5 - (cursorX - offsetX) / cell,
+            cellY + 0.5 - (cursorY - offsetY) / cell,
+            heading,
+            shaped,
+          );
           if (value === null) continue;
           if (morphing && !morphShows(cellX - cursorCellX, cellY - cursorCellY, shapeProgress, false)) continue;
           const level = levelForValue(value, hash(cellX, cellY, flickerTime) * 2 - 1);
@@ -202,14 +253,17 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     }
     heroContact = insideHero ? 1 : heroContact * decayFactor(0.95, scale);
     if (pointerInside && !insideHero && heroContact > 0.05 && speed > 1.2) {
-      const amount = heroContact * Math.min(1, speed / 14), brushRadius = 3.2;
+      const amount = heroContact * Math.min(1, speed / 14),
+        brushRadius = 3.2;
       for (let step = 1; step <= steps; step++) {
-        const column = (prevX - offsetX + (dx * step) / steps) / cell, row = (prevY - offsetY + (dy * step) / steps) / cell;
+        const column = (prevX - offsetX + (dx * step) / steps) / cell,
+          row = (prevY - offsetY + (dy * step) / steps) / cell;
         for (let cellY = Math.floor(row - brushRadius); cellY < row + brushRadius; cellY++) {
           for (let cellX = Math.floor(column - brushRadius); cellX < column + brushRadius; cellX++) {
             const distance = Math.hypot(cellX + 0.5 - column, cellY + 0.5 - row) / brushRadius;
             if (distance > 1) continue;
-            const key = cellX + ',' + cellY, strength = amount * (1 - distance * distance * 0.8) * (0.8 + 0.2 * hash(cellX, cellY, 3));
+            const key = cellX + ',' + cellY,
+              strength = amount * (1 - distance * distance * 0.8) * (0.8 + 0.2 * hash(cellX, cellY, 3));
             const existing = trail.get(key);
             if (!existing || existing.strength < strength) trail.set(key, { cellX, cellY, strength });
           }
@@ -224,7 +278,8 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
         trail.delete(key);
         return;
       }
-      const localX = entry.cellX - cursorCellX + TRAIL_CENTER, localY = entry.cellY - cursorCellY + TRAIL_CENTER;
+      const localX = entry.cellX - cursorCellX + TRAIL_CENTER,
+        localY = entry.cellY - cursorCellY + TRAIL_CENTER;
       if (localX < 0 || localY < 0 || localX >= TRAIL_CELLS || localY >= TRAIL_CELLS) return;
       const flicker = hash(entry.cellX, entry.cellY, Math.floor(clock * 3)) < 0.3 ? 1 : 0;
       const level = Math.max(0, Math.min(5, Math.round(entry.strength * 5 - flicker)));
@@ -234,10 +289,14 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
 
     const busy =
       trail.size > 0 ||
-      Math.abs(targetX - cursorX) + Math.abs(targetY - cursorY) > 0.2 || speed > 0.15 ||
-      Math.abs(targetRadius - radius) > 0.02 || (linkProgress > 0.02 && linkProgress < 0.98) ||
-      Math.abs((overText ? 1 : 0) - overTextValue) > 0.01 || Math.abs((pointerInside ? 1 : 0) - visible) > 0.01 ||
-      shapeTarget !== shape || (!!shape && shapeProgress < 0.98);
+      Math.abs(targetX - cursorX) + Math.abs(targetY - cursorY) > 0.2 ||
+      speed > 0.15 ||
+      Math.abs(targetRadius - radius) > 0.02 ||
+      (linkProgress > 0.02 && linkProgress < 0.98) ||
+      Math.abs((overText ? 1 : 0) - overTextValue) > 0.01 ||
+      Math.abs((pointerInside ? 1 : 0) - visible) > 0.01 ||
+      shapeTarget !== shape ||
+      (!!shape && shapeProgress < 0.98);
     if (busy) raf = requestAnimationFrame(frame);
   };
 

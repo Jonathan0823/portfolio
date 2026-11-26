@@ -1,4 +1,4 @@
-import snapshotJson from '../data/github.json';
+import snapshotJson from '@/data/github.json';
 import { loadGithubStats, parseGithubStats, type GithubStats } from './github';
 
 let cached: Promise<GithubStats> | undefined;

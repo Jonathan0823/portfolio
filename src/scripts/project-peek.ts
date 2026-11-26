@@ -16,8 +16,13 @@ if (peek && list && canRunTrail()) {
   const assembler = createAssembler(items, peek.querySelector<HTMLCanvasElement>('[data-peek-px]')!);
   items.forEach((el) => (el.hidden = false));
   let current: string | null = null;
-  let x = 0, y = 0, targetX = 0, targetY = 0, lastY = 0;
-  let raf = 0, last = 0;
+  let x = 0,
+    y = 0,
+    targetX = 0,
+    targetY = 0,
+    lastY = 0;
+  let raf = 0,
+    last = 0;
 
   const frame = (now: number) => {
     raf = 0;
@@ -61,11 +66,13 @@ if (peek && list && canRunTrail()) {
     }, LINGER_MS);
   };
 
-  let pointerIn = false, scrollRaf = 0;
+  let pointerIn = false,
+    scrollRaf = 0;
   const evaluate = (target: Element | null, clientY: number) => {
     const row = target?.closest<HTMLElement>('[data-project]');
     const onSummary = row && target?.closest('[data-cursor="eye"]');
-    if (row && onSummary && !row.querySelector('[data-detail]:not([data-collapsed])')) show(row.dataset.project!, clientY >= lastY);
+    if (row && onSummary && !row.querySelector('[data-detail]:not([data-collapsed])'))
+      show(row.dataset.project!, clientY >= lastY);
     else hide();
     lastY = clientY;
     wake();
@@ -81,11 +88,15 @@ if (peek && list && canRunTrail()) {
     pointerIn = false;
     hide();
   });
-  window.addEventListener('scroll', () => {
-    if (!pointerIn || scrollRaf) return;
-    scrollRaf = requestAnimationFrame(() => {
-      scrollRaf = 0;
-      evaluate(document.elementFromPoint(targetX, targetY), targetY);
-    });
-  }, { passive: true });
+  window.addEventListener(
+    'scroll',
+    () => {
+      if (!pointerIn || scrollRaf) return;
+      scrollRaf = requestAnimationFrame(() => {
+        scrollRaf = 0;
+        evaluate(document.elementFromPoint(targetX, targetY), targetY);
+      });
+    },
+    { passive: true },
+  );
 }

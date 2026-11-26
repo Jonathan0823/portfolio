@@ -4,12 +4,17 @@ import { BITMAPS, assignPixels, glyphCanvasLayout, pickSourceColumns } from './g
 describe('pickSourceColumns', () => {
   it('picks the highest local peaks first, at least 5 columns apart, at most 5', () => {
     const low = new Array(32).fill(14);
-    low[4] = 20; low[10] = 30; low[12] = 25; low[20] = 22; low[27] = 18;
+    low[4] = 20;
+    low[10] = 30;
+    low[12] = 25;
+    low[20] = 22;
+    low[27] = 18;
     const picks = pickSourceColumns(low);
     expect(picks[0]).toBe(10);
     expect(picks).not.toContain(12);
     expect(picks).toEqual(expect.arrayContaining([4, 20, 27]));
-    for (let a = 0; a < picks.length; a++) for (let b = a + 1; b < picks.length; b++) expect(Math.abs(picks[a] - picks[b])).toBeGreaterThanOrEqual(5);
+    for (let a = 0; a < picks.length; a++)
+      for (let b = a + 1; b < picks.length; b++) expect(Math.abs(picks[a] - picks[b])).toBeGreaterThanOrEqual(5);
     expect(picks.length).toBeLessThanOrEqual(5);
   });
 
@@ -25,10 +30,12 @@ describe('assignPixels', () => {
       const g = BITMAPS[name];
       const per = assignPixels(g, 28, 36, [3, 16, 28]);
       expect(per.flat().length).toBe(lit(name) * g.scale * g.scale);
-      per.forEach((list, k) => list.forEach(p => {
-        const own = Math.abs(p.column - [3, 16, 28][k]);
-        for (const sx of [3, 16, 28]) expect(own).toBeLessThanOrEqual(Math.abs(p.column - sx));
-      }));
+      per.forEach((list, k) =>
+        list.forEach((p) => {
+          const own = Math.abs(p.column - [3, 16, 28][k]);
+          for (const sx of [3, 16, 28]) expect(own).toBeLessThanOrEqual(Math.abs(p.column - sx));
+        }),
+      );
     }
   });
 });
@@ -53,7 +60,15 @@ describe('glyphCanvasLayout', () => {
   const text = { textRight: 900, textTop: 420, textBottom: 740, limitBottom: 900 };
   it('puts the icon box right of the text, bottom level with the text block, on the grid', () => {
     const l = glyphCanvasLayout({ ...base, ...text });
-    expect(l).toMatchObject({ originColumn: 106, left: 1060, top: 0, width: 280, height: 740, rows: 74, rising: false });
+    expect(l).toMatchObject({
+      originColumn: 106,
+      left: 1060,
+      top: 0,
+      width: 280,
+      height: 740,
+      rows: 74,
+      rising: false,
+    });
     expect(l.left + l.width).toBeLessThanOrEqual(1440 - 96);
     expect(l.left % 10).toBe(0);
     expect(l.height % 10).toBe(0);
@@ -73,7 +88,19 @@ describe('glyphCanvasLayout', () => {
 });
 
 describe('glyphCanvasLayout on phones', () => {
-  const base = { heroWidth: 390, cell: 4, columns: 28, glyphRows: 28, rightMargin: 20, minTop: 60, gap: 16, textRight: 230, textTop: 470, textBottom: 620, limitBottom: 800 };
+  const base = {
+    heroWidth: 390,
+    cell: 4,
+    columns: 28,
+    glyphRows: 28,
+    rightMargin: 20,
+    minTop: 60,
+    gap: 16,
+    textRight: 230,
+    textTop: 470,
+    textBottom: 620,
+    limitBottom: 800,
+  };
   it('sits beside the headline, right aligned, on the 4 px grid, bottom level with the headline', () => {
     const l = glyphCanvasLayout(base);
     expect(l).toMatchObject({ left: 256, width: 112, height: 620, rising: false });

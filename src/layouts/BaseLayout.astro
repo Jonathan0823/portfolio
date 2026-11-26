@@ -1,8 +1,8 @@
 ---
-import '../styles/global.css';
+import '@/styles/global.css';
 import geistWoff2 from '@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url';
 import geistMonoWoff2 from '@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2?url';
-import SEO from '../components/SEO.astro';
+import SEO from '@/components/SEO.astro';
 
 interface Props {
   title: string;
@@ -31,7 +31,8 @@ const { title, description, image, imageAlt, jsonLd, noindex } = Astro.props;
       (function () {
         try {
           if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-          var root = document.documentElement, store = sessionStorage;
+          var root = document.documentElement,
+            store = sessionStorage;
           var arrive = store.getItem('px-arrive');
           store.removeItem('px-arrive');
           var intro = location.pathname === '/' && !store.getItem('px-intro');
@@ -39,28 +40,28 @@ const { title, description, image, imageAlt, jsonLd, noindex } = Astro.props;
           if (!arrive && !intro) return;
           root.dataset.cover = arrive ? 'arrive' : 'intro';
           root.classList.add('px-covered');
-          setTimeout(function () { root.classList.remove('px-covered'); }, 2500);
+          setTimeout(function () {
+            root.classList.remove('px-covered');
+          }, 2500);
         } catch (e) {}
       })();
     </script>
-    {
-      import.meta.env.PROD && (
-        <script
-          is:inline
-          defer
-          src="https://static.cloudflareinsights.com/beacon.min.js"
-          data-cf-beacon='{"token": "128cd33629874c88a80baa86f02aa829"}'
-        />
-      )
-    }
+    {import.meta.env.PROD && (
+      <script
+        is:inline
+        defer
+        src="https://static.cloudflareinsights.com/beacon.min.js"
+        data-cf-beacon='{"token": "128cd33629874c88a80baa86f02aa829"}'
+      />
+    )}
   </head>
   <body>
     <slot />
     <script>
-      import '../scripts/page-cover-init';
-      import '../scripts/pixel-button';
-      import '../scripts/canvas-effects';
-      import '../scripts/smooth-scroll';
+      import '@/scripts/page-cover-init';
+      import '@/scripts/pixel-button';
+      import '@/scripts/canvas-effects';
+      import '@/scripts/smooth-scroll';
     </script>
   </body>
 </html>

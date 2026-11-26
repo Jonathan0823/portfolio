@@ -1,14 +1,14 @@
 ---
 tags:
-  - "Go"
-  - "PostgreSQL"
-  - "Next.js"
-date: "2025-10"
-label: "Work"
-title: "Five minutes to under ten seconds."
+  - 'Go'
+  - 'PostgreSQL'
+  - 'Next.js'
+date: '2025-10'
+label: 'Work'
+title: 'Five minutes to under ten seconds.'
 refs:
-  - kind: "achievement"
-    id: "telemetry-dashboard-speedup"
+  - kind: 'achievement'
+    id: 'telemetry-dashboard-speedup'
 ---
 
 The one I’m proudest of. Engineers had stopped opening the dashboard because it was so slow.

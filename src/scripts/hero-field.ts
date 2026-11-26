@@ -20,7 +20,11 @@ const TIME_STEP = 0.02;
 const HEAT_DECAY = 0.965;
 const MAX_ELAPSED_MS = 200;
 
-export function mountHeroField(host: HTMLElement, reduced: boolean, options: { seed?: number; flipped?: boolean } = {}): HeroField {
+export function mountHeroField(
+  host: HTMLElement,
+  reduced: boolean,
+  options: { seed?: number; flipped?: boolean } = {},
+): HeroField {
   const seed = options.seed ?? SEED;
   const flipped = !!options.flipped;
   const canvas = document.createElement('canvas');
@@ -31,7 +35,11 @@ export function mountHeroField(host: HTMLElement, reduced: boolean, options: { s
 
   const ctx = canvas.getContext('2d')!;
   let field = createField(1, 1);
-  let t = 0, last = 0, raf = 0, dirty = true, visible = true;
+  let t = 0,
+    last = 0,
+    raf = 0,
+    dirty = true,
+    visible = true;
 
   const wants = () => visible && !document.hidden && (dirty || !reduced || field.hottest > 0.01);
 
@@ -45,7 +53,13 @@ export function mountHeroField(host: HTMLElement, reduced: boolean, options: { s
     for (let k = 0; k < HEAT_PALETTE.length; k++) {
       ctx.fillStyle = HEAT_PALETTE[k];
       for (let i = 0; i < columns * rows; i++) {
-        if (bucket[i] === k) ctx.fillRect((i % columns) * cellSize + 1, Math.floor(i / columns) * cellSize + 1, cellSize - 1, cellSize - 1);
+        if (bucket[i] === k)
+          ctx.fillRect(
+            (i % columns) * cellSize + 1,
+            Math.floor(i / columns) * cellSize + 1,
+            cellSize - 1,
+            cellSize - 1,
+          );
       }
     }
   };
@@ -65,7 +79,8 @@ export function mountHeroField(host: HTMLElement, reduced: boolean, options: { s
   };
 
   const resize = () => {
-    const w = host.clientWidth, h = host.clientHeight;
+    const w = host.clientWidth,
+      h = host.clientHeight;
     if (!w || !h) return;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     canvas.width = Math.max(1, Math.round(w * dpr));
@@ -76,12 +91,13 @@ export function mountHeroField(host: HTMLElement, reduced: boolean, options: { s
     schedule();
   };
 
-  const io = 'IntersectionObserver' in window
-    ? new IntersectionObserver(es => {
-        visible = es[es.length - 1].isIntersecting;
-        schedule();
-      })
-    : null;
+  const io =
+    'IntersectionObserver' in window
+      ? new IntersectionObserver((es) => {
+          visible = es[es.length - 1].isIntersecting;
+          schedule();
+        })
+      : null;
   io?.observe(canvas);
   const ro = 'ResizeObserver' in window ? new ResizeObserver(resize) : null;
   ro?.observe(host);

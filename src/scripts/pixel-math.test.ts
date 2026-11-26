@@ -33,7 +33,8 @@ describe('createField', () => {
 
 describe('stepField', () => {
   it('is deterministic for the same time and seed', () => {
-    const a = createField(700, 336), b = createField(700, 336);
+    const a = createField(700, 336),
+      b = createField(700, 336);
     stepField(a, 0.5, 1.3);
     stepField(b, 0.5, 1.3);
     expect(Array.from(a.bucket)).toEqual(Array.from(b.bucket));
@@ -53,7 +54,7 @@ describe('stepField', () => {
       expect(f.lowestRow[x]).toBe(low);
       if (low >= 0) expect(f.lowestBucket[x]).toBe(f.bucket[low * f.columns + x]);
     }
-    expect(f.bucket.some(k => k >= 0)).toBe(true);
+    expect(f.bucket.some((k) => k >= 0)).toBe(true);
   });
 
   it('decays heat by 0.94 per step and paints hot cells in the top bucket', () => {
