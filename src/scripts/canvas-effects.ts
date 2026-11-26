@@ -54,7 +54,17 @@ if (typeof window.matchMedia === 'function') {
   whenIdle(sync);
   whenIdle(mountHeroHint);
   const foot = fields[hosts.findIndex((h) => h.dataset.pixelField === 'foot')];
-  if (foot) whenIdle(() => mountFooterTide(foot));
-  for (const q of [REDUCE_QUERY, FINE_POINTER_QUERY]) window.matchMedia(q).addEventListener('change', sync);
+  // hover drives the tide on a fine pointer and a timer on touch, so switching pointer (or motion) remounts it
+  let stopTide: (() => void) | null = null;
+  const mountTide = () => {
+    stopTide?.();
+    stopTide = foot ? mountFooterTide(foot) : null;
+  };
+  whenIdle(mountTide);
+  for (const q of [REDUCE_QUERY, FINE_POINTER_QUERY])
+    window.matchMedia(q).addEventListener('change', () => {
+      sync();
+      mountTide();
+    });
   watchPixelRatio(() => fields.forEach((f) => f.resize()));
 }

@@ -47,7 +47,8 @@ interface Placed {
   top: number;
 }
 
-export function mountFooterTide(foot: HeroField): void {
+/** mounts the tide for the current pointer type; the returned function removes it again */
+export function mountFooterTide(foot: HeroField): () => void {
   const buttons = [...document.querySelectorAll<HTMLAnchorElement>('#contact a[data-pixel-btn]')];
   const nameFor = (a: HTMLAnchorElement): GlyphName =>
     a.href.startsWith('mailto:')
@@ -204,10 +205,13 @@ export function mountFooterTide(foot: HeroField): void {
     head(1, performance.now());
     run();
   };
-  if (stacked) {
+  // everything this mount adds to the page, so it can be undone when the pointer type changes
+  const events = new AbortController();
+  const { signal } = events;
+  const host = document.querySelector<HTMLElement>('[data-pixel-field="foot"]');
+  let stopCycle = () => {};
+  if (stacked && host) {
     // grow the gap between the buttons and the field until the tallest logo and its wave fit under the buttons
-    const host = document.querySelector<HTMLElement>('[data-pixel-field="foot"]');
-    if (!host) return;
     const tallest = Math.max(...LOGOS.map((n) => BITMAPS[n].rows.length));
     const stage = () => {
       const short = skyline() + tallest - 1 + overTop - ceiling();
@@ -215,22 +219,34 @@ export function mountFooterTide(foot: HeroField): void {
       host.style.marginTop = `${Math.max(0, margin + short * foot.field().cellSize)}px`;
     };
     stage();
-    addEventListener('resize', stage);
-    cycle(host, buttons, nameFor, submerge);
-    return;
+    addEventListener('resize', stage, { signal });
+    stopCycle = cycle(host, buttons, nameFor, submerge, signal);
+  } else if (!stacked) {
+    for (const button of buttons) {
+      const name = nameFor(button);
+      button.addEventListener('mouseenter', () => submerge(name), { signal });
+      button.addEventListener('focus', () => submerge(name), { signal });
+      // crossing the gap between two buttons shouldn't count as leaving: wait a beat before washing away
+      const leave = () => {
+        clearTimeout(leaveTimer);
+        leaveTimer = window.setTimeout(() => submerge(null), LEAVE_GRACE_MS);
+      };
+      button.addEventListener('mouseleave', leave, { signal });
+      button.addEventListener('blur', leave, { signal });
+    }
   }
-  for (const button of buttons) {
-    const name = nameFor(button);
-    button.addEventListener('mouseenter', () => submerge(name));
-    button.addEventListener('focus', () => submerge(name));
-    // crossing the gap between two buttons shouldn't count as leaving: wait a beat before washing away
-    const leave = () => {
-      clearTimeout(leaveTimer);
-      leaveTimer = window.setTimeout(() => submerge(null), LEAVE_GRACE_MS);
-    };
-    button.addEventListener('mouseleave', leave);
-    button.addEventListener('blur', leave);
-  }
+  return () => {
+    events.abort();
+    stopCycle();
+    clearTimeout(leaveTimer);
+    cancelAnimationFrame(raf);
+    buttons.forEach((b) => b.classList.remove(TIDE_SHOWN_CLASS));
+    if (host) host.style.marginTop = '';
+    tideSwell.rows.fill(0);
+    tideSwell.crest.fill(0);
+    tideSwell.stamp.fill(0);
+    foot.markDirty();
+  };
 }
 
 /** touch has no hover, and a tap opens the link: cycle the logos on a timer while the footer is on screen */
@@ -239,8 +255,9 @@ function cycle(
   buttons: HTMLAnchorElement[],
   nameFor: (a: HTMLAnchorElement) => GlyphName,
   submerge: (next: GlyphName | null) => void,
-): void {
-  if (!buttons.length) return;
+  signal: AbortSignal,
+): () => void {
+  if (!buttons.length) return () => {};
   let index = -1,
     timer = 0,
     visible = false;
@@ -252,7 +269,7 @@ function cycle(
   if (prefersReducedMotion()) {
     // no cycling: the first logo just stands there
     show();
-    return;
+    return () => {};
   }
   const arm = () => {
     clearTimeout(timer);
@@ -266,9 +283,14 @@ function cycle(
       index < 0 ? CYCLE_FIRST_MS : CYCLE_MS,
     );
   };
-  new IntersectionObserver(([entry]) => {
+  const io = new IntersectionObserver(([entry]) => {
     visible = entry.isIntersecting;
     arm();
-  }).observe(host);
-  document.addEventListener('visibilitychange', arm);
+  });
+  io.observe(host);
+  document.addEventListener('visibilitychange', arm, { signal });
+  return () => {
+    io.disconnect();
+    clearTimeout(timer);
+  };
 }
