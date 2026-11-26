@@ -1,21 +1,45 @@
 ---
 import ContributionCalendar from './ContributionCalendar.astro';
+import StatIcon from './StatIcon.astro';
+import type { StatIconName } from '@/lib/stat-icons';
 import { getGithubStats } from '@/lib/github-stats';
 import { CODING_SINCE } from '@/lib/profile';
 import { formatDuration, formatMonth, wholeYearsSince } from '@/lib/role-timeline';
 import { GRID, skillIcon } from '@/lib/skill-icons';
 
-const { publicRepos, calendar } = await getGithubStats();
+const { calendar } = await getGithubStats();
+const days = calendar.weeks.flatMap((w) => w.days).sort((a, b) => a.date.localeCompare(b.date));
+const short = (d: string) =>
+  new Date(d + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+let best = days[0],
+  run = 0,
+  streak = 0,
+  streakEnd = 0;
+days.forEach((d, i) => {
+  if (d.count > best.count) best = d;
+  run = d.count > 0 ? run + 1 : 0;
+  if (run > streak) {
+    streak = run;
+    streakEnd = i;
+  }
+});
 const years = formatDuration(wholeYearsSince(CODING_SINCE, new Date()) * 12);
-const stats = [
-  { value: calendar.total.toLocaleString('en-US'), label: 'contributions in the last 12 months' },
-  { value: String(publicRepos), label: 'public repos' },
+const stats: { icon?: StatIconName; value: string; label: string; logos?: ReturnType<typeof skillIcon>[] }[] = [
+  {
+    icon: 'fire',
+    value: String(streak),
+    label:
+      streak >= days.length
+        ? 'days in a row, every day of the last 12 months'
+        : `days in a row, my longest streak (${short(days[streakEnd - streak + 1].date)} to ${short(days[streakEnd].date)})`,
+  },
+  { icon: 'bolt', value: String(best.count), label: `contributions in a single day, on ${short(best.date)}` },
   {
     value: 'Go and TypeScript',
     label: 'what I write most, then Python and Rust',
     logos: [skillIcon({ icon: 'go' }), skillIcon({ icon: 'typescript' })],
   },
-  { value: years, label: `writing code every day, since ${formatMonth(CODING_SINCE)}` },
+  { icon: 'prompt', value: years, label: `writing code every day, since ${formatMonth(CODING_SINCE)}` },
 ];
 ---
 
@@ -28,7 +52,7 @@ const stats = [
     {stats.map((s) => (
       <div class="flex flex-col-reverse justify-end gap-1.5 border-t border-ink pt-4">
         <dt class="text-base text-muted-strong">{s.label}</dt>
-        <dd data-count-up class="text-4xl leading-none font-semibold tracking-[-0.05em] tabular-nums md:text-[56px]">
+        <dd class="text-4xl leading-none font-semibold tracking-[-0.05em] tabular-nums md:text-[56px]">
           {s.logos ? (
             <span class="flex gap-3 md:gap-4">
               <span class="sr-only">{s.value}</span>
@@ -48,7 +72,10 @@ const stats = [
               ))}
             </span>
           ) : (
-            s.value
+            <span class="flex items-center gap-3 md:gap-4">
+              {s.icon && <StatIcon name={s.icon} />}
+              <span data-count-up>{s.value}</span>
+            </span>
           )}
         </dd>
       </div>

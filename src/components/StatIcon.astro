@@ -1,0 +1,62 @@
+---
+import { statIcon, type StatIconName } from '@/lib/stat-icons';
+
+interface Props {
+  name: StatIconName;
+}
+const icon = statIcon(Astro.props.name);
+---
+
+<svg
+  viewBox={`0 0 ${icon.width} ${icon.height}`}
+  aria-hidden="true"
+  shape-rendering="crispEdges"
+  class="stat-icon h-9 w-auto md:h-14"
+  style={`--loop:${icon.loop}s`}
+>
+  {icon.cells.map((frame, i) => (
+    <g class="frame" style={`--at:${(i / icon.cells.length) * 100}%`} data-frame={i}>
+      {frame.map((c) => (
+        <rect x={c.x} y={c.y} width="1" height="1" fill={c.fill} />
+      ))}
+    </g>
+  ))}
+</svg>
+
+<style>
+  .frame:not(:first-child) {
+    visibility: hidden;
+  }
+  /* two frames swap on a hard step, so it reads as pixel animation rather than a tween */
+  .frame {
+    animation: swap var(--loop) steps(1, end) infinite;
+  }
+  .frame:last-child {
+    animation-name: swap-b;
+  }
+  @keyframes swap {
+    0%,
+    49.99% {
+      visibility: visible;
+    }
+    50%,
+    100% {
+      visibility: hidden;
+    }
+  }
+  @keyframes swap-b {
+    0%,
+    49.99% {
+      visibility: hidden;
+    }
+    50%,
+    100% {
+      visibility: visible;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .frame {
+      animation: none;
+    }
+  }
+</style>
