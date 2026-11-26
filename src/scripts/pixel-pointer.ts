@@ -1,19 +1,29 @@
-import { smoothstep } from './cursor-math';
-import { spriteFor, type PointerState } from './pointer-sprite';
+import { HEAT_PALETTE } from './pixel-math';
+import { POP_MS, chargeScale, clampLevel, popScale, smoothstep } from './cursor-math';
+import { INK, spriteFor, type PointerState } from './pointer-sprite';
 
 /** css px per sprite cell: the 9x11 arrow is 18x22px */
 const CELL = 2;
-/** room around the tip for the biggest sprite plus jitter */
+/** room around the tip for the biggest sprite (a charged shape, 1.8x) plus jitter */
 const PAD = 40;
 const CANVAS = 88;
 /** shrink out plus grow in is about 120ms */
 const SWAP_MS = 60;
+const PRESS_SQUASH = 0.8;
+/** how fast the squash settles, ms */
+const SQUASH_MS = 45;
 
 export interface PixelPointer {
   /** locked 1:1 to the mouse: no easing, so it never lags behind the real pointer */
   move(x: number, y: number): void;
   setState(state: PointerState): void;
   setVisible(on: boolean): void;
+  /** squash on press; releasing pops back with a small overshoot */
+  press(down: boolean): void;
+  /** 0..1 grows and heats the pointer; jitterX/Y shake it by whole px at full charge */
+  setCharge(charge: number, jitterX?: number, jitterY?: number): void;
+  /** the release pop without a preceding squash (a charged pointer snapping back) */
+  pop(): void;
   destroy(): void;
 }
 
@@ -33,24 +43,34 @@ export function createPixelPointer(): PixelPointer {
   let current: PointerState = 'arrow',
     wanted: PointerState = 'arrow',
     grow = 1;
+  let down = false,
+    squash = 1,
+    popAt = -1,
+    popFrom = 1;
+  let charge = 0,
+    jitterX = 0,
+    jitterY = 0;
   let raf = 0,
     last = 0;
 
   const draw = () => {
     ctx.clearRect(0, 0, CANVAS, CANVAS);
     if (grow < 0.1) return;
-    const scale = smoothstep(grow);
-    const sprite = spriteFor(current);
+    const scale = smoothstep(grow) * squash * chargeScale(charge);
+    const sprite = spriteFor(current, down);
+    // charge heats the whole fill through the palette; the outline keeps its colour
+    const tint = charge > 0 ? HEAT_PALETTE[clampLevel(charge * 5)] : null;
     for (const c of sprite.cells) {
       const x0 = Math.round(PAD + (c.x - sprite.ax) * CELL * scale),
         y0 = Math.round(PAD + (c.y - sprite.ay) * CELL * scale);
       const x1 = Math.round(PAD + (c.x + 1 - sprite.ax) * CELL * scale),
         y1 = Math.round(PAD + (c.y + 1 - sprite.ay) * CELL * scale);
-      ctx.fillStyle = c.color;
-      ctx.fillRect(x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0));
+      ctx.fillStyle = tint && c.color !== INK ? tint : c.color;
+      ctx.fillRect(x0 + jitterX, y0 + jitterY, Math.max(1, x1 - x0), Math.max(1, y1 - y0));
     }
   };
 
+  const squashTarget = () => (charge > 0 ? 1 : PRESS_SQUASH);
   const tick = (now: number) => {
     raf = 0;
     const dt = last ? Math.min(50, now - last) : 16;
@@ -62,12 +82,24 @@ export function createPixelPointer(): PixelPointer {
         current = wanted;
       }
     } else if (grow < 1) grow = Math.min(1, grow + dt / SWAP_MS);
+    if (down) squash += (squashTarget() - squash) * Math.min(1, dt / SQUASH_MS);
+    else if (popAt >= 0) {
+      popAt += dt;
+      squash = popScale(popAt, popFrom);
+      if (popAt >= POP_MS) popAt = -1;
+    }
     draw();
-    if (current !== wanted || grow < 1) raf = requestAnimationFrame(tick);
+    const settling = down ? Math.abs(squash - squashTarget()) > 0.01 : popAt >= 0;
+    if (current !== wanted || grow < 1 || settling) raf = requestAnimationFrame(tick);
     else last = 0;
   };
   const wake = () => {
     if (!raf) raf = requestAnimationFrame(tick);
+  };
+  const startPop = () => {
+    popAt = 0;
+    popFrom = squash;
+    wake();
   };
 
   draw();
@@ -83,6 +115,24 @@ export function createPixelPointer(): PixelPointer {
     setVisible(on) {
       canvas.style.opacity = on ? '1' : '0';
     },
+    press(isDown) {
+      if (down === isDown) return;
+      down = isDown;
+      if (isDown) popAt = -1;
+      else popFrom = squash;
+      if (isDown) wake();
+      else startPop();
+      // the pressed look (hotter fill) changes with `down`, so redraw now rather than waiting for the next tick
+      draw();
+    },
+    setCharge(next, jx = 0, jy = 0) {
+      if (next === charge && jx === jitterX && jy === jitterY) return;
+      charge = next;
+      jitterX = jx;
+      jitterY = jy;
+      draw();
+    },
+    pop: startPop,
     destroy() {
       cancelAnimationFrame(raf);
       canvas.remove();

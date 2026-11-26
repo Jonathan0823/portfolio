@@ -1,19 +1,26 @@
 import type { HeroField } from './hero-field';
+import { TAP_MS } from './cursor-math';
 import { isShapeName } from './cursor-shapes';
-import { createHeroStamper } from './hero-stamp';
+import { startCharge, type Charger } from './charger';
+import { createHeroStamper, injectFieldRing } from './hero-stamp';
 import { mountMagnetRing } from './magnet-ring';
 import { createPixelPointer } from './pixel-pointer';
 import { pointerStateFor } from './pointer-sprite';
+import { spawnShockwave } from './shockwave';
 
 /** on <html> while the pixel pointer is drawn; global.css hides the native cursor under it, except over text fields */
 const DRAWN_CLASS = 'has-pixel-pointer';
 const CLICKABLE = 'a,button,summary,[data-cursor]';
+/** things that get the full-strength shockwave; a click on empty page gets ~60% */
+const STRONG = 'a,button,summary,[data-cursor],[data-cursor-magnet],[data-pixel-btn]';
+/** clicks here are not ours: the graph marks its own pointer, and text fields need their caret and selection */
+const OWN_POINTER = '[data-cursor-hide],input,textarea,select,[contenteditable]';
 const TEXT_FIELD = 'input,textarea,select,[contenteditable]';
 
 /**
  * The site's only cursor, for a hovering mouse without reduced motion: a small pixel arrow locked 1:1 to the pointer
- * that becomes the hot arrow or a named shape over clickable things, and a ring around logos. Its one mark on the page is
- * heat in the hero fields.
+ * that becomes the hot arrow or a named shape over clickable things, a ring around logos, a shockwave on click,
+ * and a hold-to-charge. Its one mark on the page is heat in the hero fields.
  */
 export function mountCursor(fields: HeroField[]): () => void {
   const pointer = createPixelPointer();
@@ -26,6 +33,8 @@ export function mountCursor(fields: HeroField[]): () => void {
   let overOwnPointer = false,
     overTextField = false,
     overShape = false;
+  let charger: Charger | null = null,
+    chargeStrong = false;
   let scrollRaf = 0;
 
   const syncVisible = () => pointer.setVisible(inside && !overOwnPointer && !overTextField);
@@ -63,6 +72,8 @@ export function mountCursor(fields: HeroField[]): () => void {
   };
   const onLeave = () => {
     inside = false;
+    // leaving the window cancels a charge: the release would land somewhere we cannot see
+    charger?.cancel();
     stamper.reset();
     syncVisible();
     syncMagnets();
@@ -71,10 +82,45 @@ export function mountCursor(fields: HeroField[]): () => void {
     if (!e.relatedTarget) onLeave();
   };
   const onVisibility = () => {
-    if (document.hidden) onLeave();
+    if (!document.hidden) return;
+    charger?.dispose();
+    charger = null;
+    onLeave();
+  };
+
+  const onDown = (e: MouseEvent) => {
+    if (e.button !== 0) return;
+    charger?.dispose();
+    charger = null;
+    const target = e.target instanceof Element ? e.target : null;
+    if (target?.closest(OWN_POINTER)) return;
+    pointer.press(true);
+    chargeStrong = !!target?.closest(STRONG);
+    // the charge reads the live pointer each frame, so moving while holding drags it along
+    charger = startCharge(pointer, () => ({ x, y }));
+  };
+  const onUp = (e: MouseEvent) => {
+    if (e.button !== 0) return;
+    pointer.press(false);
+    if (!charger) return;
+    const result = charger.release();
+    charger = null;
+    if (result.cancelled) return;
+    // the explosion fires where the button was released, not where it was pressed
+    const at = { x: e.clientX, y: e.clientY };
+    const charge = result.held < TAP_MS ? 0 : result.charge;
+    spawnShockwave(at.x, at.y, chargeStrong, charge);
+    injectFieldRing(fields, at.x, at.y, chargeStrong, charge);
+  };
+  // a drag that starts selecting text is a selection, not a charge
+  const onSelection = () => {
+    if (charger && !window.getSelection()?.isCollapsed) charger.cancel();
   };
 
   document.addEventListener('mousemove', onMove);
+  document.addEventListener('mousedown', onDown);
+  window.addEventListener('mouseup', onUp);
+  document.addEventListener('selectionchange', onSelection);
   window.addEventListener('scroll', onScroll, { passive: true });
   document.documentElement.addEventListener('mouseleave', onLeave);
   document.addEventListener('mouseout', onOut);
@@ -83,12 +129,16 @@ export function mountCursor(fields: HeroField[]): () => void {
 
   return () => {
     document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mousedown', onDown);
+    window.removeEventListener('mouseup', onUp);
+    document.removeEventListener('selectionchange', onSelection);
     window.removeEventListener('scroll', onScroll);
     cancelAnimationFrame(scrollRaf);
     document.documentElement.removeEventListener('mouseleave', onLeave);
     document.removeEventListener('mouseout', onOut);
     window.removeEventListener('blur', onLeave);
     document.removeEventListener('visibilitychange', onVisibility);
+    charger?.dispose();
     document.documentElement.classList.remove(DRAWN_CLASS);
     pointer.destroy();
     magnets.destroy();

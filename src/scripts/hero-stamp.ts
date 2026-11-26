@@ -1,5 +1,6 @@
 import type { HeroField } from './hero-field';
 import { blobGeometry, blobValue, shortestTurn } from './blob-shape';
+import { fieldRingHeat, fieldRingRadius } from './cursor-math';
 import { frameScale, smoothVelocity } from './timing';
 import { hash } from './pixel-math';
 
@@ -103,4 +104,35 @@ export function createHeroStamper(fields: HeroField[]): HeroStamper {
       hero.markDirty();
     },
   };
+}
+
+/**
+ * A click inside a field sends a ring of heat out through it; the field's own decay fades it, so nothing is cleaned up.
+ * A held click (`charge`) makes it bigger.
+ */
+export function injectFieldRing(fields: HeroField[], x: number, y: number, strong: boolean, charge: number): void {
+  const picked = pickField(fields, y);
+  if (!picked || !inside(picked.rect, x, y)) return;
+  const { field: hero, rect } = picked;
+  const duration = 380 + 200 * charge;
+  const start = performance.now();
+  const stamp = (now: number) => {
+    const t = Math.min(1, (now - start) / duration);
+    const field = hero.field();
+    const column = (x - rect.left) / field.cellSize;
+    const row = (hero.flipped ? rect.bottom - y : y - rect.top) / field.cellSize;
+    const radius = fieldRingRadius(strong, charge, t);
+    const reach = Math.ceil(radius + 2);
+    for (let r = Math.max(0, Math.floor(row - reach)); r < Math.min(field.rows, row + reach); r++) {
+      for (let c = Math.max(0, Math.floor(column - reach)); c < Math.min(field.columns, column + reach); c++) {
+        const heat = fieldRingHeat(Math.hypot(c + 0.5 - column, r + 0.5 - row), radius, strong, t);
+        if (heat === 0) continue;
+        const index = r * field.columns + c;
+        field.heat[index] = Math.max(field.heat[index], heat);
+      }
+    }
+    hero.markDirty();
+    if (t < 1) requestAnimationFrame(stamp);
+  };
+  requestAnimationFrame(stamp);
 }
