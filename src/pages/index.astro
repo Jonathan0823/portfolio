@@ -10,7 +10,7 @@ import { getSkills } from '@/lib/content';
 import { pageSeo, personJsonLd, websiteJsonLd } from '@/lib/seo';
 
 const seo = pageSeo('home');
-const skills = (await getSkills()).map((s) => s.data);
+const skills = (await getSkills()).map((s) => ({ group: s.data.group, items: s.data.items.map((i) => i.name) }));
 const jsonLd = [personJsonLd(Astro.site!.href, skills), websiteJsonLd(Astro.site!.href)];
 
 const navLinks = [

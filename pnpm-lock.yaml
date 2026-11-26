@@ -228,6 +228,9 @@ importers:
       prettier-plugin-astro:
         specifier: ^1.1.2
         version: 1.1.2(prettier@3.10.1)
+      simple-icons:
+        specifier: ^16.38.1
+        version: 16.38.1
       tailwindcss:
         specifier: ^4.3.5
         version: 4.3.5
@@ -3253,6 +3256,10 @@ packages:
 
   signal-exit@3.0.7:
     resolution: {integrity: sha512-wnD2ZE+l+SPC/uoS0vXeE9L1+0wuaMqKlfz9AMUo38JsyLSBWSFcHR1Rri62LZc12vLr1gb3jl7iwQhgwpAbGQ==}
+
+  simple-icons@16.38.1:
+    resolution: {integrity: sha512-q4JnGp1cgeASp4jzEsmSh/7BD/e2y7aYO8XST+QBEvOJ5wzZ/9WRmKsI+QUwkfPUSiXC+sfh2+QetD38zl3N0g==}
+    engines: {node: '>=0.12.18'}
 
   sisteransi@2.0.0:
     resolution: {integrity: sha512-2WCqLdt12eN6ehLI50S2/ZxoowXU3DD1KVPRyVP0WEsFahrGZZmCdq1K59qjJljMRIDTwx1D9YaRK+hDneBUMg==}
@@ -6859,6 +6866,8 @@ snapshots:
       side-channel-weakmap: 1.0.2
 
   signal-exit@3.0.7: {}
+
+  simple-icons@16.38.1: {}
 
   sisteransi@2.0.0: {}
 

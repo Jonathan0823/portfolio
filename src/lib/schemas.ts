@@ -1,4 +1,5 @@
 import { z } from 'astro/zod';
+import { PIXEL_ART_NAMES } from './skill-art';
 
 const BRACKETS = /\[[^\]]*\](?!\()/;
 const PLACEHOLDER = /placeholder/i;
@@ -80,9 +81,29 @@ export const milestoneSchema = z.object({
   refs: z.array(z.object({ kind: z.enum(['role', 'achievement', 'project']), id: z.string() })).default([]),
 });
 
+export const skillSchema = z
+  .object({
+    name: copy,
+    /** simple-icons slug */
+    icon: z
+      .string()
+      .regex(/^[a-z0-9]+$/, 'must be a simple-icons slug')
+      .optional(),
+    /** letters for a pixel monogram, when there is no logo */
+    mono: z
+      .string()
+      .regex(/^[A-Z]{1,3}$/, 'must be 1 to 3 capital letters')
+      .optional(),
+    /** a hand-drawn mark from PIXEL_ART */
+    art: z.enum(PIXEL_ART_NAMES).optional(),
+    /** drawn larger: the tools used most */
+    primary: z.boolean().default(false),
+  })
+  .refine((s) => [s.icon, s.mono, s.art].filter(Boolean).length === 1, 'set exactly one of icon, mono or art');
+
 export const skillGroupSchema = z.object({
   group: copy,
-  items: z.array(copy).min(1),
+  items: z.array(skillSchema).min(1),
 });
 
 export const storyYearSchema = z.object({
@@ -94,4 +115,5 @@ export const storyYearSchema = z.object({
 export type Role = z.infer<typeof roleSchema>;
 export type Project = z.infer<typeof projectSchema>;
 export type Milestone = z.infer<typeof milestoneSchema>;
+export type Skill = z.infer<typeof skillSchema>;
 export type SkillGroup = z.infer<typeof skillGroupSchema>;
