@@ -8,6 +8,8 @@ export interface HeroField {
   time(): number;
   /** bounding box in viewport coordinates */
   rect(): DOMRect;
+  /** true when the host is mirrored vertically (the footer band): row 0 is at the bottom */
+  flipped: boolean;
   markDirty(): void;
   resize(): void;
   setReduced(reduced: boolean): void;
@@ -15,9 +17,10 @@ export interface HeroField {
 }
 
 const SEED = 1.3;
-const FRAME_MS = 50; // about 20 fps, like the original design
-const TIME_STEP = 0.02; // animation time per FRAME_MS
-const HEAT_DECAY = 0.965; // heat decay per FRAME_MS; cursor heat lingers about 1.5 to 2 s
+const STEP_MS = 50; // the reference step the constants below were tuned for
+const MIN_FRAME_MS = 1000 / 60 - 2; // paint at display rate (capped near 60 fps) so cursor heat moves smoothly
+const TIME_STEP = 0.02; // animation time per STEP_MS
+const HEAT_DECAY = 0.965; // heat decay per STEP_MS; cursor heat lingers about 1.5 to 2 s
 const MAX_ELAPSED_MS = 200;
 
 /**
@@ -25,11 +28,13 @@ const MAX_ELAPSED_MS = 200;
  * before this runs, so nothing shifts. The loop only runs while the canvas is on screen
  * and the tab is visible; under reduced motion it draws one static frame.
  */
-export function mountHeroField(host: HTMLElement, reduced: boolean): HeroField {
+export function mountHeroField(host: HTMLElement, reduced: boolean, options: { seed?: number; flipped?: boolean } = {}): HeroField {
+  const seed = options.seed ?? SEED;
+  const flipped = !!options.flipped;
   const canvas = document.createElement('canvas');
   canvas.setAttribute('aria-hidden', 'true');
   canvas.setAttribute('data-px', 'field');
-  canvas.style.cssText = 'display:block;width:100%;height:100%;pointer-events:none';
+  canvas.style.cssText = `display:block;width:100%;height:100%;pointer-events:none${flipped ? ';transform:scaleY(-1)' : ''}`;
   host.appendChild(canvas);
 
   const ctx = canvas.getContext('2d')!;
@@ -40,9 +45,9 @@ export function mountHeroField(host: HTMLElement, reduced: boolean): HeroField {
 
   const paint = (elapsed: number) => {
     dirty = false;
-    const steps = Math.min(Math.max(elapsed, 0), MAX_ELAPSED_MS) / FRAME_MS;
+    const steps = Math.min(Math.max(elapsed, 0), MAX_ELAPSED_MS) / STEP_MS;
     if (!reduced) t += TIME_STEP * steps;
-    stepField(field, t, SEED, 1, decayFactor(HEAT_DECAY, steps));
+    stepField(field, t, seed, 1, decayFactor(HEAT_DECAY, steps));
     ctx.clearRect(0, 0, field.width, field.height);
     const { columns, rows, cellSize, bucket } = field;
     for (let k = 0; k < HEAT_PALETTE.length; k++) {
@@ -56,10 +61,10 @@ export function mountHeroField(host: HTMLElement, reduced: boolean): HeroField {
   const frame = (now: number) => {
     raf = 0;
     if (!wants()) return;
-    // Never faster than FRAME_MS, even when a redraw was requested: time and heat decay
-    // advance by the real elapsed time, so the pace is the same at any refresh rate.
-    if (!last || now - last >= FRAME_MS - 2) {
-      const elapsed = last ? now - last : FRAME_MS;
+    // Capped near 60 fps on faster displays. Time and heat decay advance by the real
+    // elapsed time, so the pace is the same at any refresh rate.
+    if (!last || now - last >= MIN_FRAME_MS) {
+      const elapsed = last ? now - last : STEP_MS;
       last = now;
       paint(elapsed);
     }
@@ -99,6 +104,7 @@ export function mountHeroField(host: HTMLElement, reduced: boolean): HeroField {
     field: () => field,
     time: () => t,
     rect: () => canvas.getBoundingClientRect(),
+    flipped,
     markDirty() {
       dirty = true;
       schedule();

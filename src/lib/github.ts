@@ -114,6 +114,24 @@ export function contributionLevel(count: number): number {
   return 5;
 }
 
+/**
+ * Level thresholds from this year's own spread: the 15th, 35th, 55th, 75th and 90th percentile
+ * of active days. With fixed thresholds a busy year turns almost every day the hottest colour.
+ */
+export function levelThresholds(counts: readonly number[]): number[] {
+  const active = counts.filter((c) => c > 0).sort((a, b) => a - b);
+  if (active.length === 0) return [1, 2, 3, 4, 5];
+  const at = (q: number) => active[Math.min(active.length - 1, Math.floor(active.length * q))];
+  return [0.15, 0.35, 0.55, 0.75, 0.9].map(at);
+}
+
+/** -1 for an empty day, then 0..5 against thresholds from levelThresholds. */
+export function relativeLevel(count: number, thresholds: readonly number[]): number {
+  if (count <= 0) return -1;
+  const level = thresholds.findIndex((t) => count < t);
+  return level === -1 ? 5 : level;
+}
+
 /** Grid position of a day: column = week index, row = weekday with Sunday at the top. */
 export function cellPosition(date: string, weekIndex: number): { col: number; row: number } {
   return { col: weekIndex, row: new Date(`${date}T00:00:00Z`).getUTCDay() };

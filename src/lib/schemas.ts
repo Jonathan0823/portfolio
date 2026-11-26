@@ -61,6 +61,12 @@ export const roleSchema = z.object({
 
 export const projectSchema = z.object({
   name: copy,
+  /** One plain sentence on what it does for someone, shown large in the row. */
+  hook: copy.optional(),
+  /** Short state shown with a coloured square: "Open source", "On npm", "Daily use". */
+  status: copy.optional(),
+  /** Your part in it, for example "Solo, built at work first". */
+  role: copy.optional(),
   order: z.number().int(),
   month,
   result: copy,

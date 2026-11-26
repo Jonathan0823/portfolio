@@ -3,6 +3,8 @@ import {
   calendarLabel,
   cellPosition,
   contributionLevel,
+  levelThresholds,
+  relativeLevel,
   dayTooltip,
   loadGithubStats,
   parseGithubResponse,
@@ -112,5 +114,20 @@ describe('calendar presentation', () => {
     expect(dayTooltip('2026-11-23', 1)).toBe('Mon, 23 Nov 2026 · 1 contribution');
     expect(dayTooltip('2026-11-24', 0)).toBe('Tue, 24 Nov 2026 · nothing pushed');
     expect(calendarLabel(1234)).toBe('1,234 contributions in the last 12 months');
+  });
+});
+
+describe('relative levels', () => {
+  it('spreads a busy year across every level', () => {
+    const counts = Array.from({ length: 100 }, (_, i) => 20 + i);
+    const t = levelThresholds(counts);
+    const levels = new Set(counts.map((c) => relativeLevel(c, t)));
+    expect([...levels].sort()).toEqual([0, 1, 2, 3, 4, 5]);
+  });
+  it('keeps empty days empty', () => {
+    expect(relativeLevel(0, levelThresholds([5, 9]))).toBe(-1);
+  });
+  it('falls back when nothing was pushed', () => {
+    expect(levelThresholds([0, 0])).toEqual([1, 2, 3, 4, 5]);
   });
 });

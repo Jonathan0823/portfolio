@@ -1,5 +1,8 @@
 ---
 name: "pi-sonarqube"
+hook: "My coding agent fixes its own SonarQube issues before I review."
+status: "On npm"
+role: "Solo"
 order: 3
 month: "2026-01"
 result: "Published on npm as @jonathan0823/pi-sonarqube."

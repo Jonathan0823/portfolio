@@ -2,6 +2,7 @@ import { HEAT_PALETTE, hash } from './pixel-math';
 import type { HeroField } from './hero-field';
 import { blobGeometry, blobValue, levelForValue, shortestTurn } from './blob-shape';
 import { decayFactor, easeFactor, frameScale, smoothVelocity } from './timing';
+import { isShapeName, morphShows, shapeCells, type ShapeName } from './cursor-shapes';
 
 const MAX_CELL = 10; // largest cell size in CSS px (desktop hero field); canvases are sized for it
 const TEXT_SELECTOR = 'p,li,dt,dd,span,h3,h4,figcaption,blockquote';
@@ -30,11 +31,30 @@ interface TrailCell {
  * into an oval along its travel with the hot core toward the leading edge. Over the hero it
  * heats the field instead of drawing an overlay, and leaving the hero drags a fading drip of
  * cells out behind it. Overlays are fixed-position and ignore pointer events; the system
- * cursor is never hidden. The loop only runs while the pointer is over the page, the tab is
- * visible and something is still moving; otherwise it stops. Returns a function that removes
- * everything.
+ * cursor is never hidden. Over an element with data-cursor="name" the blob breaks up, cell by
+ * cell, into that shape (see cursor-shapes.ts), and back. Every pixel field on the page (hero,
+ * story strip, footer band) takes heat the same way. The loop only runs while the pointer is
+ * over the page, the tab is visible and something is still moving; otherwise it stops.
+ * Returns a function that removes everything.
  */
-export function mountCursorTrail(hero: HeroField | null): () => void {
+export function mountCursorTrail(fields: HeroField[]): () => void {
+  const shapeCache = new Map<ShapeName, ReturnType<typeof shapeCells>>();
+  const cellsOf = (name: ShapeName) => {
+    let cells = shapeCache.get(name);
+    if (!cells) shapeCache.set(name, (cells = shapeCells(name)));
+    return cells;
+  };
+  /** The field under the pointer, or else the nearest one on screen; its grid is the blob's grid. */
+  const pickField = (y: number): { field: HeroField; rect: DOMRect } | null => {
+    let best: { field: HeroField; rect: DOMRect } | null = null, bestDistance = Infinity;
+    for (const field of fields) {
+      const rect = field.rect();
+      if (!rect.width || rect.bottom < -200 || rect.top > window.innerHeight + 200) continue;
+      const distance = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0;
+      if (distance < bestDistance) { best = { field, rect }; bestDistance = distance; }
+    }
+    return best;
+  };
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   // Two blob canvases: heat colours above the content, and light greys behind it (z-index -1,
   // so text keeps its own colour). An eased "overText" value cross-fades between them.
@@ -73,6 +93,7 @@ export function mountCursorTrail(hero: HeroField | null): () => void {
   let pointerClientX = 0, pointerClientY = 0, scrollRaf = 0;
   let hoveredLink: Element | null = null, linkProgress = 0, overLink = false;
   let onHeading = false, overText = false, overTextValue = 0, visible = 0, cell = MAX_CELL;
+  let shapeTarget: ShapeName | null = null, shape: ShapeName | null = null, shapeProgress = 0;
 
   const fillCell = (cellX: number, cellY: number, originX: number, originY: number, offsetX: number, offsetY: number, ctx: CanvasRenderingContext2D) =>
     ctx.fillRect((cellX - originX) * cell + offsetX + 1, (cellY - originY) * cell + offsetY + 1, cell - 1, cell - 1);
@@ -83,6 +104,8 @@ export function mountCursorTrail(hero: HeroField | null): () => void {
     // Everything eases by real elapsed time, relative to a 60 fps frame.
     const scale = lastFrameTime ? frameScale(now - lastFrameTime) : 1;
     lastFrameTime = now;
+    const picked = pickField(targetY);
+    const hero = picked?.field ?? null;
     cell = hero ? hero.field().cellSize : window.innerWidth < 700 ? 8 : MAX_CELL;
     const prevX = cursorX, prevY = cursorY;
     const follow = easeFactor(0.35, scale);
@@ -104,13 +127,21 @@ export function mountCursorTrail(hero: HeroField | null): () => void {
     linkProgress += ((overLink ? 1 : 0) - linkProgress) * easeFactor(0.3, scale);
     overTextValue += ((overText ? 1 : 0) - overTextValue) * easeFactor(0.25, scale);
     visible += ((pointerInside ? 1 : 0) - visible) * easeFactor(0.35, scale);
+    // Shape morph: dissolve back to the blob first, then into the new shape.
+    if (shapeTarget !== shape) {
+      shapeProgress -= shapeProgress * easeFactor(0.3, scale);
+      if (shapeProgress < 0.04) { shape = shapeTarget; shapeProgress = 0; }
+    } else if (shape) {
+      shapeProgress += (1 - shapeProgress) * easeFactor(0.2, scale);
+    }
     heat.canvas.style.opacity = String(visible * (1 - overTextValue));
     mono.canvas.style.opacity = String(visible * overTextValue);
 
-    // Cells sit on the hero field's grid: its origin is the hero's top-left corner.
-    const heroRect = hero ? hero.rect() : null;
+    // Cells sit on the field's grid: its origin is the field's top-left corner (bottom-left when flipped).
+    const heroRect = picked?.rect ?? null;
+    const flipped = !!hero?.flipped;
     const offsetX = heroRect ? ((heroRect.left % cell) + cell) % cell : 0;
-    const offsetY = heroRect ? ((heroRect.top % cell) + cell) % cell : 0;
+    const offsetY = heroRect ? (((flipped ? heroRect.bottom : heroRect.top) % cell) + cell) % cell : 0;
     const cursorCellX = Math.floor((cursorX - offsetX) / cell), cursorCellY = Math.floor((cursorY - offsetY) / cell);
     const originX = cursorCellX - BLOB_CENTER, originY = cursorCellY - BLOB_CENTER;
     const blobTransform = `translate(${originX * cell}px,${originY * cell}px)`;
@@ -136,13 +167,27 @@ export function mountCursorTrail(hero: HeroField | null): () => void {
     }
     const blobAlpha = linkProgress < 0.5 ? 1 - linkProgress / 0.5 : 0;
     // The hero shows the blob through its own cells, so the overlay is skipped there.
-    if (blobAlpha > 0.05 && !insideHero) {
-      const shaped = blobGeometry(radius * Math.max(0.3, blobAlpha), stretch);
+    const morphing = !!shape && shapeProgress > 0.02;
+    if (morphing && !insideHero) {
+      for (const c of cellsOf(shape!)) {
+        if (!morphShows(c.dx, c.dy, shapeProgress, true)) continue;
+        const level = levelForValue(1 - c.distance * 0.55, hash(c.dx, c.dy, flickerTime) * 2 - 1);
+        blobCtx.fillStyle = HEAT_PALETTE[level];
+        fillCell(cursorCellX + c.dx, cursorCellY + c.dy, originX, originY, offsetX, offsetY, blobCtx);
+        if (overTextValue > 0.02) {
+          mono.ctx.fillStyle = UNDER_PALETTE[level];
+          fillCell(cursorCellX + c.dx, cursorCellY + c.dy, originX, originY, offsetX, offsetY, mono.ctx);
+        }
+      }
+    }
+    if (blobAlpha > 0.05 && !insideHero && !(morphing && shapeProgress > 0.98)) {
+      const shaped = blobGeometry(radius * Math.max(0.3, blobAlpha), morphing ? 0 : stretch);
       const reach = Math.ceil(shaped.longRadius + shaped.shift) + 1;
       for (let cellY = cursorCellY - reach; cellY <= cursorCellY + reach; cellY++) {
         for (let cellX = cursorCellX - reach; cellX <= cursorCellX + reach; cellX++) {
           const value = blobValue(cellX + 0.5 - (cursorX - offsetX) / cell, cellY + 0.5 - (cursorY - offsetY) / cell, heading, shaped);
           if (value === null) continue;
+          if (morphing && !morphShows(cellX - cursorCellX, cellY - cursorCellY, shapeProgress, false)) continue;
           const level = levelForValue(value, hash(cellX, cellY, flickerTime) * 2 - 1);
           blobCtx.fillStyle = HEAT_PALETTE[level];
           fillCell(cellX, cellY, originX, originY, offsetX, offsetY, blobCtx);
@@ -162,10 +207,11 @@ export function mountCursorTrail(hero: HeroField | null): () => void {
       const reach = Math.ceil(shaped.longRadius + shaped.shift) + 1;
       for (let step = 1; step <= steps; step++) {
         const column = (prevX + (dx * step) / steps - heroRect.left) / field.cellSize;
-        const row = (prevY + (dy * step) / steps - heroRect.top) / field.cellSize;
+        const pointY = prevY + (dy * step) / steps;
+        const row = (flipped ? heroRect.bottom - pointY : pointY - heroRect.top) / field.cellSize;
         for (let r = Math.max(0, Math.floor(row - reach)); r < Math.min(field.rows, row + reach); r++) {
           for (let c = Math.max(0, Math.floor(column - reach)); c < Math.min(field.columns, column + reach); c++) {
-            const value = blobValue(c + 0.5 - column, r + 0.5 - row, heading, shaped);
+            const value = blobValue(c + 0.5 - column, (r + 0.5 - row) * (flipped ? -1 : 1), heading, shaped);
             if (value === null) continue;
             const index = r * field.columns + c;
             const jitter = (hash(c, r, flickerTime) * 2 - 1) * 0.06;
@@ -213,7 +259,8 @@ export function mountCursorTrail(hero: HeroField | null): () => void {
       trail.size > 0 ||
       Math.abs(targetX - cursorX) + Math.abs(targetY - cursorY) > 0.2 || speed > 0.15 ||
       Math.abs(targetRadius - radius) > 0.02 || (linkProgress > 0.02 && linkProgress < 0.98) ||
-      Math.abs((overText ? 1 : 0) - overTextValue) > 0.01 || Math.abs((pointerInside ? 1 : 0) - visible) > 0.01;
+      Math.abs((overText ? 1 : 0) - overTextValue) > 0.01 || Math.abs((pointerInside ? 1 : 0) - visible) > 0.01 ||
+      shapeTarget !== shape || (!!shape && shapeProgress < 0.98);
     if (pointerInside && busy) raf = requestAnimationFrame(frame);
   };
 
@@ -242,7 +289,9 @@ export function mountCursorTrail(hero: HeroField | null): () => void {
   /** Re-reads what is under the pointer: link, heading and month-square state. */
   const evaluate = (target: Element | null) => {
     overText = !!target && pointOverText(pointerClientX, pointerClientY, target);
-    const link = target?.closest('a,button,summary') ?? null;
+    const named = target?.closest<HTMLElement>('[data-cursor]')?.dataset.cursor;
+    shapeTarget = isShapeName(named) ? named : null;
+    const link = shapeTarget ? null : (target?.closest('a,button,summary') ?? null);
     onHeading = !!target?.closest('h1,h2');
     const onSquare = !!target?.closest('[data-sq]');
     // Pixel buttons draw their own hover; skip the underline there.

@@ -1,5 +1,8 @@
 ---
 name: "esp32-pc-remote"
+hook: "Wake my PC from anywhere by voice, Telegram or MQTT, with no open ports."
+status: "Daily use"
+role: "Solo, hardware and firmware"
 order: 4
 month: "2024-01"
 result: "Wakes my PC every day. Open source with setup docs."

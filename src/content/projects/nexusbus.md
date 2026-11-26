@@ -1,5 +1,8 @@
 ---
 name: "NexusBus"
+hook: "The Modbus gateway I built for a battery factory, rebuilt in the open."
+status: "Open source"
+role: "Solo, built at work first"
 order: 1
 month: "2025-08"
 result: "The same design runs the gateway on the factory floor at Century Batteries."

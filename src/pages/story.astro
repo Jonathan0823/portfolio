@@ -1,7 +1,7 @@
 ---
 import { render } from 'astro:content';
-import StoryClosing from '../components/story/StoryClosing.astro';
-import StoryStats from '../components/story/StoryStats.astro';
+import Nav from '../components/Nav.astro';
+import PageEnd from '../components/PageEnd.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getStoryYears } from '../lib/content';
 import { NOW_LABEL, NOW_YEAR } from '../lib/content-logic';
@@ -18,17 +18,23 @@ const groupsWithBodies = await Promise.all(
     milestones: await Promise.all(g.milestones.map(async (m) => ({ ...m, Content: (await render(m)).Content }))),
   })),
 );
+
+// One link per year of the story, then contact.
+const navLinks = [
+  ...groups.map((g) => ({ href: `#y${g.year}`, label: g.year === NOW_YEAR ? NOW_LABEL : String(g.year), sec: `y${g.year}` })),
+  { href: '#contact', label: 'Contact', sec: 'contact' },
+];
 ---
 
 <BaseLayout title={seo.title} description={seo.description} image={seo.ogPath}>
-  <div class="text-muted flex justify-between px-5 py-7 font-mono text-[13px] leading-relaxed md:px-24">
-    <a href="/" class="text-ink hover:text-muted">← Eguin Jonathan</a>
-    <p>The full story</p>
-  </div>
+  <Nav links={navLinks} brandHref="/" />
+  <!-- As on home, the pixels start at the very top and the nav floats over them, turning solid once
+       they are scrolled past (the nav script looks for id="top"). -->
+  <div id="top" data-pixel-field="strip" aria-hidden="true" class="h-[200px] w-full md:h-[240px]"></div>
 
   <main>
     <section class="px-5 pt-10 md:px-24 md:pt-14">
-      <h1 class="text-[56px] leading-[0.9] font-semibold tracking-[-0.06em] md:text-[168px] md:whitespace-nowrap">
+      <h1 data-intro-rise class="text-[56px] leading-[0.9] font-semibold tracking-[-0.06em] md:text-[168px] md:whitespace-nowrap">
         How I got here<span class="text-accent">.</span>
       </h1>
       <p class="mt-8 max-w-[34ch] text-xl leading-[1.45] tracking-[-0.01em] text-pretty md:text-[26px]">
@@ -59,7 +65,8 @@ const groupsWithBodies = await Promise.all(
                   {g.months.map((m) => (
                     <li
                       title={formatMonth(m.month)}
-                      class:list={['h-3.5 w-3.5', m.count > 0 ? 'bg-accent' : 'bg-line']}
+                      data-sq
+                      class:list={['sq h-3.5 w-3.5', m.count > 0 ? 'bg-accent' : 'bg-square']}
                     />
                   ))}
                 </ol>
@@ -104,10 +111,25 @@ const groupsWithBodies = await Promise.all(
       ))
     }
 
-    <StoryStats />
-    <StoryClosing />
+    <PageEnd headline="That’s the story so far" />
   </main>
 </BaseLayout>
+
+<script>
+  // Month squares fill in as each year scrolls into view (same as Experience). Without JS they show filled.
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
+    const lists = document.querySelectorAll<HTMLElement>('main ol[aria-hidden]');
+    lists.forEach((l) => l.querySelectorAll('[data-sq]').forEach((s) => s.classList.add('sq-hidden')));
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        io.unobserve(e.target);
+        e.target.querySelectorAll<HTMLElement>('[data-sq]').forEach((s, i) => setTimeout(() => s.classList.remove('sq-hidden'), i * 45));
+      }
+    }, { threshold: 0.5 });
+    lists.forEach((l) => io.observe(l));
+  }
+</script>
 
 <style is:global>
   .milestone-body > * + * {

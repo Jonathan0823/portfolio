@@ -9,6 +9,7 @@ const years = formatDuration(wholeYearsSince(CODING_SINCE, new Date()) * 12);
 const stats = [
   { value: calendar.total.toLocaleString('en-US'), label: 'contributions in the last 12 months' },
   { value: String(publicRepos), label: 'public repos' },
+  { value: 'Go · TS', label: 'what I write most, then Python and Rust' },
   { value: years, label: `writing code every day, since ${formatMonth(CODING_SINCE)}` },
 ];
 ---
@@ -20,10 +21,33 @@ const stats = [
   </div>
   <dl class="grid grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-4 md:gap-x-6 md:gap-y-8">
     {stats.map((s) => (
-      <div class="flex flex-col-reverse gap-1.5 border-t border-ink pt-4">
+      <div class="flex flex-col-reverse justify-end gap-1.5 border-t border-ink pt-4">
         <dt class="text-base text-muted-strong">{s.label}</dt>
-        <dd class="text-4xl leading-none font-semibold tracking-[-0.05em] md:text-[56px]">{s.value}</dd>
+        <dd data-count-up class="text-4xl leading-none font-semibold tracking-[-0.05em] tabular-nums md:text-[56px]">{s.value}</dd>
       </div>
     ))}
   </dl>
 </section>
+
+<script>
+  // Numbers count up once when they scroll into view, in step with the calendar replay. The
+  // markup keeps the final value, so without JS (or with reduced motion) nothing changes.
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
+    const els = [...document.querySelectorAll<HTMLElement>('#github [data-count-up]')].filter((el) => /^[\d,]+$/.test(el.textContent!.trim()));
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        io.unobserve(e.target);
+        const el = e.target as HTMLElement, final = el.textContent!.trim(), target = Number(final.replace(/,/g, ''));
+        const start = performance.now();
+        const tick = (now: number) => {
+          const t = Math.min(1, (now - start) / 1100), eased = t * t * (3 - 2 * t);
+          el.textContent = t < 1 ? Math.round(target * eased).toLocaleString('en-US') : final;
+          if (t < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }
+    }, { threshold: 0.6 });
+    els.forEach((el) => io.observe(el));
+  }
+</script>
