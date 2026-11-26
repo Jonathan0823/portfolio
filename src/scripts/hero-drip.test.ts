@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { caretDelay, periodGrid, planDrops, settleLevel } from './hero-drip';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { fakeHeroDom } from './hero-dom.fake';
+import { caretDelay, mountHeroDrip, periodGrid, planDrops, settleLevel } from './hero-drip';
 
 describe('periodGrid', () => {
   it('counts field cells across the period and clamps its bands to 2..4', () => {
@@ -38,5 +39,27 @@ describe('caretDelay', () => {
     expect(caretDelay(1000, 1000)).toBe(480);
     expect(caretDelay(1300, 1000)).toBe(180);
     expect(caretDelay(5000, 1000)).toBe(0);
+  });
+});
+
+describe('mountHeroDrip', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('blinks the caret: nothing of the square stays painted in the off phase', async () => {
+    const dom = fakeHeroDom();
+    const onCaret = vi.fn();
+    const stop = mountHeroDrip(dom.hero, onCaret);
+    while (!onCaret.mock.calls.length) await vi.advanceTimersByTimeAsync(10);
+    await vi.advanceTimersByTimeAsync(100);
+    const lit: number[] = [];
+    for (let k = 0; k < 4; k++) {
+      lit.push(dom.painted.length);
+      await vi.advanceTimersByTimeAsync(500);
+    }
+    expect(lit).toEqual([1, 0, 1, 0]);
+    stop();
   });
 });

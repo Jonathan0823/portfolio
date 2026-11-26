@@ -225,6 +225,8 @@ export function mountHeroDrip(hero: HeroField, onCaret: () => void): () => void 
       const x = ink.left + d.column * cw;
       const bandTop = ink.bottom - (d.band + 1) * bh; // top of the band this drop fills
       if (d.landedAt) {
+        // the caret has taken over the square: a band painted under it would keep it lit through the off phase
+        if (caret) continue;
         // the settled band: white-hot, cooling to the accent; the neighbouring columns fill in with it
         const k = Math.min(1, (now - d.landedAt) / COOL_MS);
         if (k < 1) busy = true;
