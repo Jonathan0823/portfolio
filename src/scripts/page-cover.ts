@@ -12,6 +12,7 @@ function makeCanvas() {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const canvas = document.createElement('canvas');
   canvas.setAttribute('aria-hidden', 'true');
+  canvas.dataset.pxCover = '';
   canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:101;pointer-events:none';
   canvas.width = Math.round(window.innerWidth * dpr);
   canvas.height = Math.round(window.innerHeight * dpr);
@@ -59,6 +60,17 @@ function play(
   });
 }
 
+export const COVER_SELECTOR = 'canvas[data-px-cover]';
+
+/** Drop a cover left behind by a page restored from the back/forward cache. */
+export function clearCover(): void {
+  document.querySelectorAll(COVER_SELECTOR).forEach((c) => c.remove());
+  document.documentElement.classList.remove('px-covered');
+  try {
+    sessionStorage.removeItem(ARRIVE_KEY);
+  } catch {}
+}
+
 export function reveal(): void {
   const root = document.documentElement;
   if (!root.classList.contains('px-covered')) return;
@@ -94,7 +106,6 @@ export function interceptLinks(): void {
   });
   window.addEventListener('pageshow', (e) => {
     if (!e.persisted) return;
-    document.querySelectorAll('canvas[style*="z-index:101"]').forEach((c) => c.remove());
-    document.documentElement.classList.remove('px-covered');
+    clearCover();
   });
 }
