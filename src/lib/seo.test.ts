@@ -4,7 +4,11 @@ import { canonicalUrl, pageSeo, personJsonLd } from './seo';
 describe('pageSeo', () => {
   it('titles the home page and the story page', () => {
     expect(pageSeo('home').title).toBe('Eguin Jonathan — Software Engineer (Backend & Full-Stack)');
-    expect(pageSeo('story').title).toBe('Story — Eguin Jonathan');
+    expect(pageSeo('story').title).toBe('My Story — Eguin Jonathan, Software Engineer');
+  });
+  it('keeps descriptions under the ~160 character snippet limit', () => {
+    expect(pageSeo('home').description.length).toBeLessThanOrEqual(160);
+    expect(pageSeo('story').description.length).toBeLessThanOrEqual(160);
   });
   it('gives every page a description and an image path', () => {
     expect(pageSeo('home').description.length).toBeGreaterThan(40);

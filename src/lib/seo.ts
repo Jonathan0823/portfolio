@@ -6,10 +6,10 @@ const PAGES: Record<SeoPage, { title: string; description: string }> = {
   home: {
     title: 'Eguin Jonathan — Software Engineer (Backend & Full-Stack)',
     description:
-      'Eguin Jonathan is a software engineer (backend and full-stack) in Karawang, Indonesia, building device gateways, data pipelines and fast dashboards in Go, Python and TypeScript. Open to remote roles.',
+      'Eguin Jonathan, software engineer in Karawang, Indonesia: device gateways, data pipelines and fast dashboards in Go, Python, TypeScript. Open to remote roles.',
   },
   story: {
-    title: 'Story — Eguin Jonathan',
+    title: 'My Story — Eguin Jonathan, Software Engineer',
     description:
       'How Eguin Jonathan went from informatics student to software engineer writing software for factory machines and the people who watch them.',
   },
