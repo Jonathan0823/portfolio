@@ -3,6 +3,7 @@ import type { HeroField } from './hero-field';
 import { blobGeometry, blobValue, levelForValue, shortestTurn } from './blob-shape';
 import { decayFactor, easeFactor, frameScale, smoothVelocity } from './timing';
 import { isShapeName, morphShows, shapeCells, type ShapeName } from './cursor-shapes';
+import { MAGNET_LEAN, MAGNET_ZONE, idleRing, magnetPull, ringValue, stepRing, type RingShape } from './cursor-ring';
 
 const MAX_CELL = 10;
 const TEXT_SELECTOR = 'p,li,dt,dd,span,h3,h4,figcaption,blockquote';
@@ -16,6 +17,23 @@ const REST_RADIUS = 5;
 const SQUARE_RADIUS = 2;
 const UNDERLINE_LEVEL = 0;
 const HEADING_SCALE = 2.4;
+// [data-cursor-magnet] elements pull the cursor in; it morphs into a ring drawn behind them
+const visibleMagnets = () =>
+  [...document.querySelectorAll<HTMLElement>('[data-cursor-magnet]')].filter((el) => el.offsetParent !== null);
+const nearestMagnet = (x: number, y: number) => {
+  let best: { el: HTMLElement; rect: DOMRect; pull: number } | null = null,
+    bestD = Infinity;
+  for (const el of visibleMagnets()) {
+    const rect = (el.querySelector('svg') ?? el).getBoundingClientRect();
+    if (rect.bottom < y - 200 || rect.top > y + 200) continue;
+    const d = Math.hypot(rect.left + rect.width / 2 - x, rect.top + rect.height / 2 - y);
+    const pull = magnetPull(d - rect.width / 2);
+    if (pull === 0 || d >= bestD) continue;
+    best = { el, rect, pull };
+    bestD = d;
+  }
+  return best;
+};
 const UNDER_PALETTE = ['#f3f3f3', '#efefef', '#ebebeb', '#e6e6e6', '#e1e1e1', '#dcdcdc'];
 
 interface TrailCell {
@@ -60,6 +78,7 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
   };
   const heat = makeBlobCanvas(50);
   const mono = makeBlobCanvas(-1);
+  const under = makeBlobCanvas(-1);
   const blobCanvas = heat.canvas,
     blobCtx = heat.ctx;
 
@@ -98,6 +117,10 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     overTextValue = 0,
     visible = 0,
     cell = MAX_CELL;
+  const ring = idleRing();
+  let magnet: HTMLElement | null = null,
+    magnetRect: DOMRect | null = null,
+    baseRadius = REST_RADIUS;
   let shapeTarget: ShapeName | null = null,
     shape: ShapeName | null = null,
     shapeProgress = 0;
@@ -117,12 +140,45 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     if (document.hidden) return;
     const scale = lastFrameTime ? frameScale(now - lastFrameTime) : 1;
     lastFrameTime = now;
+    const near = pointerInside && !shapeTarget ? nearestMagnet(pointerClientX, pointerClientY) : null;
+    if (magnet !== (near?.el ?? null)) {
+      if (magnet) {
+        magnet.removeAttribute('data-magnet-on');
+        const svg = magnet.querySelector('svg');
+        if (svg) svg.style.transform = '';
+      }
+      near?.el.setAttribute('data-magnet-on', '');
+    }
+    if (near) {
+      // the logo leans toward the pointer too, so the pull reads both ways
+      const svg = near.el.querySelector('svg');
+      if (svg) {
+        const r = near.rect;
+        const lx = Math.max(-1, Math.min(1, (pointerClientX - (r.left + r.width / 2)) / (r.width / 2 + MAGNET_ZONE)));
+        const ly = Math.max(-1, Math.min(1, (pointerClientY - (r.top + r.height / 2)) / (r.height / 2 + MAGNET_ZONE)));
+        svg.style.transition = 'transform 120ms ease-out';
+        svg.style.transform = `translate(${(lx * MAGNET_LEAN).toFixed(1)}px,${(ly * MAGNET_LEAN).toFixed(1)}px)`;
+      }
+    }
+    magnet = near?.el ?? null;
+    magnetRect = near?.rect ?? null;
+    if (pointerInside) {
+      targetX = pointerClientX;
+      targetY = pointerClientY;
+    }
+    if (near) {
+      const r = near.rect;
+      targetX += (r.left + r.width / 2 - pointerClientX) * near.pull;
+      targetY += (r.top + r.height / 2 - pointerClientY) * near.pull;
+    }
+    const iconCells = magnetRect ? magnetRect.width / (window.innerWidth < 700 ? 8 : MAX_CELL) : 0;
+    targetRadius = magnet ? Math.max(3, iconCells * 0.45) : baseRadius;
     const picked = pickField(targetY);
     const hero = picked?.field ?? null;
     cell = hero ? hero.field().cellSize : window.innerWidth < 700 ? 8 : MAX_CELL;
     const prevX = cursorX,
       prevY = cursorY;
-    const follow = easeFactor(0.35, scale);
+    const follow = easeFactor(magnet ? 0.6 : 0.35, scale);
     cursorX += (targetX - cursorX) * follow;
     cursorY += (targetY - cursorY) * follow;
     clock += 0.12 * scale;
@@ -153,7 +209,9 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     } else if (shape) {
       shapeProgress += (1 - shapeProgress) * easeFactor(0.2, scale);
     }
-    heat.canvas.style.opacity = String(visible * (1 - overTextValue));
+    // near a logo everything draws behind the content; the blob↔ring crossfade happens inside the under layer
+    heat.canvas.style.opacity = String(visible * (1 - overTextValue) * (magnet ? 0 : 1 - ring.mix));
+    under.canvas.style.opacity = String(visible);
     mono.canvas.style.opacity = String(visible * overTextValue);
 
     const heroRect = picked?.rect ?? null;
@@ -167,6 +225,8 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     const blobTransform = `translate(${originX * cell}px,${originY * cell}px)`;
     heat.canvas.style.transform = blobTransform;
     mono.canvas.style.transform = blobTransform;
+    under.canvas.style.transform = blobTransform;
+    under.ctx.clearRect(0, 0, BLOB_SIZE, BLOB_SIZE);
     blobCtx.clearRect(0, 0, BLOB_SIZE, BLOB_SIZE);
     mono.ctx.clearRect(0, 0, BLOB_SIZE, BLOB_SIZE);
 
@@ -206,7 +266,7 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
         }
       }
     }
-    if (blobAlpha > 0.05 && !insideHero && !(morphing && shapeProgress > 0.98)) {
+    if (blobAlpha > 0.05 && !insideHero && ring.mix <= 0.99 && !(morphing && shapeProgress > 0.98)) {
       const shaped = blobGeometry(radius * Math.max(0.3, blobAlpha), morphing ? 0 : stretch);
       const reach = Math.ceil(shaped.longRadius + shaped.shift) + 1;
       for (let cellY = cursorCellY - reach; cellY <= cursorCellY + reach; cellY++) {
@@ -222,6 +282,12 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
           const level = levelForValue(value, hash(cellX, cellY, flickerTime) * 2 - 1);
           blobCtx.fillStyle = HEAT_PALETTE[level];
           fillCell(cellX, cellY, originX, originY, offsetX, offsetY, blobCtx);
+          if (magnet) {
+            under.ctx.globalAlpha = 1 - ring.mix;
+            under.ctx.fillStyle = HEAT_PALETTE[level];
+            fillCell(cellX, cellY, originX, originY, offsetX, offsetY, under.ctx);
+            under.ctx.globalAlpha = 1;
+          }
           if (overTextValue > 0.02) {
             mono.ctx.fillStyle = UNDER_PALETTE[level];
             fillCell(cellX, cellY, originX, originY, offsetX, offsetY, mono.ctx);
@@ -230,6 +296,41 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
       }
     }
 
+    if (magnet || ring.active) {
+      const sub = cell / 2; // the ring draws at half-cell resolution so it reads round
+      const baseX = originX * cell - offsetX,
+        baseY = originY * cell - offsetY;
+      let goal: RingShape | null = null;
+      if (magnetRect) {
+        const breathe = (Math.sin(clock * 0.55) + 1) / 2;
+        const cx = magnetRect.left + magnetRect.width / 2,
+          cy = magnetRect.top + magnetRect.height / 2;
+        const lean = (v: number) => Math.max(-1, Math.min(1, v / (magnetRect!.width * 0.45)));
+        const outer = (magnetRect.width / 2 / sub) * 1.12 + 1.4 + breathe * 1.6;
+        goal = {
+          x: (cx - offsetX) / sub + lean(pointerClientX - cx) * 1.6,
+          y: (cy - offsetY) / sub + lean(pointerClientY - cy) * 1.6,
+          outer,
+          inner: outer - 1.2,
+          gap: 0.32,
+        };
+      }
+      stepRing(ring, goal, { x: (cursorX - offsetX) / sub, y: (cursorY - offsetY) / sub, radius: radius * 2 }, scale);
+      if (ring.active) {
+        under.ctx.globalAlpha = ring.mix;
+        const pulse = (clock * 0.35) % (Math.PI * 2);
+        const reach = Math.ceil(ring.outer + 1);
+        for (let y = Math.floor(ring.y - reach); y <= ring.y + reach; y++) {
+          for (let x = Math.floor(ring.x - reach); x <= ring.x + reach; x++) {
+            const value = ringValue(ring, x + 0.5 - ring.x, y + 0.5 - ring.y, pulse);
+            if (value === null) continue;
+            under.ctx.fillStyle = HEAT_PALETTE[levelForValue(value, hash(x >> 1, y >> 1, flickerTime) * 2 - 1)];
+            under.ctx.fillRect(x * sub - baseX + 0.5, y * sub - baseY + 0.5, sub - 0.5, sub - 0.5);
+          }
+        }
+        under.ctx.globalAlpha = 1;
+      }
+    }
     const steps = Math.max(1, Math.min(12, Math.ceil(stepLength / cell)));
     if (hero && heroRect && insideHero && blobAlpha > 0.05) {
       const field = hero.field();
@@ -294,6 +395,8 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
       Math.abs(targetRadius - radius) > 0.02 ||
       (linkProgress > 0.02 && linkProgress < 0.98) ||
       Math.abs((overText ? 1 : 0) - overTextValue) > 0.01 ||
+      !!magnet ||
+      ring.active ||
       Math.abs((pointerInside ? 1 : 0) - visible) > 0.01 ||
       shapeTarget !== shape ||
       (!!shape && shapeProgress < 0.98);
@@ -322,7 +425,8 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
   };
 
   const evaluate = (target: Element | null) => {
-    overText = !!target && pointOverText(pointerClientX, pointerClientY, target);
+    const onMagnet = !!target?.closest('[data-cursor-magnet]');
+    overText = !onMagnet && !!target && pointOverText(pointerClientX, pointerClientY, target);
     const named = target?.closest<HTMLElement>('[data-cursor]')?.dataset.cursor;
     shapeTarget = isShapeName(named) ? named : null;
     const link = shapeTarget ? null : (target?.closest('a,button,summary') ?? null);
@@ -330,7 +434,7 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     const onSquare = !!target?.closest('[data-sq]');
     overLink = !!link && !onSquare && !link.hasAttribute('data-pixel-btn');
     if (link && !onSquare && !link.hasAttribute('data-pixel-btn')) hoveredLink = link;
-    targetRadius = onSquare ? SQUARE_RADIUS : onHeading ? REST_RADIUS * HEADING_SCALE : REST_RADIUS;
+    baseRadius = onSquare ? SQUARE_RADIUS : onHeading ? REST_RADIUS * HEADING_SCALE : REST_RADIUS;
   };
 
   const onMove = (e: MouseEvent) => {
@@ -370,6 +474,7 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
       visible = 0;
       heat.canvas.style.opacity = '0';
       mono.canvas.style.opacity = '0';
+      under.canvas.style.opacity = '0';
     } else wake();
   };
   document.addEventListener('mousemove', onMove);
@@ -391,5 +496,6 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     blobCanvas.remove();
     trailCanvas.remove();
     mono.canvas.remove();
+    under.canvas.remove();
   };
 }
