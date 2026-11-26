@@ -98,8 +98,10 @@ export interface FieldShape {
   crest?: Float32Array;
   /** footer tide: heat per cell drawn only above the surface (what the water has uncovered); never stored */
   stamp?: Float32Array;
-  /** footer tide: how far down from the surface the water under a swell is solid, 0 (none) .. 1 (to the bottom) */
-  flood?: number;
+  /** footer tide: highest row a raised surface may reach; the wandering skyline plus a swell can't lift it past this */
+  cap?: number;
+  /** no gaps in the body under the surface; only the loose top and the dithered bottom edge stay ragged */
+  solid?: boolean;
 }
 
 export function stepField(
@@ -114,7 +116,6 @@ export function stepField(
   const coverage = Math.max(0, Math.min(1, shape.coverage ?? 1));
   const fadeRows = hostRows * (shape.fadeEdge ?? 0);
   const stamp = shape.stamp?.length === columns * rows ? shape.stamp : null;
-  const flood = Math.max(0, Math.min(1, shape.flood ?? 0));
   bucket.fill(-1);
   lowestRow.fill(-1);
   lowestBucket.fill(0);
@@ -124,10 +125,16 @@ export function stepField(
     const sky = shape.skyline ? (noise(x * 0.06, seed * 3 + time * 0.08) - 0.5) * hostRows * shape.skyline * 2 : 0;
     const surface = (field.horizonRow + sky) * coverage;
     const swell = shape.swell?.[x] ?? 0;
-    const horizonRow = surface + swell;
+    // a swell lifts the wandering skyline, which could carry it above where the tide is meant to stop
+    const horizonRow =
+      swell > 0 && shape.cap
+        ? Math.min(surface + swell, shape.cap + Math.max(0, surface - shape.cap) * Math.max(0, 1 - swell / 3))
+        : surface + swell;
     const crest = shape.crest?.[x] ?? 0;
+    // the loose, flame-like top settles onto a raised surface, and never reaches past the cap
+    const calm = swell > 0 && shape.cap ? Math.max(0, 1 - swell / 4) : 1;
     const drip = Math.floor(
-      Math.max(0, noise(x * 0.17, 3.1 + seed + time * 0.15) - 0.35) * 16 * density + hash(x, 7) * 2,
+      (Math.max(0, noise(x * 0.17, 3.1 + seed + time * 0.15) - 0.35) * 16 * density + hash(x, 7) * 2) * calm,
     );
     for (let y = 0; y < rows; y++) {
       const i = y * columns + x;
@@ -137,12 +144,13 @@ export function stepField(
       let h = heat[i];
       if (crest > 0 && y < horizonRow && y >= horizonRow - 3) h = Math.max(h, crest);
       // a negative stamp is the clearing around a logo: kept empty above the water so the logo stands apart
+      if (swell > 0 && shape.cap && y > shape.cap && !(stamp && stamp[i] > 0)) continue;
       const stamped = stamp && y >= horizonRow ? stamp[i] : 0;
       if (stamped < 0) continue;
       h = Math.max(h, stamped);
-      // under a raised wave the water is solid, without the field's gaps; it floods down from the surface as the wave
-      // rises (flood). The dithered bottom edge stays, as it does across the rest of the footer
-      const water = swell > 0.5 && y < horizonRow && y >= surface * (1 - flood);
+      // everything under a raised surface is solid water, without the field's gaps, from the first rows it lifts. The
+      // dithered bottom edge stays, as it does across the rest of the footer
+      const water = (shape.solid || swell > 0.05) && y < horizonRow;
       if (h < 0.3) {
         if (y >= horizonRow + drip * (0.4 + 0.6 * coverage)) continue;
         if (y < fadeRows) {
