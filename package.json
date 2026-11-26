@@ -10,6 +10,8 @@
     "check": "astro check",
     "lhci": "lhci autorun --config=lighthouserc.mobile.json && lhci autorun --config=lighthouserc.desktop.json",
     "test": "vitest run",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "stats:snapshot": "node scripts/github-snapshot.ts",
     "astro": "astro"
   },
@@ -28,6 +30,8 @@
     "@astrojs/check": "^0.9.12",
     "@lhci/cli": "^0.16.1",
     "@tailwindcss/vite": "^4.3.5",
+    "prettier": "^3.10.1",
+    "prettier-plugin-astro": "^1.1.2",
     "tailwindcss": "^4.3.5",
     "typescript": "^6.0.3",
     "vitest": "^5.1.1",
