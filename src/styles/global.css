@@ -56,13 +56,13 @@ html.has-pixel-pointer :is(input, textarea, select, [contenteditable]) {
   cursor: auto !important;
 }
 
-/* the hero hint's target: accent colour and a pixel underline drawn in steps */
+/* the contact links; `hint-lit` is the hero hint's target: accent colour and a pixel underline drawn in steps */
 a[data-glyph-for] {
   padding-bottom: 3px;
   background: linear-gradient(var(--color-accent), var(--color-accent)) left bottom / 0 2px no-repeat;
   transition: color 0.2s;
 }
-a[data-glyph-for].cursor-guided {
+a[data-glyph-for].hint-lit {
   color: var(--color-accent);
   animation: guide-underline 0.45s steps(6) forwards;
 }

@@ -1,98 +1,78 @@
-// Hero hint: tells desktop visitors that the hero's contact links spill a pixel logo on hover.
-// A second after load a link lights up. Moving, the nearest link is lit;
-// resting, the highlight hops across all three. It ends for the session on the first real hover of a link.
+// Hero hint: tells desktop visitors that the contact links spill a pixel logo on hover.
+// Once per session, after the intro settles, the GitHub logo spills by itself and retracts.
+// Any real hover, focus or touch of a link ends it: the visitor has found it.
 import { FINE_POINTER_QUERY, prefersReducedMotion } from './motion';
-import { setCursorGuide } from './cursor-guide';
+import type { GlyphSpill } from './glyph-spill';
 
-/** the highlight hops email → GitHub → LinkedIn so all three read as one set */
-const HOP_MS = 1100;
-/** how long the pointer rests before the guide starts hopping */
-const REST_MS = 700;
-/** nothing is lit this long after load, so the hero settles before it asks for attention */
-const GUIDE_AFTER_MS = 1000;
-const DISCOVERED_KEY = 'px-guide-done';
+/** the hero settles this long after the page cover lifts before it asks for attention */
+const SETTLE_MS = 1200;
+const SHOW_MS = 1400;
+const DONE_KEY = 'px-hint-done';
+/** styled in global.css: accent colour and a stepped underline */
+const LIT_CLASS = 'hint-lit';
 
-export function mountHeroHint(): void {
-  if (!window.matchMedia(FINE_POINTER_QUERY).matches || prefersReducedMotion()) return;
-  if (sessionStorage.getItem(DISCOVERED_KEY)) return;
-  const links = [...document.querySelectorAll<HTMLElement>('[data-glyph-for]')];
-  const section = links[0]?.closest('section');
-  if (!section) return;
+export function shouldPlayHint(o: { fine: boolean; reduced: boolean; seen: boolean }): boolean {
+  return o.fine && !o.reduced && !o.seen;
+}
 
-  let done = false,
-    armed = false,
-    guided: HTMLElement | null = null,
-    hopTimer = 0,
-    restTimer = 0,
-    px = -1,
-    py = -1;
+/** Resolves once the page cover is gone (it always lifts within 2.5s of load). */
+function whenUncovered(root: HTMLElement): Promise<void> {
+  if (!root.classList.contains('px-covered')) return Promise.resolve();
+  return new Promise((resolve) => {
+    const watch = new MutationObserver(() => {
+      if (root.classList.contains('px-covered')) return;
+      watch.disconnect();
+      resolve();
+    });
+    watch.observe(root, { attributes: true, attributeFilter: ['class'] });
+  });
+}
 
-  const aimAt = (link: HTMLElement) => {
-    if (guided === link) return;
-    guided = link;
-    setCursorGuide(link);
-  };
-  const stopGuide = () => {
-    clearInterval(hopTimer);
-    clearTimeout(restTimer);
-    if (!guided) return;
-    guided = null;
-    setCursorGuide(null);
-  };
-  const inHero = () => {
-    if (px < 0) return false;
-    const r = section.getBoundingClientRect();
-    return px >= r.left && px <= r.right && py >= r.top && py <= r.bottom;
-  };
-  const nearest = () => {
-    let best = links[0],
-      bestD = Infinity;
+/** `spill` is read late: the glyph spill mounts on idle and remounts when motion preferences change. */
+export function mountHeroHint(spill: () => GlyphSpill | null): void {
+  const fine = window.matchMedia(FINE_POINTER_QUERY).matches;
+  if (!shouldPlayHint({ fine, reduced: prefersReducedMotion(), seen: !!sessionStorage.getItem(DONE_KEY) })) return;
+  const links = [...document.querySelectorAll<HTMLElement>('a[data-glyph-for]')];
+  const github = links.find((link) => link.dataset.glyphFor === 'git');
+  if (!github) return;
+
+  let over = false,
+    shown = false,
+    timer = 0;
+  const end = () => {
+    if (over) return;
+    over = true;
+    sessionStorage.setItem(DONE_KEY, '1');
+    clearTimeout(timer);
+    github.classList.remove(LIT_CLASS);
     for (const link of links) {
-      const r = link.getBoundingClientRect();
-      const d = Math.hypot(r.left + r.width / 2 - px, r.top + r.height / 2 - py);
-      if (d < bestD) [best, bestD] = [link, d];
+      link.removeEventListener('mouseenter', found);
+      link.removeEventListener('focus', found);
+      link.removeEventListener('touchstart', found);
     }
-    return best;
   };
+  // a real hover drives the spill itself, so the hint only has to get out of the way
+  const found = () => end();
+  for (const link of links) {
+    link.addEventListener('mouseenter', found);
+    link.addEventListener('focus', found);
+    link.addEventListener('touchstart', found, { passive: true });
+  }
 
-  const update = () => {
-    if (done || !armed) return;
-    if (!inHero()) return stopGuide();
-    // moving: the nearest link is lit; resting: the highlight hops across all three
-    clearInterval(hopTimer);
-    clearTimeout(restTimer);
-    aimAt(nearest());
-    restTimer = window.setTimeout(() => {
-      let index = links.indexOf(guided!);
-      hopTimer = window.setInterval(() => {
-        index = (index + 1) % links.length;
-        aimAt(links[index]);
-      }, HOP_MS);
-    }, REST_MS);
-  };
-  const onMove = (e: MouseEvent) => {
-    px = e.clientX;
-    py = e.clientY;
-    update();
-  };
-  const onScroll = () => {
-    if (guided && !inHero()) stopGuide();
-  };
-  const finish = (e: Event) => {
-    // the spill's own auto-cycle dispatches synthetic hovers; only a real one counts as found
-    if (!e.isTrusted || done) return;
-    done = true;
-    sessionStorage.setItem(DISCOVERED_KEY, '1');
-    stopGuide();
-    document.removeEventListener('mousemove', onMove);
-    window.removeEventListener('scroll', onScroll);
-  };
-
-  links.forEach((link) => link.addEventListener('mouseenter', finish));
-  document.addEventListener('mousemove', onMove);
-  window.addEventListener('scroll', onScroll, { passive: true });
-  setTimeout(() => {
-    armed = true;
-    update();
-  }, GUIDE_AFTER_MS);
+  void whenUncovered(document.documentElement).then(() => {
+    timer = window.setTimeout(() => {
+      const glyph = spill();
+      if (over || !glyph) return;
+      // scrolled away already: an off-screen demo teaches nothing, so keep it for a later visit
+      const box = github.getBoundingClientRect();
+      if (box.bottom < 0 || box.top > window.innerHeight) return;
+      shown = true;
+      github.classList.add(LIT_CLASS);
+      glyph.show('git');
+      timer = window.setTimeout(() => {
+        if (shown && !over) glyph.hide();
+        end();
+      }, SHOW_MS);
+    }, SETTLE_MS);
+  });
 }
