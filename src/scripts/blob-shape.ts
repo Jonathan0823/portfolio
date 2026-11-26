@@ -33,3 +33,24 @@ export function shortestTurn(from: number, to: number): number {
   turn -= Math.round(turn / full) * full;
   return turn;
 }
+
+/** px from the edge of a heading's text at which the cursor starts growing to heading size */
+export const HEADING_REACH = 56;
+
+/** Distance (px) from a point to a rect; 0 inside it. */
+export function rectDistance(
+  x: number,
+  y: number,
+  r: { left: number; right: number; top: number; bottom: number },
+): number {
+  const dx = Math.max(r.left - x, 0, x - r.right),
+    dy = Math.max(r.top - y, 0, y - r.bottom);
+  return Math.hypot(dx, dy);
+}
+
+/** How far the cursor has grown toward heading size: 1 on the text, easing to 0 at HEADING_REACH. */
+export function headingGrow(distance: number): number {
+  if (distance >= HEADING_REACH) return 0;
+  const t = 1 - Math.max(0, distance) / HEADING_REACH;
+  return t * t * (3 - 2 * t);
+}

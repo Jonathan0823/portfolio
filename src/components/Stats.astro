@@ -3,13 +3,18 @@ import ContributionCalendar from './ContributionCalendar.astro';
 import { getGithubStats } from '@/lib/github-stats';
 import { CODING_SINCE } from '@/lib/profile';
 import { formatDuration, formatMonth, wholeYearsSince } from '@/lib/role-timeline';
+import { GRID, skillIcon } from '@/lib/skill-icons';
 
 const { publicRepos, calendar } = await getGithubStats();
 const years = formatDuration(wholeYearsSince(CODING_SINCE, new Date()) * 12);
 const stats = [
   { value: calendar.total.toLocaleString('en-US'), label: 'contributions in the last 12 months' },
   { value: String(publicRepos), label: 'public repos' },
-  { value: 'Go · TS', label: 'what I write most, then Python and Rust' },
+  {
+    value: 'Go and TypeScript',
+    label: 'what I write most, then Python and Rust',
+    logos: [skillIcon({ icon: 'go' }), skillIcon({ icon: 'typescript' })],
+  },
   { value: years, label: `writing code every day, since ${formatMonth(CODING_SINCE)}` },
 ];
 ---
@@ -24,7 +29,27 @@ const stats = [
       <div class="flex flex-col-reverse justify-end gap-1.5 border-t border-ink pt-4">
         <dt class="text-base text-muted-strong">{s.label}</dt>
         <dd data-count-up class="text-4xl leading-none font-semibold tracking-[-0.05em] tabular-nums md:text-[56px]">
-          {s.value}
+          {s.logos ? (
+            <span class="flex gap-3 md:gap-4">
+              <span class="sr-only">{s.value}</span>
+              {s.logos.map((logo) => (
+                <span data-cursor-magnet class="flex">
+                  <svg
+                    viewBox={`0 0 ${GRID} ${GRID}`}
+                    aria-hidden="true"
+                    shape-rendering="crispEdges"
+                    class="size-9 md:size-14"
+                  >
+                    {logo.layers.map((l) => (
+                      <path d={l.d} fill={l.color} />
+                    ))}
+                  </svg>
+                </span>
+              ))}
+            </span>
+          ) : (
+            s.value
+          )}
         </dd>
       </div>
     ))}

@@ -52,6 +52,8 @@ export interface Field {
   cellSize: number;
   columns: number;
   rows: number;
+  /** rows inside the host box; rows past it are bleed, where only heat and embers show */
+  hostRows: number;
   horizonRow: number;
   heat: Float32Array;
   bucket: Int8Array;
@@ -60,17 +62,20 @@ export interface Field {
   hottest: number;
 }
 
-export function createField(width: number, height: number): Field {
+/** A field for a host of `width` × `height` px, with `bleed` px of extra rows past the host. */
+export function createField(width: number, height: number, bleed = 0): Field {
   const cellSize = width < 700 ? 8 : 10;
   const columns = Math.ceil(width / cellSize),
-    rows = Math.ceil(height / cellSize);
+    hostRows = Math.ceil(height / cellSize),
+    rows = Math.ceil((height + bleed) / cellSize);
   return {
     width,
     height,
     cellSize,
     columns,
     rows,
-    horizonRow: Math.floor(rows * 0.68),
+    hostRows,
+    horizonRow: Math.floor(hostRows * 0.68),
     heat: new Float32Array(columns * rows),
     bucket: new Int8Array(columns * rows).fill(-1),
     lowestRow: new Int16Array(columns).fill(-1),
@@ -79,14 +84,35 @@ export function createField(width: number, height: number): Field {
   };
 }
 
-export function stepField(field: Field, time: number, seed: number, density = 1, decay = 0.94): void {
-  const { columns, rows, horizonRow, heat, bucket, lowestRow, lowestBucket } = field;
+/** How a field's outline is cut. Every part is optional; {} is the plain field. */
+export interface FieldShape {
+  /** share of the horizon kept, 0..1; lower drains the field toward row 0 */
+  coverage?: number;
+  /** how far the horizon wanders per column, as a share of the host rows */
+  skyline?: number;
+  /** share of the host rows next to row 0 that dither out into paper */
+  fadeEdge?: number;
+}
+
+export function stepField(
+  field: Field,
+  time: number,
+  seed: number,
+  density = 1,
+  decay = 0.94,
+  shape: FieldShape = {},
+): void {
+  const { columns, rows, hostRows, heat, bucket, lowestRow, lowestBucket } = field;
+  const coverage = Math.max(0, Math.min(1, shape.coverage ?? 1));
+  const fadeRows = hostRows * (shape.fadeEdge ?? 0);
   bucket.fill(-1);
   lowestRow.fill(-1);
   lowestBucket.fill(0);
   let hottest = 0;
   for (let x = 0; x < columns; x++) {
     const across = x / columns;
+    const sky = shape.skyline ? (noise(x * 0.06, seed * 3 + time * 0.08) - 0.5) * hostRows * shape.skyline * 2 : 0;
+    const horizonRow = (field.horizonRow + sky) * coverage;
     const drip = Math.floor(
       Math.max(0, noise(x * 0.17, 3.1 + seed + time * 0.15) - 0.35) * 16 * density + hash(x, 7) * 2,
     );
@@ -95,11 +121,15 @@ export function stepField(field: Field, time: number, seed: number, density = 1,
       heat[i] *= decay;
       hottest = Math.max(hottest, heat[i]);
       if (heat[i] < 0.3) {
-        if (y >= horizonRow + drip) continue;
+        if (y >= horizonRow + drip * (0.4 + 0.6 * coverage)) continue;
+        if (y < fadeRows) {
+          const t = y / fadeRows;
+          if (hash(x, y, seed + 11) > t * t * (3 - 2 * t)) continue;
+        }
         if (y >= horizonRow && hash(x, y, Math.floor(time * 2) + seed) < ((y - horizonRow) / (drip + 1)) * 0.55)
           continue;
       }
-      const depth = y / horizonRow;
+      const depth = y / field.horizonRow;
       const base = fbm(x * 0.07 - time * 0.9 + seed, y * 0.11 + x * 0.03);
       const ridgeLine = 0.42 + 0.2 * Math.sin(across * 6.2 + time * 0.6 + seed) + 0.08 * Math.sin(across * 17 - time);
       const ridge = Math.exp(-Math.pow(depth - ridgeLine, 2) / 0.018);

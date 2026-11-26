@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { blobGeometry, blobValue, levelForValue, shortestTurn } from './blob-shape';
+import {
+  HEADING_REACH,
+  blobGeometry,
+  blobValue,
+  headingGrow,
+  levelForValue,
+  rectDistance,
+  shortestTurn,
+} from './blob-shape';
 
 describe('blobGeometry', () => {
   it('is round at rest and elongates with stretch', () => {
@@ -55,5 +63,24 @@ describe('shortestTurn', () => {
     expect(shortestTurn(0, Math.PI * 1.5)).toBeCloseTo(-Math.PI / 2, 10);
     expect(shortestTurn(3, -3)).toBeCloseTo(2 * Math.PI - 6, 10);
     expect(shortestTurn(0, Math.PI / 2)).toBeCloseTo(Math.PI / 2, 10);
+  });
+});
+
+describe('heading growth', () => {
+  const line = { left: 100, right: 400, top: 200, bottom: 280 };
+
+  it('measures distance to the text box, zero inside it', () => {
+    expect(rectDistance(250, 240, line)).toBe(0);
+    expect(rectDistance(450, 240, line)).toBe(50);
+    expect(rectDistance(250, 300, line)).toBe(20);
+    expect(rectDistance(403, 284, line)).toBe(5);
+  });
+
+  it('is full on the text, gone past HEADING_REACH', () => {
+    expect(headingGrow(0)).toBe(1);
+    expect(headingGrow(HEADING_REACH)).toBe(0);
+    expect(headingGrow(HEADING_REACH / 2)).toBeCloseTo(0.5);
+    // same row, far to the right of the words: no growth
+    expect(headingGrow(rectDistance(1200, 240, line))).toBe(0);
   });
 });
