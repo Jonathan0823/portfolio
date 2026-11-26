@@ -1,14 +1,14 @@
-// Guide cursor: tells desktop visitors that the hero's contact links spill a pixel logo on hover.
-// A second after load the cursor morphs into a pixel arrow. Moving, it points at the nearest link;
-// resting, it hops across all three. It ends for the session on the first real hover of a link.
+// Hero hint: tells desktop visitors that the hero's contact links spill a pixel logo on hover.
+// A second after load a link lights up. Moving, the nearest link is lit;
+// resting, the highlight hops across all three. It ends for the session on the first real hover of a link.
 import { FINE_POINTER_QUERY, prefersReducedMotion } from './motion';
-import { setCursorGuide } from './cursor-trail';
+import { setCursorGuide } from './cursor-guide';
 
-/** the guide hops email → GitHub → LinkedIn so all three read as one set */
+/** the highlight hops email → GitHub → LinkedIn so all three read as one set */
 const HOP_MS = 1100;
 /** how long the pointer rests before the guide starts hopping */
 const REST_MS = 700;
-/** the cursor stays a normal blob this long after load, then morphs into the arrow */
+/** nothing is lit this long after load, so the hero settles before it asks for attention */
 const GUIDE_AFTER_MS = 1000;
 const DISCOVERED_KEY = 'px-guide-done';
 
@@ -58,7 +58,7 @@ export function mountHeroHint(): void {
   const update = () => {
     if (done || !armed) return;
     if (!inHero()) return stopGuide();
-    // moving: the arrow points at the nearest link; resting: it hops across all three
+    // moving: the nearest link is lit; resting: the highlight hops across all three
     clearInterval(hopTimer);
     clearTimeout(restTimer);
     aimAt(nearest());

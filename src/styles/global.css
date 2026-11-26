@@ -47,7 +47,16 @@
   transition: background-color 0.4s;
 }
 
-/* the guide cursor's target: accent colour and a pixel underline drawn in steps */
+/* the pixel pointer is drawn (set on <html> while it is mounted): the native cursor goes, except where text needs its caret */
+html.has-pixel-pointer,
+html.has-pixel-pointer * {
+  cursor: none !important;
+}
+html.has-pixel-pointer :is(input, textarea, select, [contenteditable]) {
+  cursor: auto !important;
+}
+
+/* the hero hint's target: accent colour and a pixel underline drawn in steps */
 a[data-glyph-for] {
   padding-bottom: 3px;
   background: linear-gradient(var(--color-accent), var(--color-accent)) left bottom / 0 2px no-repeat;

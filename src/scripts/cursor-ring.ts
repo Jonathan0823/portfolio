@@ -1,26 +1,17 @@
 import { easeFactor } from './timing';
 
-/** How far from a magnet's edge, in px, the cursor starts being pulled in. */
+/** How far from a magnet's edge, in px, the pointer starts raising its ring. */
 export const MAGNET_ZONE = 72;
-/** How far, in px, a locked-on logo leans toward the pointer. */
-export const MAGNET_LEAN = 6;
-
-/** Share of the way the cursor is pulled onto a magnet: 1 at its edge, easing to 0 at MAGNET_ZONE. */
-export function magnetPull(edgeDistance: number): number {
-  if (edgeDistance >= MAGNET_ZONE) return 0;
-  const t = 1 - Math.max(0, edgeDistance) / MAGNET_ZONE;
-  return t * t * (3 - 2 * t);
-}
 
 /**
- * The ring the blob morphs into around a magnet, in half-cell units.
- * It grows as a disc, hollows once grown, opens gaps once hollow, and spins;
- * leaving runs that backwards and crossfades (mix) back to the normal blob.
+ * The ring that rises around a magnet, in half-cell units.
+ * It grows from a point at the pointer as a disc, hollows once grown, opens gaps once hollow, and spins;
+ * leaving runs that backwards and crossfades (mix) back to nothing.
  */
 export interface Ring {
   active: boolean;
   collapsed: boolean;
-  /** 0 = the normal blob is showing, 1 = the ring is */
+  /** 0 = nothing is drawn, 1 = the ring is fully showing */
   mix: number;
   x: number;
   y: number;
@@ -87,7 +78,7 @@ const ARC = Math.PI / 2;
 
 /**
  * Heat value (0..1) of the half-cell at (dx, dy) from the ring's centre, or null when empty.
- * A solid disc is hot in the middle like the blob; as it hollows it becomes arcs
+ * A solid disc is hot in the middle; as it hollows it becomes arcs
  * with cooler ends and a hot pulse at angle `pulse` travelling round.
  */
 export function ringValue(r: Ring, dx: number, dy: number, pulse: number): number | null {

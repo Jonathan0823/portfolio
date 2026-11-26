@@ -52,7 +52,7 @@ const dayLabels = [
 ];
 ---
 
-<figure class="relative" data-calendar data-cursor-quiet>
+<figure class="relative" data-calendar>
   <div class="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
     <div class="flex items-center gap-4 md:gap-5">
       <svg viewBox="0 0 16 16" aria-hidden="true" class="size-9 shrink-0 md:size-14">
@@ -142,6 +142,7 @@ const dayLabels = [
 <script>
   import { HEAT_PALETTE } from '@/lib/palette';
   import { prefersReducedMotion } from '@/scripts/motion';
+  import { SHOCKWAVE_EVENT, type ShockwaveDetail } from '@/scripts/cursor-math';
   import {
     gridCell,
     gridPoint,
@@ -315,6 +316,21 @@ const dayLabels = [
     });
     svg.addEventListener('pointermove', move);
     svg.addEventListener('pointerdown', click);
+    // a charged click elsewhere sends a front across the page: the graph ripples from the cell facing it when the front arrives
+    window.addEventListener(SHOCKWAVE_EVENT, (ev) => {
+      const { x, y, speed } = (ev as CustomEvent<ShockwaveDetail>).detail;
+      const box = svg.getBoundingClientRect();
+      if (box.bottom < 0 || box.top > innerHeight) return;
+      const nx = Math.min(box.right - 1, Math.max(box.left + 1, x)),
+        ny = Math.min(box.bottom - 1, Math.max(box.top + 1, y));
+      const vb = svg.viewBox.baseVal;
+      const { col, row } = gridCell(
+        ((nx - box.left) / box.width) * vb.width,
+        ((ny - box.top) / box.height) * vb.height,
+        columns,
+      );
+      setTimeout(() => ripple(col, row, 'click'), (Math.hypot(nx - x, ny - y) / speed) * 1000);
+    });
 
     if ('IntersectionObserver' in window) {
       const io = new IntersectionObserver(

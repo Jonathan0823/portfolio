@@ -1,17 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { MAGNET_ZONE, idleRing, magnetPull, ringValue, stepRing, type RingShape } from './cursor-ring';
+import { idleRing, ringValue, stepRing, type RingShape } from './cursor-ring';
 
 const blob = { x: 0, y: 0, radius: 10 };
 const goal: RingShape = { x: 40, y: 0, outer: 20, inner: 18.8, gap: 0.32 };
-
-describe('magnetPull', () => {
-  it('is full at the edge and gone at the zone limit', () => {
-    expect(magnetPull(0)).toBe(1);
-    expect(magnetPull(-5)).toBe(1);
-    expect(magnetPull(MAGNET_ZONE)).toBe(0);
-    expect(magnetPull(MAGNET_ZONE / 2)).toBeCloseTo(0.5);
-  });
-});
 
 describe('stepRing', () => {
   it('stays idle with no magnet', () => {
