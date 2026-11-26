@@ -7,7 +7,7 @@ label: 'Project'
 title: 'Put code-quality checks inside my coding agent.'
 link:
   href: 'https://github.com/Jonathan0823/pi-sonarqube'
-  text: 'Code on GitHub ↗'
+  text: 'pi-sonarqube on GitHub ↗'
 refs:
   - kind: 'project'
     id: 'pi-sonarqube'
