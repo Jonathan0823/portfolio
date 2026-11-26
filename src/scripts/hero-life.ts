@@ -49,7 +49,7 @@ export function heroLifeShape(hero: HeroField | undefined, motion: boolean, base
   // the real field stays empty; the overlay draws the cells until the paint where it takes over
   if (emptied.length !== field.columns)
     emptied = new Float32Array(field.columns).fill(-emptyDepth(field.horizonRow, field.hostRows));
-  ignite.draw(hero, base, Math.max(0, elapsed));
+  ignite.draw(hero, base, elapsed);
   return { swell: emptied };
 }
 
