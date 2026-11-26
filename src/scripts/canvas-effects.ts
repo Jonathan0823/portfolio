@@ -12,6 +12,7 @@ import { mountGlyphSpill, type GlyphSpill } from './glyph-spill';
 import { FIELD_BLEED, fieldShape } from './field-edges';
 import { mountHeroHint } from './hero-hint';
 import { FOOT_BLEED, mountFooterTide, tideSwell } from './footer-tide';
+import { heroLifeShape, mountHeroLife } from './hero-life';
 
 const SEEDS: Record<string, number> = { hero: 1.3, strip: 4.7, foot: 8.1 };
 const hosts = [...document.querySelectorAll<HTMLElement>('[data-pixel-field]')];
@@ -22,18 +23,26 @@ if (typeof window.matchMedia === 'function') {
     return mountHeroField(host, prefersReducedMotion(), {
       seed: SEEDS[kind] ?? 2.2,
       flipped: kind === 'foot',
-      shape: (motion) => ({
-        ...fieldShape(kind, host.getBoundingClientRect(), scrollY, innerHeight, motion),
-        ...(kind === 'foot'
-          ? {
-              swell: tideSwell.rows,
-              crest: tideSwell.crest,
-              stamp: tideSwell.stamp,
-              cap: tideSwell.cap,
-              solid: true,
-            }
-          : {}),
-      }),
+      shape: (motion) => {
+        const base = {
+          ...fieldShape(kind, host.getBoundingClientRect(), scrollY, innerHeight, motion),
+          ...(kind === 'foot'
+            ? {
+                swell: tideSwell.rows,
+                crest: tideSwell.crest,
+                stamp: tideSwell.stamp,
+                cap: tideSwell.cap,
+                solid: true,
+              }
+            : {}),
+        };
+        const field = fields[hosts.indexOf(host)];
+        return {
+          ...base,
+          // the hero's ignite empties its field until the real one takes over
+          ...(kind === 'hero' ? heroLifeShape(field, motion, base) : {}),
+        };
+      },
       // the footer bleeds further up so the tide has room to rise
       bleed: kind === 'foot' ? FOOT_BLEED : FIELD_BLEED,
       // on touch the footer cycles its logos on a timer, and sparks drifting over them only read as stray pixels
@@ -44,7 +53,7 @@ if (typeof window.matchMedia === 'function') {
   const glyphCanvas = document.querySelector<HTMLCanvasElement>('canvas[data-glyph]');
   let stopCursor: (() => void) | null = null;
   let glyph: GlyphSpill | null = null;
-  let glyphReduced: boolean | null = null;
+  let glyphKey: string | null = null;
 
   const sync = () => {
     const reduced = prefersReducedMotion();
@@ -56,14 +65,17 @@ if (typeof window.matchMedia === 'function') {
       stopCursor();
       stopCursor = null;
     }
-    if (hero && glyphCanvas && reduced !== glyphReduced) {
+    // touch has no hover for the logos to answer, so the glyph spill is not mounted beside the headline at all
+    const key = window.matchMedia(FINE_POINTER_QUERY).matches ? String(reduced) : null;
+    if (hero && glyphCanvas && key !== glyphKey) {
       glyph?.stop();
-      glyph = mountGlyphSpill(glyphCanvas, hero, reduced);
-      glyphReduced = reduced;
+      glyph = key === null ? null : mountGlyphSpill(glyphCanvas, hero, reduced);
+      glyphKey = key;
     }
   };
   whenIdle(sync);
-  whenIdle(() => mountHeroHint(() => glyph));
+  // the hint plays once the hero's life has settled (its caret blinks), so it mounts with the life that gates it
+  whenIdle(() => mountHeroHint(() => glyph, mountHeroLife(hero)));
   const foot = fields[hosts.findIndex((h) => h.dataset.pixelField === 'foot')];
   // hover drives the tide on a fine pointer and a timer on touch, so switching pointer (or motion) remounts it
   let stopTide: (() => void) | null = null;

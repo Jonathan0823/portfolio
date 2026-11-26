@@ -1,12 +1,13 @@
 // Hero hint: tells desktop visitors that the contact links spill a pixel logo on hover.
-// Once per session, after the intro settles, the GitHub logo spills by itself and retracts.
+// Once per session, a beat after the headline's caret starts blinking, the GitHub logo spills by itself and retracts.
 // Any real hover, focus or touch of a link ends it: the visitor has found it.
 import { FINE_POINTER_QUERY, prefersReducedMotion } from './motion';
 import type { GlyphSpill } from './glyph-spill';
 
-/** the hero settles this long after the page cover lifts before it asks for attention */
-const SETTLE_MS = 1200;
-const SHOW_MS = 1400;
+/** the hint spills this long after the caret starts blinking: one focal point at a time */
+const AFTER_CARET_MS = 500;
+/** the logo stands this long before it retracts */
+const SHOW_MS = 3500;
 const DONE_KEY = 'px-hint-done';
 /** styled in global.css: accent colour and a stepped underline */
 const LIT_CLASS = 'hint-lit';
@@ -30,21 +31,11 @@ export function markHintSeen(): void {
   } catch {}
 }
 
-/** Resolves once the page cover is gone (it always lifts within 2.5s of load). */
-function whenUncovered(root: HTMLElement): Promise<void> {
-  if (!root.classList.contains('px-covered')) return Promise.resolve();
-  return new Promise((resolve) => {
-    const watch = new MutationObserver(() => {
-      if (root.classList.contains('px-covered')) return;
-      watch.disconnect();
-      resolve();
-    });
-    watch.observe(root, { attributes: true, attributeFilter: ['class'] });
-  });
-}
-
-/** `spill` is read late: the glyph spill mounts on idle and remounts when motion preferences change. */
-export function mountHeroHint(spill: () => GlyphSpill | null): void {
+/**
+ * `spill` is read late: the glyph spill mounts on idle and remounts when motion preferences change. `ready`
+ * resolves when the hero's life has settled (the caret blinks); the hint plays a beat after it.
+ */
+export function mountHeroHint(spill: () => GlyphSpill | null, ready: Promise<void>): void {
   const fine = window.matchMedia(FINE_POINTER_QUERY).matches;
   if (!shouldPlayHint({ fine, reduced: prefersReducedMotion(), seen: hintSeen() })) return;
   const links = [...document.querySelectorAll<HTMLElement>('a[data-glyph-for]')];
@@ -74,7 +65,8 @@ export function mountHeroHint(spill: () => GlyphSpill | null): void {
     link.addEventListener('touchstart', found, { passive: true });
   }
 
-  void whenUncovered(document.documentElement).then(() => {
+  void ready.then(() => {
+    if (over) return;
     timer = window.setTimeout(() => {
       const glyph = spill();
       if (over || !glyph) return;
@@ -91,6 +83,6 @@ export function mountHeroHint(spill: () => GlyphSpill | null): void {
         if (shown && !over) glyph.hide();
         end();
       }, SHOW_MS);
-    }, SETTLE_MS);
+    }, AFTER_CARET_MS);
   });
 }

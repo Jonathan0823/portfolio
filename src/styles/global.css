@@ -93,6 +93,11 @@ a[data-glyph-for]:is(:hover, :focus-visible, .hint-lit) .link-icon {
 [data-pixel-btn]:is(:hover, :focus-visible, .tide-shown) .btn-icon {
   color: var(--heat);
 }
+/* the hero drip builds the headline's period: absent until built, then drawn as a blinking caret on a canvas */
+html.drip-pending [data-drip-period],
+[data-drip-period].drip-caret {
+  color: transparent;
+}
 /* the closing button whose logo the footer tide is showing (touch) */
 [data-pixel-btn].tide-shown {
   box-shadow: 0 0 0 2px var(--color-accent);
