@@ -110,6 +110,7 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     linkProgress += ((overLink ? 1 : 0) - linkProgress) * easeFactor(0.3, scale);
     overTextValue += ((overText ? 1 : 0) - overTextValue) * easeFactor(0.25, scale);
     visible += ((pointerInside ? 1 : 0) - visible) * easeFactor(0.35, scale);
+    if (!pointerInside && visible < 0.02) visible = 0;
     if (shapeTarget !== shape) {
       shapeProgress -= shapeProgress * easeFactor(0.3, scale);
       if (shapeProgress < 0.04) { shape = shapeTarget; shapeProgress = 0; }
@@ -237,11 +238,11 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
       Math.abs(targetRadius - radius) > 0.02 || (linkProgress > 0.02 && linkProgress < 0.98) ||
       Math.abs((overText ? 1 : 0) - overTextValue) > 0.01 || Math.abs((pointerInside ? 1 : 0) - visible) > 0.01 ||
       shapeTarget !== shape || (!!shape && shapeProgress < 0.98);
-    if (pointerInside && busy) raf = requestAnimationFrame(frame);
+    if (busy) raf = requestAnimationFrame(frame);
   };
 
   const wake = () => {
-    if (!raf && pointerInside && !document.hidden) raf = requestAnimationFrame(frame);
+    if (!raf && !document.hidden) raf = requestAnimationFrame(frame);
   };
   const pointOverText = (x: number, y: number, target: Element | null): boolean => {
     const doc = document as Document & {
@@ -299,15 +300,24 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     pointerInside = false;
     wake();
   };
+  const onOut = (e: MouseEvent) => {
+    if (!e.relatedTarget) onLeave();
+  };
   const onVisibility = () => {
     if (document.hidden) {
       cancelAnimationFrame(raf);
       raf = 0;
+      pointerInside = false;
+      visible = 0;
+      heat.canvas.style.opacity = '0';
+      mono.canvas.style.opacity = '0';
     } else wake();
   };
   document.addEventListener('mousemove', onMove);
   window.addEventListener('scroll', onScroll, { passive: true });
   document.documentElement.addEventListener('mouseleave', onLeave);
+  document.addEventListener('mouseout', onOut);
+  window.addEventListener('blur', onLeave);
   document.addEventListener('visibilitychange', onVisibility);
 
   return () => {
@@ -315,6 +325,8 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     window.removeEventListener('scroll', onScroll);
     cancelAnimationFrame(scrollRaf);
     document.documentElement.removeEventListener('mouseleave', onLeave);
+    document.removeEventListener('mouseout', onOut);
+    window.removeEventListener('blur', onLeave);
     document.removeEventListener('visibilitychange', onVisibility);
     cancelAnimationFrame(raf);
     blobCanvas.remove();
