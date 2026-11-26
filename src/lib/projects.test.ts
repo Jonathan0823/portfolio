@@ -49,7 +49,9 @@ describe('projectLinks', () => {
     expect(
       projectLinks({
         repo: 'https://github.com/Jonathan0823/nexusbus',
-        extraRepos: [{ text: 'nexusbus-mqtt-consumer', href: 'https://github.com/Jonathan0823/nexusbus-mqtt-consumer' }],
+        extraRepos: [
+          { text: 'nexusbus-mqtt-consumer', href: 'https://github.com/Jonathan0823/nexusbus-mqtt-consumer' },
+        ],
       }),
     ).toEqual([
       { text: 'nexusbus', href: 'https://github.com/Jonathan0823/nexusbus' },

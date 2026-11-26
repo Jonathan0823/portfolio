@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  milestoneSchema,
-  projectSchema,
-  roleSchema,
-  skillGroupSchema,
-} from './schemas';
+import { milestoneSchema, projectSchema, roleSchema, skillGroupSchema } from './schemas';
 
 const achievement = { id: 'a1', month: '2025-08', text: 'Cut load time 30x.' };
 const role = {
@@ -64,9 +59,9 @@ describe('projectSchema', () => {
     expect(projectSchema.safeParse({ ...project, result: '' }).success).toBe(false);
   });
   it('accepts a visual with a src and rejects an unknown kind', () => {
-    expect(
-      projectSchema.safeParse({ ...project, visual: { kind: 'photo', label: 'x', src: '/a.png' } }).success,
-    ).toBe(true);
+    expect(projectSchema.safeParse({ ...project, visual: { kind: 'photo', label: 'x', src: '/a.png' } }).success).toBe(
+      true,
+    );
     expect(projectSchema.safeParse({ ...project, visual: { kind: 'gif', label: 'x' } }).success).toBe(false);
   });
 });

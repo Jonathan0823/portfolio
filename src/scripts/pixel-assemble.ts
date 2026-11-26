@@ -8,12 +8,16 @@ const CELL = 14;
 export function createAssembler(layers: HTMLElement[], canvas: HTMLCanvasElement) {
   const ctx = canvas.getContext('2d')!;
   let cells: Cells | null = null;
-  let columns = 0, rows = 0, width = 0, height = 0;
+  let columns = 0,
+    rows = 0,
+    width = 0,
+    height = 0;
   let raf = 0;
   let done: (() => void) | undefined;
 
   const measure = () => {
-    const w = layers[0].offsetWidth, h = layers[0].offsetHeight;
+    const w = layers[0].offsetWidth,
+      h = layers[0].offsetHeight;
     if (cells && w === width && h === height) return;
     width = w;
     height = h;

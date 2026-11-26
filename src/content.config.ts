@@ -20,8 +20,7 @@ const milestones = defineCollection({
 
 const skills = defineCollection({
   loader: file('src/content/skills.yaml', {
-    parser: (text) =>
-      (parse(text) as { group: string }[]).map((g, i) => ({ id: String(i).padStart(2, '0'), ...g })),
+    parser: (text) => (parse(text) as { group: string }[]).map((g, i) => ({ id: String(i).padStart(2, '0'), ...g })),
   }),
   schema: skillGroupSchema,
 });

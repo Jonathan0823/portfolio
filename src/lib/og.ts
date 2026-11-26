@@ -4,7 +4,8 @@ import { Resvg } from '@resvg/resvg-js';
 import satori from 'satori';
 
 const require = createRequire(import.meta.url);
-const font = (weight: 400 | 600) => readFile(require.resolve(`@fontsource/geist/files/geist-latin-${weight}-normal.woff`));
+const font = (weight: 400 | 600) =>
+  readFile(require.resolve(`@fontsource/geist/files/geist-latin-${weight}-normal.woff`));
 
 const INK = '#111111';
 const ACCENT = '#e5484d';
@@ -19,16 +20,28 @@ const el = (type: string, style: Record<string, unknown>, children?: unknown) =>
 export async function renderOgImage(headline: string, sub: string): Promise<Uint8Array> {
   const [regular, semi] = await Promise.all([font(400), font(600)]);
   const pixels = PIXELS.map((c, i) => el('div', { width: 40, height: 40, background: c, marginLeft: i ? 8 : 0 }));
-  const tree = el('div', { flexDirection: 'column', justifyContent: 'space-between', width: 1200, height: 630, boxSizing: 'border-box', background: '#ffffff', padding: 80 }, [
-    el('div', {}, pixels),
-    el('div', { flexDirection: 'column' }, [
-      el('div', { fontSize: 112, fontWeight: 600, color: INK, letterSpacing: -6, lineHeight: 1 }, [
-        { type: 'span', props: { children: headline } },
-        { type: 'span', props: { style: { color: ACCENT }, children: '.' } },
+  const tree = el(
+    'div',
+    {
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      width: 1200,
+      height: 630,
+      boxSizing: 'border-box',
+      background: '#ffffff',
+      padding: 80,
+    },
+    [
+      el('div', {}, pixels),
+      el('div', { flexDirection: 'column' }, [
+        el('div', { fontSize: 112, fontWeight: 600, color: INK, letterSpacing: -6, lineHeight: 1 }, [
+          { type: 'span', props: { children: headline } },
+          { type: 'span', props: { style: { color: ACCENT }, children: '.' } },
+        ]),
+        el('div', { fontSize: 36, color: MUTED, marginTop: 28 }, sub),
       ]),
-      el('div', { fontSize: 36, color: MUTED, marginTop: 28 }, sub),
-    ]),
-  ]);
+    ],
+  );
   const svg = await satori(tree as never, {
     width: 1200,
     height: 630,

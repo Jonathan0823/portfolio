@@ -1,4 +1,11 @@
-import { FINE_POINTER_QUERY, REDUCE_QUERY, canRunTrail, prefersReducedMotion, watchPixelRatio, whenIdle } from './motion';
+import {
+  FINE_POINTER_QUERY,
+  REDUCE_QUERY,
+  canRunTrail,
+  prefersReducedMotion,
+  watchPixelRatio,
+  whenIdle,
+} from './motion';
 import { mountHeroField, type HeroField } from './hero-field';
 import { mountCursorTrail } from './cursor-trail';
 import { mountGlyphSpill } from './glyph-spill';
@@ -22,7 +29,10 @@ if (typeof window.matchMedia === 'function') {
     fields.forEach((f) => f.setReduced(reduced));
     const trail = canRunTrail();
     if (trail && !stopTrail) stopTrail = mountCursorTrail(fields);
-    if (!trail && stopTrail) { stopTrail(); stopTrail = null; }
+    if (!trail && stopTrail) {
+      stopTrail();
+      stopTrail = null;
+    }
     if (hero && glyphCanvas && reduced !== glyphReduced) {
       stopGlyph?.();
       stopGlyph = mountGlyphSpill(glyphCanvas, hero, reduced);

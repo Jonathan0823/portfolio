@@ -20,9 +20,14 @@ function setup(button: HTMLElement, reduced: boolean) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  let columns = 0, rows = 0, delays = cellDelays(0, 0, 'left');
+  let columns = 0,
+    rows = 0,
+    delays = cellDelays(0, 0, 'left');
   let side: Side = 'left';
-  let t = 0, target = 0, raf = 0, last = 0;
+  let t = 0,
+    target = 0,
+    raf = 0,
+    last = 0;
 
   const draw = () => {
     const scale = canvas.width / Math.max(1, button.clientWidth);
@@ -33,7 +38,12 @@ function setup(button: HTMLElement, reduced: boolean) {
         const p = cellProgress(t, delays[i]);
         if (p <= 0) continue;
         ctx.fillStyle = p >= 1 ? settle : HOT[Math.floor(hash(x, y, 9) * HOT.length)];
-        ctx.fillRect(Math.floor(x * CELL * scale), Math.floor(y * CELL * scale), Math.ceil(CELL * scale), Math.ceil(CELL * scale));
+        ctx.fillRect(
+          Math.floor(x * CELL * scale),
+          Math.floor(y * CELL * scale),
+          Math.ceil(CELL * scale),
+          Math.ceil(CELL * scale),
+        );
       }
     }
   };
@@ -44,7 +54,8 @@ function setup(button: HTMLElement, reduced: boolean) {
   const render = () => (t >= 1 ? fillAll() : t <= 0 ? ctx.clearRect(0, 0, canvas.width, canvas.height) : draw());
 
   const layout = () => {
-    const w = button.clientWidth, h = button.clientHeight;
+    const w = button.clientWidth,
+      h = button.clientHeight;
     const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.max(1, Math.round(w * dpr));
     canvas.height = Math.max(1, Math.round(h * dpr));

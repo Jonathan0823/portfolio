@@ -23,7 +23,9 @@ const stats = [
     {stats.map((s) => (
       <div class="flex flex-col-reverse justify-end gap-1.5 border-t border-ink pt-4">
         <dt class="text-base text-muted-strong">{s.label}</dt>
-        <dd data-count-up class="text-4xl leading-none font-semibold tracking-[-0.05em] tabular-nums md:text-[56px]">{s.value}</dd>
+        <dd data-count-up class="text-4xl leading-none font-semibold tracking-[-0.05em] tabular-nums md:text-[56px]">
+          {s.value}
+        </dd>
       </div>
     ))}
   </dl>
@@ -31,21 +33,29 @@ const stats = [
 
 <script>
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
-    const els = [...document.querySelectorAll<HTMLElement>('#github [data-count-up]')].filter((el) => /^[\d,]+$/.test(el.textContent!.trim()));
-    const io = new IntersectionObserver((entries) => {
-      for (const e of entries) {
-        if (!e.isIntersecting) continue;
-        io.unobserve(e.target);
-        const el = e.target as HTMLElement, final = el.textContent!.trim(), target = Number(final.replace(/,/g, ''));
-        const start = performance.now();
-        const tick = (now: number) => {
-          const t = Math.min(1, (now - start) / 1100), eased = t * t * (3 - 2 * t);
-          el.textContent = t < 1 ? Math.round(target * eased).toLocaleString('en-US') : final;
-          if (t < 1) requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-      }
-    }, { threshold: 0.6 });
+    const els = [...document.querySelectorAll<HTMLElement>('#github [data-count-up]')].filter((el) =>
+      /^[\d,]+$/.test(el.textContent!.trim()),
+    );
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          io.unobserve(e.target);
+          const el = e.target as HTMLElement,
+            final = el.textContent!.trim(),
+            target = Number(final.replace(/,/g, ''));
+          const start = performance.now();
+          const tick = (now: number) => {
+            const t = Math.min(1, (now - start) / 1100),
+              eased = t * t * (3 - 2 * t);
+            el.textContent = t < 1 ? Math.round(target * eased).toLocaleString('en-US') : final;
+            if (t < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        }
+      },
+      { threshold: 0.6 },
+    );
     els.forEach((el) => io.observe(el));
   }
 </script>

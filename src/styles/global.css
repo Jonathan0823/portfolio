@@ -6,7 +6,9 @@
   [data-pixel-btn] {
     position: relative;
     isolation: isolate;
-    transition: color 120ms 120ms, border-color 120ms 120ms;
+    transition:
+      color 120ms 120ms,
+      border-color 120ms 120ms;
   }
   [data-pixel-btn]:not([data-pixel-btn='dark'])[data-pixel-on] {
     color: var(--color-paper);

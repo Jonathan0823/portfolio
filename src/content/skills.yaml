@@ -9,7 +9,7 @@
 - group: IoT
   items: [Modbus, MQTT (Mosquitto), Bluetooth, WiFi, Arduino]
 - group: Data
-  items: [PostgreSQL, "Redis (caching, Redis Streams)", MySQL, SQL Server, MongoDB]
+  items: [PostgreSQL, 'Redis (caching, Redis Streams)', MySQL, SQL Server, MongoDB]
 - group: DevOps & tools
   items: [Linux, Neovim, Docker, Podman, Nginx, CI with GitHub Actions, Git, GitHub, GitLab]
 - group: Spoken languages

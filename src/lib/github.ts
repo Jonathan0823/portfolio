@@ -95,7 +95,9 @@ export async function loadGithubStats(opts: LoadOptions): Promise<GithubStats> {
     if (!res.ok) throw new Error(`GitHub API responded ${res.status}`);
     return parseGithubResponse(await res.json());
   } catch (err) {
-    warn(`[github] live fetch failed (${err instanceof Error ? err.message : 'unknown'}); using the committed snapshot.`);
+    warn(
+      `[github] live fetch failed (${err instanceof Error ? err.message : 'unknown'}); using the committed snapshot.`,
+    );
     return snapshot;
   }
 }

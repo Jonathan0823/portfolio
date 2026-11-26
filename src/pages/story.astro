@@ -21,7 +21,11 @@ const groupsWithBodies = await Promise.all(
 );
 
 const navLinks = [
-  ...groups.map((g) => ({ href: `#y${g.year}`, label: g.year === NOW_YEAR ? NOW_LABEL : String(g.year), sec: `y${g.year}` })),
+  ...groups.map((g) => ({
+    href: `#y${g.year}`,
+    label: g.year === NOW_YEAR ? NOW_LABEL : String(g.year),
+    sec: `y${g.year}`,
+  })),
   { href: '#contact', label: 'Contact', sec: 'contact' },
 ];
 ---
@@ -32,7 +36,10 @@ const navLinks = [
 
   <main>
     <section class="px-5 pt-10 md:px-24 md:pt-14">
-      <h1 data-intro-rise class="text-[56px] leading-[0.9] font-semibold tracking-[-0.06em] md:text-[168px] md:whitespace-nowrap">
+      <h1
+        data-intro-rise
+        class="text-[56px] leading-[0.9] font-semibold tracking-[-0.06em] md:text-[168px] md:whitespace-nowrap"
+      >
         How I got here<span class="text-accent">.</span>
       </h1>
       <p class="mt-8 max-w-[34ch] text-xl leading-[1.45] tracking-[-0.01em] text-pretty md:text-[26px]">
@@ -40,9 +47,17 @@ const navLinks = [
         Now I write the software between factory machines and the people who watch them.
       </p>
       <p class="text-muted mt-6 font-mono text-[13px] leading-relaxed">
-        <a href={MAILTO_URL} class="text-ink hover:text-muted">{CONTACT_EMAIL}</a> ·
-        <a href={GITHUB_URL} class="text-ink hover:text-muted">GitHub</a> ·
-        <a href={LINKEDIN_URL} class="text-ink hover:text-muted">LinkedIn</a>
+        <a href={MAILTO_URL} class="text-ink hover:text-muted">
+          {CONTACT_EMAIL}
+        </a>{' '}
+        ·
+        <a href={GITHUB_URL} class="text-ink hover:text-muted">
+          GitHub
+        </a>{' '}
+        ·
+        <a href={LINKEDIN_URL} class="text-ink hover:text-muted">
+          LinkedIn
+        </a>
       </p>
     </section>
 
@@ -50,64 +65,62 @@ const navLinks = [
       Each square beside a year is a month. Red months have a milestone.
     </p>
 
-    {
-      groupsWithBodies.map((g) => (
-        <section id={`y${g.year}`} class="px-5 pt-20 md:px-24 md:pt-36">
-          <div class="grid gap-4 pb-6 md:grid-cols-12 md:items-end md:gap-x-6">
-            <div class="flex flex-col gap-3.5 md:col-span-3">
-              <h2 class="text-7xl leading-[0.85] font-semibold tracking-[-0.06em] md:text-[88px]">
-                {g.year === NOW_YEAR ? NOW_LABEL : g.year}
-              </h2>
-              {g.months.length > 0 && (
-                <ol class="flex gap-[3px]" aria-hidden="true">
-                  {g.months.map((m) => (
-                    <li
-                      title={formatMonth(m.month)}
-                      data-sq
-                      class:list={['sq h-3.5 w-3.5', m.count > 0 ? 'bg-accent' : 'bg-square']}
-                    />
-                  ))}
-                </ol>
-              )}
-            </div>
-            <div class="flex flex-col gap-2 md:col-span-9">
-              <p class="text-3xl leading-[1.1] font-semibold tracking-[-0.03em] text-balance md:text-4xl">
-                {g.subtitle}
-              </p>
-              {g.meta && <p class="text-muted font-mono text-[13px] leading-relaxed">{g.meta}</p>}
-            </div>
+    {groupsWithBodies.map((g) => (
+      <section id={`y${g.year}`} class="px-5 pt-20 md:px-24 md:pt-36">
+        <div class="grid gap-4 pb-6 md:grid-cols-12 md:items-end md:gap-x-6">
+          <div class="flex flex-col gap-3.5 md:col-span-3">
+            <h2 class="text-7xl leading-[0.85] font-semibold tracking-[-0.06em] md:text-[88px]">
+              {g.year === NOW_YEAR ? NOW_LABEL : g.year}
+            </h2>
+            {g.months.length > 0 && (
+              <ol class="flex gap-[3px]" aria-hidden="true">
+                {g.months.map((m) => (
+                  <li
+                    title={formatMonth(m.month)}
+                    data-sq
+                    class:list={['sq h-3.5 w-3.5', m.count > 0 ? 'bg-accent' : 'bg-square']}
+                  />
+                ))}
+              </ol>
+            )}
           </div>
+          <div class="flex flex-col gap-2 md:col-span-9">
+            <p class="text-3xl leading-[1.1] font-semibold tracking-[-0.03em] text-balance md:text-4xl">{g.subtitle}</p>
+            {g.meta && <p class="text-muted font-mono text-[13px] leading-relaxed">{g.meta}</p>}
+          </div>
+        </div>
 
-          <ol>
-            {g.milestones.map((m) => (
-              <li class="border-line-soft grid gap-3 border-t py-6 md:grid-cols-12 md:items-baseline md:gap-x-6">
-                <p class="text-muted font-mono text-[13px] leading-relaxed md:col-span-2">
-                  {formatMonth(m.data.date)}<br />{m.data.label}
-                </p>
-                <h3 class="text-2xl leading-[1.15] font-semibold tracking-[-0.02em] text-balance md:col-span-5 md:text-[26px]">
-                  {m.data.title}
-                </h3>
-                <div class="flex flex-col gap-2 md:col-span-5">
-                  <div class="milestone-body text-body text-lg leading-[1.6] text-pretty">
-                    <m.Content />
-                  </div>
-                  {m.data.tags.length > 0 && (
-                    <p class="text-muted font-mono text-[13px] leading-relaxed">{m.data.tags.join(' · ')}</p>
-                  )}
-                  {m.data.link && (
-                    <p class="font-mono text-[13px] leading-relaxed">
-                      <a href={m.data.link.href} class="text-ink hover:text-muted">
-                        {m.data.link.text}
-                      </a>
-                    </p>
-                  )}
+        <ol>
+          {g.milestones.map((m) => (
+            <li class="border-line-soft grid gap-3 border-t py-6 md:grid-cols-12 md:items-baseline md:gap-x-6">
+              <p class="text-muted font-mono text-[13px] leading-relaxed md:col-span-2">
+                {formatMonth(m.data.date)}
+                <br />
+                {m.data.label}
+              </p>
+              <h3 class="text-2xl leading-[1.15] font-semibold tracking-[-0.02em] text-balance md:col-span-5 md:text-[26px]">
+                {m.data.title}
+              </h3>
+              <div class="flex flex-col gap-2 md:col-span-5">
+                <div class="milestone-body text-body text-lg leading-[1.6] text-pretty">
+                  <m.Content />
                 </div>
-              </li>
-            ))}
-          </ol>
-        </section>
-      ))
-    }
+                {m.data.tags.length > 0 && (
+                  <p class="text-muted font-mono text-[13px] leading-relaxed">{m.data.tags.join(' · ')}</p>
+                )}
+                {m.data.link && (
+                  <p class="font-mono text-[13px] leading-relaxed">
+                    <a href={m.data.link.href} class="text-ink hover:text-muted">
+                      {m.data.link.text}
+                    </a>
+                  </p>
+                )}
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+    ))}
 
     <PageEnd headline="That’s the story so far" />
   </main>
@@ -117,13 +130,18 @@ const navLinks = [
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
     const lists = document.querySelectorAll<HTMLElement>('main ol[aria-hidden]');
     lists.forEach((l) => l.querySelectorAll('[data-sq]').forEach((s) => s.classList.add('sq-hidden')));
-    const io = new IntersectionObserver((entries) => {
-      for (const e of entries) {
-        if (!e.isIntersecting) continue;
-        io.unobserve(e.target);
-        e.target.querySelectorAll<HTMLElement>('[data-sq]').forEach((s, i) => setTimeout(() => s.classList.remove('sq-hidden'), i * 45));
-      }
-    }, { threshold: 0.5 });
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          io.unobserve(e.target);
+          e.target
+            .querySelectorAll<HTMLElement>('[data-sq]')
+            .forEach((s, i) => setTimeout(() => s.classList.remove('sq-hidden'), i * 45));
+        }
+      },
+      { threshold: 0.5 },
+    );
     lists.forEach((l) => io.observe(l));
   }
 </script>

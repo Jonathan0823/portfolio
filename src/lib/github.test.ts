@@ -48,7 +48,12 @@ describe('parseGithubResponse', () => {
       calendar: {
         total: 5,
         weeks: [
-          { days: [{ date: '2026-11-22', count: 0 }, { date: '2026-11-23', count: 2 }] },
+          {
+            days: [
+              { date: '2026-11-22', count: 0 },
+              { date: '2026-11-23', count: 2 },
+            ],
+          },
           { days: [{ date: '2026-11-29', count: 3 }] },
         ],
       },
@@ -91,9 +96,9 @@ describe('loadGithubStats', () => {
       throw new Error('offline');
     });
     expect(await loadGithubStats({ token: 't', snapshot, fetchFn: boom, warn: vi.fn() })).toBe(snapshot);
-    expect(
-      await loadGithubStats({ token: 't', snapshot, fetchFn: okFetch({ data: {} }), warn: vi.fn() }),
-    ).toBe(snapshot);
+    expect(await loadGithubStats({ token: 't', snapshot, fetchFn: okFetch({ data: {} }), warn: vi.fn() })).toBe(
+      snapshot,
+    );
   });
 });
 

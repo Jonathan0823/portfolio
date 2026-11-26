@@ -12,10 +12,16 @@ const { links, brandHref = '#top' } = Astro.props;
       data-nav-bg
       aria-hidden="true"
       class="border-line pointer-events-none absolute inset-0 -z-10 border-b bg-paper/95 opacity-0 backdrop-blur-md transition-opacity duration-200 motion-reduce:transition-none"
-    >
-    </div>
+    ></div>
 
-    <a href={brandHref} data-cursor={brandHref === '/' ? 'back' : undefined} aria-label={brandHref === '/' ? 'Eguin Jonathan, back to the home page' : undefined} class="bg-paper px-3.5 py-2.5 text-[17px] font-semibold tracking-[-0.03em] whitespace-nowrap text-ink no-underline">{brandHref === '/' && <span aria-hidden="true">← </span>}Eguin Jonathan</a>
+    <a
+      href={brandHref}
+      data-cursor={brandHref === '/' ? 'back' : undefined}
+      aria-label={brandHref === '/' ? 'Eguin Jonathan, back to the home page' : undefined}
+      class="bg-paper px-3.5 py-2.5 text-[17px] font-semibold tracking-[-0.03em] whitespace-nowrap text-ink no-underline"
+    >
+      {brandHref === '/' && <span aria-hidden="true">← </span>}Eguin Jonathan
+    </a>
 
     <div class="bg-paper hidden gap-0.5 p-1.5 font-mono text-[13px] md:flex">
       {links.map((l) => (
@@ -26,7 +32,10 @@ const { links, brandHref = '#top' } = Astro.props;
             'px-3 py-1.5 text-ink no-underline decoration-accent decoration-2 underline-offset-[6px] aria-[current=true]:underline',
             l.sec === 'contact' && 'bg-ink text-paper',
           ]}
-          data-pixel-btn={l.sec === 'contact' ? 'dark' : undefined}>{l.label}</a>
+          data-pixel-btn={l.sec === 'contact' ? 'dark' : undefined}
+        >
+          {l.label}
+        </a>
       ))}
     </div>
 
@@ -40,7 +49,10 @@ const { links, brandHref = '#top' } = Astro.props;
           <a
             href={l.href}
             data-sec={l.sec}
-            class="py-1 font-sans text-[28px] font-semibold tracking-[-0.03em] text-ink no-underline decoration-accent decoration-2 underline-offset-4 aria-[current=true]:underline">{l.label}</a>
+            class="py-1 font-sans text-[28px] font-semibold tracking-[-0.03em] text-ink no-underline decoration-accent decoration-2 underline-offset-4 aria-[current=true]:underline"
+          >
+            {l.label}
+          </a>
         ))}
       </div>
     </details>
@@ -49,8 +61,7 @@ const { links, brandHref = '#top' } = Astro.props;
       data-progress
       aria-hidden="true"
       class="pointer-events-none absolute top-full right-0 left-0 flex gap-px overflow-hidden opacity-0 transition-opacity duration-200 motion-reduce:transition-none"
-    >
-    </div>
+    ></div>
   </div>
 </nav>
 
@@ -76,7 +87,8 @@ const { links, brandHref = '#top' } = Astro.props;
     const heat = [5, 4, 3, 2, 1].map((i) => HEAT_PALETTE[i]);
     const hero = document.getElementById('top');
     let cells: HTMLElement[] = [];
-    let lit = -1, frame = 0;
+    let lit = -1,
+      frame = 0;
 
     const build = () => {
       const count = Math.ceil(innerWidth / 10);
@@ -104,9 +116,14 @@ const { links, brandHref = '#top' } = Astro.props;
       cells.forEach((cell, i) => cell.classList.toggle('opacity-0', i >= count));
       lit = count;
     };
-    const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
     addEventListener('scroll', schedule, { passive: true });
-    addEventListener('resize', () => { build(); schedule(); });
+    addEventListener('resize', () => {
+      build();
+      schedule();
+    });
     build();
     update();
   }

@@ -36,7 +36,12 @@ export function cellProgress(t: number, delay: number): number {
 export function radialDelays(columns: number, rows: number, originX: number, originY: number): Float32Array {
   const delays = new Float32Array(columns * rows);
   let farthest = 1;
-  for (const [x, y] of [[0, 0], [columns, 0], [0, rows], [columns, rows]]) {
+  for (const [x, y] of [
+    [0, 0],
+    [columns, 0],
+    [0, rows],
+    [columns, rows],
+  ]) {
     farthest = Math.max(farthest, Math.hypot(x - originX, y - originY));
   }
   for (let y = 0; y < rows; y++) {
@@ -57,7 +62,8 @@ export function cellsPath(mask: Uint8Array, columns: number, size: number): stri
   let path = '';
   for (let i = 0; i < mask.length; i++) {
     if (!mask[i]) continue;
-    const x = i % columns, y = Math.floor(i / columns);
+    const x = i % columns,
+      y = Math.floor(i / columns);
     let run = 1;
     while (x + run < columns && mask[i + run]) run++;
     path += `M${x * size} ${y * size}h${run * size}v${size + 0.5}h-${run * size}z`;

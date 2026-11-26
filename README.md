@@ -30,14 +30,14 @@ pnpm lhci     # Lighthouse CI on / and /story, mobile and desktop
 
 ## Scripts
 
-| Script | What it does |
-| --- | --- |
-| `dev` | Starts the Astro dev server |
-| `build` | Builds the static site into `dist/` |
-| `preview` | Serves the built `dist/` |
-| `check` | Runs `astro check` |
-| `test` | Runs the Vitest suite once |
-| `lhci` | Runs Lighthouse CI for mobile and desktop |
+| Script           | What it does                                                           |
+| ---------------- | ---------------------------------------------------------------------- |
+| `dev`            | Starts the Astro dev server                                            |
+| `build`          | Builds the static site into `dist/`                                    |
+| `preview`        | Serves the built `dist/`                                               |
+| `check`          | Runs `astro check`                                                     |
+| `test`           | Runs the Vitest suite once                                             |
+| `lhci`           | Runs Lighthouse CI for mobile and desktop                              |
 | `stats:snapshot` | Refreshes the committed GitHub stats snapshot (needs `GH_STATS_TOKEN`) |
 
 ## Project layout

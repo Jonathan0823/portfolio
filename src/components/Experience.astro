@@ -11,7 +11,12 @@ const projects = await getProjects();
 
 const work = (await getRoles('work')).map((role) => {
   const squares = roleSquares(role, currentMonth);
-  return { role, squares, range: formatRange(role.data.start, role.data.end), duration: formatDuration(squares.length) };
+  return {
+    role,
+    squares,
+    range: formatRange(role.data.start, role.data.end),
+    duration: formatDuration(squares.length),
+  };
 });
 const cv = cvAvailable();
 const education = await getRoles('education');
@@ -23,46 +28,88 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 <Section id="experience" title="Experience.">
   {cv && (
-    <a slot="aside" href="/cv.pdf" class="text-ink"><span class="md:hidden">CV (PDF)</span><span class="hidden md:inline">Download CV (PDF)</span></a>
+    <a slot="aside" href="/cv.pdf" class="text-ink">
+      <span class="md:hidden">CV (PDF)</span>
+      <span class="hidden md:inline">Download CV (PDF)</span>
+    </a>
   )}
   {work.map(({ role, squares, range, duration }) => (
     <div class="grid grid-cols-12 gap-x-6 border-t border-ink pt-8 pb-4 md:py-10">
       <div class="col-span-12 flex flex-col md:sticky md:top-24 md:col-span-3 md:gap-2.5 md:self-start">
-        <p class="font-mono text-[13px] leading-relaxed text-muted md:hidden">{range} · {duration}</p>
+        <p class="font-mono text-[13px] leading-relaxed text-muted md:hidden">
+          {range} · {duration}
+        </p>
         <p class="hidden text-[22px] leading-tight font-semibold tracking-[-0.02em] md:block">{range}</p>
         <p class="hidden font-mono text-[13px] leading-relaxed text-muted md:block">{duration}</p>
         <div class="hidden max-w-[204px] flex-wrap gap-[3px] md:flex" role="img" aria-label={summary(squares)}>
-          {squares.map((q) => <span data-sq class:list={['sq size-3.5', q.hasAchievement ? 'bg-accent' : 'bg-square']} title={q.label}></span>)}
+          {squares.map((q) => (
+            <span
+              data-sq
+              class:list={['sq size-3.5', q.hasAchievement ? 'bg-accent' : 'bg-square']}
+              title={q.label}
+            ></span>
+          ))}
         </div>
       </div>
       <div class="col-span-12 flex flex-col md:col-span-9">
-        <p class="mt-2.5 text-[26px] leading-[1.15] font-semibold tracking-[-0.02em] md:mt-0 md:text-[32px] md:leading-[1.1] md:tracking-[-0.03em]">{role.data.title}</p>
+        <p class="mt-2.5 text-[26px] leading-[1.15] font-semibold tracking-[-0.02em] md:mt-0 md:text-[32px] md:leading-[1.1] md:tracking-[-0.03em]">
+          {role.data.title}
+        </p>
         <p class="mt-1 font-mono text-[13px] leading-relaxed text-muted md:pb-3">{place(role.data)}</p>
         <div class="my-4 flex max-w-[156px] flex-wrap gap-[3px] md:hidden" role="img" aria-label={summary(squares)}>
-          {squares.map((q) => <span data-sq class:list={['sq size-2.5', q.hasAchievement ? 'bg-accent' : 'bg-square']} title={q.label}></span>)}
+          {squares.map((q) => (
+            <span
+              data-sq
+              class:list={['sq size-2.5', q.hasAchievement ? 'bg-accent' : 'bg-square']}
+              title={q.label}
+            ></span>
+          ))}
         </div>
         {role.data.achievements
           .toSorted((a, b) => b.month.localeCompare(a.month))
           .map((a) => (
             <div id={a.id} class="border-t border-line-soft py-3.5 md:-mx-3 md:px-3">
               <div class="md:grid md:grid-cols-[1fr_240px] md:items-baseline md:gap-6">
-                <p class="text-[17px] leading-[1.55] text-body text-pretty md:text-lg md:leading-relaxed">{a.text}{(() => {
+                <p class="text-[17px] leading-[1.55] text-body text-pretty md:text-lg md:leading-relaxed">
+                  {a.text}
+                  {(() => {
                     const published = projectForAchievement(projects, a.id);
-                    return published && (<> I also published an open-source version: <a href={`#${projectAnchor(published.id)}`} class="text-ink">{published.data.name} ↓</a></>);
-                  })()}</p>
+                    return (
+                      published && (
+                        <>
+                          {' '}
+                          I also published an open-source version:{' '}
+                          <a href={`#${projectAnchor(published.id)}`} class="text-ink">
+                            {published.data.name} ↓
+                          </a>
+                        </>
+                      )
+                    );
+                  })()}
+                </p>
                 <div class="mt-1.5 flex justify-between gap-3 md:mt-0 md:flex-col md:items-end md:gap-1 md:text-right">
-                  {a.tags.length > 0 && <p class="font-mono text-[13px] leading-relaxed text-muted">{a.tags.join(' · ')}</p>}
+                  {a.tags.length > 0 && (
+                    <p class="font-mono text-[13px] leading-relaxed text-muted">{a.tags.join(' · ')}</p>
+                  )}
                 </div>
               </div>
               {a.detail && (
                 <details class="group mt-2 md:mt-0">
                   <summary class="cursor-pointer list-none text-right font-mono text-[13px] leading-relaxed text-ink [&::-webkit-details-marker]:hidden">
-                    <span class="group-open:hidden">Open +</span><span class="hidden group-open:inline">Close −</span>
+                    <span class="group-open:hidden">Open +</span>
+                    <span class="hidden group-open:inline">Close −</span>
                   </summary>
                   <div class="grid gap-6 pt-5 pb-2 md:grid-cols-[1.1fr_1fr]">
                     {a.visual && <Visual visual={a.visual} />}
                     <dl>
-                      {([['Problem', a.detail.problem], ['What I did', a.detail.did], ['Why', a.detail.why], ['Result', a.detail.result]] as const)
+                      {(
+                        [
+                          ['Problem', a.detail.problem],
+                          ['What I did', a.detail.did],
+                          ['Why', a.detail.why],
+                          ['Result', a.detail.result],
+                        ] as const
+                      )
                         .filter(([, v]) => v)
                         .map(([k, v]) => (
                           <div class="grid grid-cols-[96px_1fr] gap-3 border-t border-line-soft py-2.5">
@@ -86,9 +133,13 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
         Education<span class="md:hidden"> · {formatRange(e.data.start, e.data.end)}</span>
       </p>
       <div class="col-span-12 flex flex-col gap-1 md:col-span-9">
-        <p class="text-lg leading-snug text-ink md:text-body">{e.data.title}, {e.data.org}</p>
+        <p class="text-lg leading-snug text-ink md:text-body">
+          {e.data.title}, {e.data.org}
+        </p>
         <p class="font-mono text-[13px] leading-relaxed text-muted">
-          <span class="hidden md:inline">{formatRange(e.data.start, e.data.end)} · </span>{e.data.note && <span class="md:hidden">{cap(e.data.note)}</span>}{e.data.note && <span class="hidden md:inline">{e.data.note}</span>}
+          <span class="hidden md:inline">{formatRange(e.data.start, e.data.end)} · </span>
+          {e.data.note && <span class="md:hidden">{cap(e.data.note)}</span>}
+          {e.data.note && <span class="hidden md:inline">{e.data.note}</span>}
         </p>
       </div>
     </div>
@@ -96,7 +147,9 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
   <div class="flex flex-col gap-3 border-t border-ink pt-5 md:flex-row md:justify-between md:gap-6 font-mono text-[13px] leading-relaxed text-muted">
     <p>Each square is a month in the role. Red months have a result listed.</p>
-    <a href="/story" data-cursor="next" class="text-ink">Read the full story →</a>
+    <a href="/story" data-cursor="next" class="text-ink">
+      Read the full story →
+    </a>
   </div>
 </Section>
 
@@ -105,15 +158,18 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
     const squares = document.querySelectorAll<HTMLElement>('#experience [data-sq]');
     squares.forEach((s) => s.classList.add('sq-hidden'));
-    const io = new IntersectionObserver((entries) => {
-      for (const e of entries) {
-        if (!e.isIntersecting) continue;
-        io.unobserve(e.target);
-        e.target.querySelectorAll<HTMLElement>('[data-sq]').forEach((s, i) =>
-          setTimeout(() => s.classList.remove('sq-hidden'), i * 35),
-        );
-      }
-    }, { threshold: 0.3 });
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          io.unobserve(e.target);
+          e.target
+            .querySelectorAll<HTMLElement>('[data-sq]')
+            .forEach((s, i) => setTimeout(() => s.classList.remove('sq-hidden'), i * 35));
+        }
+      },
+      { threshold: 0.3 },
+    );
     groups.forEach((g) => io.observe(g));
   }
 </script>

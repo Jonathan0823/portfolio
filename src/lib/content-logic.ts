@@ -84,9 +84,7 @@ export function groupMilestonesByYear<T extends MilestoneEntry>(
     const key = m.data.label === NOW_LABEL ? NOW_YEAR : yearOf(m.data.date);
     buckets.set(key, [...(buckets.get(key) ?? []), m]);
   }
-  const keys = [...buckets.keys()].sort((a, b) =>
-    a === NOW_YEAR ? 1 : b === NOW_YEAR ? -1 : a.localeCompare(b),
-  );
+  const keys = [...buckets.keys()].sort((a, b) => (a === NOW_YEAR ? 1 : b === NOW_YEAR ? -1 : a.localeCompare(b)));
   return keys.map((key) => {
     const info = years.find((y) => y.year === key);
     if (!info) throw new Error(`No subtitle for story year "${key}": add it to src/content/years.yaml`);

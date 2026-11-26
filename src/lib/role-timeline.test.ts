@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { formatDuration, formatMonth, formatRange, monthOf, monthsOfYear, resolveEnd, roleSquares, wholeYearsSince, yearOf, type RoleEntry } from './role-timeline';
+import {
+  formatDuration,
+  formatMonth,
+  formatRange,
+  monthOf,
+  monthsOfYear,
+  resolveEnd,
+  roleSquares,
+  wholeYearsSince,
+  yearOf,
+  type RoleEntry,
+} from './role-timeline';
 
 const role = (start: string, end: string, months: string[] = []): RoleEntry => ({
   id: 'r',
@@ -17,7 +28,14 @@ describe('roleSquares', () => {
   it('gives one square per month of the role, ends included', () => {
     const sq = roleSquares(role('2024-11', '2025-06'), '2026-11');
     expect(sq.map((s) => s.month)).toEqual([
-      '2024-11', '2024-12', '2025-01', '2025-02', '2025-03', '2025-04', '2025-05', '2025-06',
+      '2024-11',
+      '2024-12',
+      '2025-01',
+      '2025-02',
+      '2025-03',
+      '2025-04',
+      '2025-05',
+      '2025-06',
     ]);
   });
 
@@ -39,10 +57,8 @@ describe('roleSquares', () => {
 
 describe('formatting', () => {
   it('formats a month', () => expect(formatMonth('2023-09')).toBe('Sep 2023'));
-  it('formats a finished range', () =>
-    expect(formatRange('2024-11', '2025-06')).toBe('Nov 2024 – Jun 2025'));
-  it('formats an open range with "now"', () =>
-    expect(formatRange('2025-07', 'present')).toBe('Jul 2025 – now'));
+  it('formats a finished range', () => expect(formatRange('2024-11', '2025-06')).toBe('Nov 2024 – Jun 2025'));
+  it('formats an open range with "now"', () => expect(formatRange('2025-07', 'present')).toBe('Jul 2025 – now'));
   it('formats durations', () => {
     expect(formatDuration(8)).toBe('8 mo');
     expect(formatDuration(17)).toBe('1 yr 5 mo');

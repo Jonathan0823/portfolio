@@ -1,15 +1,15 @@
-- year: "2023"
-  subtitle: "The year I started writing code every day."
-  meta: "Informatics student, UNSIKA"
-- year: "2024"
-  subtitle: "The year someone paid me to write code."
-  meta: "Student, then full-stack intern at Century Batteries"
-- year: "2025"
-  subtitle: "The year the factory became my lab."
-  meta: "Intern, then software engineer at Century Batteries"
-- year: "2026"
-  subtitle: "The year I started building tools for how I build."
-  meta: "Software engineer, and tinkering with AI agents at night"
-- year: "now"
-  subtitle: "Looking for a remote backend or full-stack role."
-  meta: "November 2026 · open to remote roles"
+- year: '2023'
+  subtitle: 'The year I started writing code every day.'
+  meta: 'Informatics student, UNSIKA'
+- year: '2024'
+  subtitle: 'The year someone paid me to write code.'
+  meta: 'Student, then full-stack intern at Century Batteries'
+- year: '2025'
+  subtitle: 'The year the factory became my lab.'
+  meta: 'Intern, then software engineer at Century Batteries'
+- year: '2026'
+  subtitle: 'The year I started building tools for how I build.'
+  meta: 'Software engineer, and tinkering with AI agents at night'
+- year: 'now'
+  subtitle: 'Looking for a remote backend or full-stack role.'
+  meta: 'November 2026 · open to remote roles'

@@ -1,4 +1,3 @@
-
 export interface BlobGeometry {
   longRadius: number;
   shortRadius: number;
@@ -12,8 +11,10 @@ export function blobGeometry(radius: number, stretch: number): BlobGeometry {
 }
 
 export function blobValue(du: number, dv: number, heading: number, geometry: BlobGeometry): number | null {
-  const cos = Math.cos(heading), sin = Math.sin(heading);
-  const along = du * cos + dv * sin, across = -du * sin + dv * cos;
+  const cos = Math.cos(heading),
+    sin = Math.sin(heading);
+  const along = du * cos + dv * sin,
+    across = -du * sin + dv * cos;
   const { longRadius, shortRadius, shift } = geometry;
   if ((along / longRadius) ** 2 + (across / shortRadius) ** 2 > 1) return null;
   const fromCore = Math.hypot((along - shift) / longRadius, across / shortRadius);

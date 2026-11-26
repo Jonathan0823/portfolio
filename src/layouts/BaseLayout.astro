@@ -31,7 +31,8 @@ const { title, description, image, imageAlt, jsonLd, noindex } = Astro.props;
       (function () {
         try {
           if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-          var root = document.documentElement, store = sessionStorage;
+          var root = document.documentElement,
+            store = sessionStorage;
           var arrive = store.getItem('px-arrive');
           store.removeItem('px-arrive');
           var intro = location.pathname === '/' && !store.getItem('px-intro');
@@ -39,20 +40,20 @@ const { title, description, image, imageAlt, jsonLd, noindex } = Astro.props;
           if (!arrive && !intro) return;
           root.dataset.cover = arrive ? 'arrive' : 'intro';
           root.classList.add('px-covered');
-          setTimeout(function () { root.classList.remove('px-covered'); }, 2500);
+          setTimeout(function () {
+            root.classList.remove('px-covered');
+          }, 2500);
         } catch (e) {}
       })();
     </script>
-    {
-      import.meta.env.PROD && (
-        <script
-          is:inline
-          defer
-          src="https://static.cloudflareinsights.com/beacon.min.js"
-          data-cf-beacon='{"token": "128cd33629874c88a80baa86f02aa829"}'
-        />
-      )
-    }
+    {import.meta.env.PROD && (
+      <script
+        is:inline
+        defer
+        src="https://static.cloudflareinsights.com/beacon.min.js"
+        data-cf-beacon='{"token": "128cd33629874c88a80baa86f02aa829"}'
+      />
+    )}
   </head>
   <body>
     <slot />

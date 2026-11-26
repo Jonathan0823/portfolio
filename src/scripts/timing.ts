@@ -1,4 +1,3 @@
-
 export const REFERENCE_FRAME_MS = 1000 / 60;
 const MAX_ELAPSED_MS = 100;
 

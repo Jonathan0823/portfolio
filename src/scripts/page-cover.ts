@@ -19,10 +19,21 @@ function makeCanvas() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   document.body.appendChild(canvas);
   const size = cellSize();
-  return { canvas, ctx, size, columns: Math.ceil(window.innerWidth / size), rows: Math.ceil(window.innerHeight / size) };
+  return {
+    canvas,
+    ctx,
+    size,
+    columns: Math.ceil(window.innerWidth / size),
+    rows: Math.ceil(window.innerHeight / size),
+  };
 }
 
-function play(delays: (columns: number, rows: number) => Float32Array, duration: number, covering: boolean, keep: boolean): Promise<void> {
+function play(
+  delays: (columns: number, rows: number) => Float32Array,
+  duration: number,
+  covering: boolean,
+  keep: boolean,
+): Promise<void> {
   return new Promise((resolve) => {
     const { canvas, ctx, size, columns, rows } = makeCanvas();
     const order = delays(columns, rows);
@@ -52,7 +63,12 @@ export function reveal(): void {
   const root = document.documentElement;
   if (!root.classList.contains('px-covered')) return;
   const intro = root.dataset.cover === 'intro';
-  const done = play((c, r) => cellDelays(c, r, intro ? 'bottom' : 'top'), intro ? REVEAL_MS.intro : REVEAL_MS.arrive, false, false);
+  const done = play(
+    (c, r) => cellDelays(c, r, intro ? 'bottom' : 'top'),
+    intro ? REVEAL_MS.intro : REVEAL_MS.arrive,
+    false,
+    false,
+  );
   requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('px-covered')));
   void done;
 }
@@ -71,9 +87,10 @@ export function interceptLinks(): void {
     e.preventDefault();
     try {
       sessionStorage.setItem(ARRIVE_KEY, '1');
-    } catch {
-    }
-    void coverFrom(e.clientX || window.innerWidth / 2, e.clientY || window.innerHeight / 2).then(() => location.assign(url.href));
+    } catch {}
+    void coverFrom(e.clientX || window.innerWidth / 2, e.clientY || window.innerHeight / 2).then(() =>
+      location.assign(url.href),
+    );
   });
   window.addEventListener('pageshow', (e) => {
     if (!e.persisted) return;

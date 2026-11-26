@@ -23,9 +23,13 @@ describe('cellDelays', () => {
     expect(avg(right, 20, 19, 6)).toBeLessThan(avg(right, 20, 0, 6));
   });
   it('is deterministic and bounded', () => {
-    const a = cellDelays(12, 5, 'top'), b = cellDelays(12, 5, 'top');
+    const a = cellDelays(12, 5, 'top'),
+      b = cellDelays(12, 5, 'top');
     expect(Array.from(a)).toEqual(Array.from(b));
-    for (const d of a) { expect(d).toBeGreaterThanOrEqual(0); expect(d).toBeLessThanOrEqual(SPREAD + 1e-6); }
+    for (const d of a) {
+      expect(d).toBeGreaterThanOrEqual(0);
+      expect(d).toBeLessThanOrEqual(SPREAD + 1e-6);
+    }
   });
 });
 
