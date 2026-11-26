@@ -44,14 +44,20 @@ const groups = (await getSkills()).map((g) => ({
 </Section>
 
 <style is:global>
-  /* the brand colour wipes in left to right, in pixel steps, on hover or when the cursor magnet locks on */
+  /* the brand colour wipes in left to right, in pixel steps, on hover, when the cursor magnet locks on, or when a tapped tile is lit */
   .skill-hot {
     clip-path: inset(0 100% 0 0);
     transition: clip-path 0.32s steps(6, end);
   }
-  .skill-tile:hover .skill-hot,
-  .skill-tile[data-magnet-on] .skill-hot {
+  .skill-tile[data-magnet-on] .skill-hot,
+  .skill-tile[data-lit] .skill-hot {
     clip-path: inset(0 0 0 0);
+  }
+  /* touch keeps :hover stuck on the last tap, so only real hover devices use it */
+  @media (hover: hover) {
+    .skill-tile:hover .skill-hot {
+      clip-path: inset(0 0 0 0);
+    }
   }
   [data-skill-row].skill-wait svg {
     visibility: hidden;
@@ -60,5 +66,18 @@ const groups = (await getSkills()).map((g) => ({
 
 <script>
   import { mountSkillEntrance } from '@/scripts/skill-entrance';
-  mountSkillEntrance(document.querySelectorAll<HTMLElement>('[data-skill-row]'));
+  import { mountSkillColour, type SkillColour } from '@/scripts/skill-colour';
+  import { FINE_POINTER_QUERY, REDUCE_QUERY } from '@/scripts/motion';
+
+  const section = document.getElementById('skills');
+  let colour: SkillColour | null = null;
+  // the pointer type and motion preference pick the mode, so a change remounts it
+  const syncColour = () => {
+    colour?.stop();
+    colour = section ? mountSkillColour(section) : null;
+  };
+  syncColour();
+  for (const query of [FINE_POINTER_QUERY, REDUCE_QUERY])
+    window.matchMedia(query).addEventListener('change', syncColour);
+  mountSkillEntrance(document.querySelectorAll<HTMLElement>('[data-skill-row]'), (row) => colour?.sweep(row));
 </script>
