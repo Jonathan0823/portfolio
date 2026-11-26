@@ -194,6 +194,9 @@ export function sourceBucket(lowestRow: number | undefined, lowestBucket: number
   return lowestRow === undefined || lowestRow < 0 ? WARM_BUCKET : lowestBucket;
 }
 
+/** the narrow hero's smaller field cells: the spill shows its logos by itself there */
+export const isCompactHero = (fieldCellSize: number): boolean => fieldCellSize < 10;
+
 export function pickSourceColumns(lowestRows: number[]): number[] {
   const columnCount = lowestRows.length;
   const peaks: number[] = [];

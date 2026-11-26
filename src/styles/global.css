@@ -72,7 +72,7 @@ html.has-pixel-pointer :is(input, textarea, select, [contenteditable]) {
 .btn-icon {
   flex: none;
 }
-[data-pixel-btn]:is(:hover, :focus-visible, .tide-shown, .hint-lit) .btn-icon {
+[data-pixel-btn]:is(:hover, :focus-visible, .tide-shown) .btn-icon {
   color: var(--heat);
 }
 /* the hero drip builds the headline's period: absent until built, then drawn as a blinking caret on a canvas */
@@ -80,9 +80,22 @@ html.drip-pending [data-drip-period],
 [data-drip-period].drip-caret {
   color: transparent;
 }
-/* the button whose logo is on show: by the footer tide (touch), or the hero hint's target */
-[data-pixel-btn]:is(.tide-shown, .hint-lit) {
+/* the closing button whose logo the footer tide is showing (touch) */
+[data-pixel-btn].tide-shown {
   box-shadow: 0 0 0 2px var(--color-accent);
+}
+/* the Mould's caption, under the hero's contact links (hero-mould.ts) */
+.pour-caption {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  color: var(--color-accent);
+  font: 600 13px/1.2 var(--font-mono);
+  white-space: nowrap;
+  opacity: 0;
+}
+.pour-caption.on {
+  opacity: 1;
 }
 .sq.sq-hidden {
   background-color: var(--color-line);
