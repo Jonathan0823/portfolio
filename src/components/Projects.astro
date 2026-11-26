@@ -1,9 +1,9 @@
 ---
 import Section from './Section.astro';
 import Visual from './Visual.astro';
-import { getProjects } from '../lib/content';
-import { GITHUB_REPOS_URL } from '../lib/profile';
-import { projectAnchor, projectLinks, projectYear, splitProjectBody } from '../lib/projects';
+import { getProjects } from '@/lib/content';
+import { GITHUB_REPOS_URL } from '@/lib/profile';
+import { projectAnchor, projectLinks, projectYear, splitProjectBody } from '@/lib/projects';
 
 const STATUS_COLOR: Record<string, string> = { 'Open source': '#4338CA', 'On npm': '#E5484D', 'Daily use': '#FF7A28' };
 const PEEK_BG = [
@@ -103,9 +103,9 @@ const projects = await Promise.all(
 </Section>
 
 <script>
-  import '../scripts/project-peek';
-  import { createAssembler } from '../scripts/pixel-assemble';
-  import { prefersReducedMotion } from '../scripts/motion';
+  import '@/scripts/project-peek';
+  import { createAssembler } from '@/scripts/pixel-assemble';
+  import { prefersReducedMotion } from '@/scripts/motion';
 
   document.querySelectorAll<HTMLElement>('[data-project]').forEach((project) => {
     const button = project.querySelector<HTMLButtonElement>('[data-toggle]');

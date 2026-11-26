@@ -1,8 +1,8 @@
 ---
 import ContributionCalendar from './ContributionCalendar.astro';
-import { getGithubStats } from '../lib/github-stats';
-import { CODING_SINCE } from '../lib/profile';
-import { formatDuration, formatMonth, wholeYearsSince } from '../lib/role-timeline';
+import { getGithubStats } from '@/lib/github-stats';
+import { CODING_SINCE } from '@/lib/profile';
+import { formatDuration, formatMonth, wholeYearsSince } from '@/lib/role-timeline';
 
 const { publicRepos, calendar } = await getGithubStats();
 const years = formatDuration(wholeYearsSince(CODING_SINCE, new Date()) * 12);

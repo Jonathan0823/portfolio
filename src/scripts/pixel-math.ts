@@ -1,5 +1,5 @@
 
-export { HEAT_PALETTE } from '../lib/palette';
+export { HEAT_PALETTE } from '@/lib/palette';
 
 export function hash(a: number, b: number, c = 0): number {
   const h = Math.sin(a * 127.1 + b * 311.7 + c * 74.7) * 43758.5453;

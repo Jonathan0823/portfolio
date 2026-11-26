@@ -1,13 +1,13 @@
 ---
 import { render } from 'astro:content';
-import Nav from '../components/Nav.astro';
-import PageEnd from '../components/PageEnd.astro';
-import BaseLayout from '../layouts/BaseLayout.astro';
-import { getStoryYears } from '../lib/content';
-import { NOW_LABEL, NOW_YEAR } from '../lib/content-logic';
-import { CONTACT_EMAIL, GITHUB_URL, LINKEDIN_URL, MAILTO_URL } from '../lib/profile';
-import { formatMonth } from '../lib/role-timeline';
-import { pageSeo, storyJsonLd } from '../lib/seo';
+import Nav from '@/components/Nav.astro';
+import PageEnd from '@/components/PageEnd.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getStoryYears } from '@/lib/content';
+import { NOW_LABEL, NOW_YEAR } from '@/lib/content-logic';
+import { CONTACT_EMAIL, GITHUB_URL, LINKEDIN_URL, MAILTO_URL } from '@/lib/profile';
+import { formatMonth } from '@/lib/role-timeline';
+import { pageSeo, storyJsonLd } from '@/lib/seo';
 
 const seo = pageSeo('story');
 const jsonLd = storyJsonLd(Astro.site!.href, Astro.url.pathname);

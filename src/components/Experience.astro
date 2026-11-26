@@ -1,10 +1,10 @@
 ---
 import Section from './Section.astro';
 import Visual from './Visual.astro';
-import { cvAvailable } from '../lib/site-data';
-import { getProjects, getRoles } from '../lib/content';
-import { projectAnchor, projectForAchievement } from '../lib/projects';
-import { formatDuration, formatRange, monthOf, roleSquares } from '../lib/role-timeline';
+import { cvAvailable } from '@/lib/site-data';
+import { getProjects, getRoles } from '@/lib/content';
+import { projectAnchor, projectForAchievement } from '@/lib/projects';
+import { formatDuration, formatRange, monthOf, roleSquares } from '@/lib/role-timeline';
 
 const currentMonth = monthOf(new Date());
 const projects = await getProjects();

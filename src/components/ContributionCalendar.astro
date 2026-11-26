@@ -1,6 +1,6 @@
 ---
-import { HEAT_PALETTE } from '../lib/palette';
-import { calendarLabel, cellPosition, dayTooltip, levelThresholds, relativeLevel, type GithubStats } from '../lib/github';
+import { HEAT_PALETTE } from '@/lib/palette';
+import { calendarLabel, cellPosition, dayTooltip, levelThresholds, relativeLevel, type GithubStats } from '@/lib/github';
 
 interface Props {
   calendar: GithubStats['calendar'];
@@ -67,8 +67,8 @@ const cells = calendar.weeks.flatMap((w, i) =>
 </style>
 
 <script>
-  import { HEAT_PALETTE } from '../lib/palette';
-  import { canRunTrail, prefersReducedMotion } from '../scripts/motion';
+  import { HEAT_PALETTE } from '@/lib/palette';
+  import { canRunTrail, prefersReducedMotion } from '@/scripts/motion';
 
   const LENS = 3;
   const COOL_MS = 900;

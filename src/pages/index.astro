@@ -1,13 +1,13 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import Nav from '../components/Nav.astro';
-import Hero from '../components/Hero.astro';
-import Experience from '../components/Experience.astro';
-import Skills from '../components/Skills.astro';
-import Projects from '../components/Projects.astro';
-import PageEnd from '../components/PageEnd.astro';
-import { getSkills } from '../lib/content';
-import { pageSeo, personJsonLd, websiteJsonLd } from '../lib/seo';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Nav from '@/components/Nav.astro';
+import Hero from '@/components/Hero.astro';
+import Experience from '@/components/Experience.astro';
+import Skills from '@/components/Skills.astro';
+import Projects from '@/components/Projects.astro';
+import PageEnd from '@/components/PageEnd.astro';
+import { getSkills } from '@/lib/content';
+import { pageSeo, personJsonLd, websiteJsonLd } from '@/lib/seo';
 
 const seo = pageSeo('home');
 const skills = (await getSkills()).map((s) => s.data);

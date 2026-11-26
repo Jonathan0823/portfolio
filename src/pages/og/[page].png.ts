@@ -1,5 +1,5 @@
 import type { APIRoute, GetStaticPaths } from 'astro';
-import { renderOgImage } from '../../lib/og';
+import { renderOgImage } from '@/lib/og';
 
 const IMAGES = {
   home: { headline: 'Eguin Jonathan', sub: 'Software engineer · Go, Python, TypeScript · IoT and data pipelines' },

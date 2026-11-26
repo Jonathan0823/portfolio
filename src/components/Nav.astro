@@ -55,7 +55,7 @@ const { links, brandHref = '#top' } = Astro.props;
 </nav>
 
 <script>
-  import { HEAT_PALETTE, hash } from '../scripts/pixel-math';
+  import { HEAT_PALETTE, hash } from '@/scripts/pixel-math';
 
   const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-sec]')];
   const sections = [...new Set(links.map((a) => a.dataset.sec!))]
