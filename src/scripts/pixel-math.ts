@@ -133,11 +133,15 @@ export function stepField(
       // overlays are recomputed by their owner every frame, so nothing they draw outlives them
       let h = heat[i];
       if (crest > 0 && y < horizonRow && y >= horizonRow - 3) h = Math.max(h, crest);
-      if (stamp && y >= horizonRow) h = Math.max(h, stamp[i]);
-      const water = swell > 0.5 && y >= surface && y < horizonRow;
+      // a negative stamp is the clearing around a logo: kept empty above the water so the logo stands apart
+      const stamped = stamp && y >= horizonRow ? stamp[i] : 0;
+      if (stamped < 0) continue;
+      h = Math.max(h, stamped);
+      // under a raised wave the whole column is water: solid, without the field's gaps or its dithered bottom edge
+      const water = swell > 0.5 && y < horizonRow;
       if (h < 0.3) {
         if (y >= horizonRow + drip * (0.4 + 0.6 * coverage)) continue;
-        if (y < fadeRows) {
+        if (y < fadeRows && !water) {
           const t = y / fadeRows;
           if (hash(x, y, seed + 11) > t * t * (3 - 2 * t)) continue;
         }

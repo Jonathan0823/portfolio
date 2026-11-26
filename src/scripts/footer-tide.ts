@@ -45,6 +45,7 @@ interface Placed {
   left: number;
   right: number;
   top: number;
+  bottom: number;
 }
 
 /** mounts the tide for the current pointer type; the returned function removes it again */
@@ -125,7 +126,7 @@ export function mountFooterTide(foot: HeroField): () => void {
         if (c === '#') cells.push([left + j, bottom + (h - 1 - i)]);
       }),
     );
-    return { cells, left, right: left + w - 1, top: bottom + h - 1 };
+    return { cells, left, right: left + w - 1, top: bottom + h - 1, bottom };
   };
 
   const frame = (now: number) => {
@@ -160,12 +161,18 @@ export function mountFooterTide(foot: HeroField): () => void {
     const shoulder = (right - left) * 0.35;
     // the crest glows while the water rises and fades shortly after; it is never written into the field's heat
     const glow = CREST_HEAT * Math.max(0, 1 - (now - crestAt) / CREST_FADE_MS);
+    // when the logo stands lower than the field's highest skyline (a short window), the calm field dips under it so
+    // the whole logo shows instead of half of it sinking into the field. Faded out as the water rises over it
+    const dip = logo ? Math.min(0, logo.bottom - 2 - (field.horizonRow + field.hostRows * 0.22)) : 0;
+    const dipShoulder = logo ? (logo.right - logo.left) * 0.35 : 1;
     for (let x = 0; x < field.columns; x++) {
       const out = x < left ? left - x : x > right ? x - right : 0;
       const falloff = out ? Math.exp(-((out / shoulder) ** 2)) : 1;
       // a little chop along the crest so it reads as water, not a bump
       const chop = Math.sin(x * 0.7 + now * 0.012) * 1.2 * level;
-      tideSwell.rows[x] = Math.max(0, ((top - field.horizonRow) * falloff + chop) * level);
+      const wave = Math.max(0, ((top - field.horizonRow) * falloff + chop) * level);
+      const beside = logo ? (x < logo.left - 1 ? logo.left - 1 - x : x > logo.right + 1 ? x - logo.right - 1 : 0) : 0;
+      tideSwell.rows[x] = wave + dip * Math.exp(-((beside / dipShoulder) ** 2)) * (1 - level);
       tideSwell.crest[x] = level > 0.05 && falloff > 0.2 ? glow * falloff : 0;
     }
 
@@ -174,7 +181,11 @@ export function mountFooterTide(foot: HeroField): () => void {
       if (level === 0 && logo.shownAt === Infinity) logo.shownAt = now;
       const cool = Math.min(1, Math.max(0, (now - logo.shownAt) / COOL_MS));
       const heat = LOGO_HOT + (LOGO_COOL - LOGO_HOT) * cool * cool * (3 - 2 * cool);
-      // the field draws it only above the surface, so it is uncovered as the water drains past it
+      // the field draws it only above the surface, so it is uncovered as the water drains past it. A one-cell
+      // clearing around it (negative) keeps the field's loose top pixels out of it, so it doesn't merge in
+      for (let y = Math.max(0, logo.bottom - 1); y <= Math.min(field.rows - 1, logo.top + 1); y++)
+        for (let x = Math.max(0, logo.left - 1); x <= Math.min(field.columns - 1, logo.right + 1); x++)
+          tideSwell.stamp[y * field.columns + x] = -1;
       for (const [x, y] of logo.cells)
         if (x >= 0 && x < field.columns && y >= 0 && y < field.rows) tideSwell.stamp[y * field.columns + x] = heat;
     }
@@ -182,10 +193,8 @@ export function mountFooterTide(foot: HeroField): () => void {
     const settled = level === 0 && goal === 0 && !duration;
     const cooling = !!logo && now - logo.shownAt < COOL_MS;
     if (!settled || cooling || glow > 0) raf = requestAnimationFrame(frame);
-    else {
-      tideSwell.rows.fill(0);
-      tideSwell.crest.fill(0);
-    }
+    // at rest the rows hold only the dip under the logo (the wave is at level 0), so they stay as they are
+    else tideSwell.crest.fill(0);
   };
   const run = () => {
     if (!raf) raf = requestAnimationFrame(frame);
