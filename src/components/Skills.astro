@@ -1,19 +1,64 @@
 ---
 import Section from './Section.astro';
 import { getSkills } from '@/lib/content';
+import { GRID, skillIcon } from '@/lib/skill-icons';
 
-const groups = await getSkills();
+const groups = (await getSkills()).map((g) => ({
+  group: g.data.group,
+  items: g.data.items.map((s) => ({ ...s, ...skillIcon(s) })),
+}));
 ---
 
 <Section id="skills" title="Skills.">
   <div class="border-t border-ink">
-    {groups.map((g) => (
-      <div class="grid grid-cols-12 items-baseline gap-x-6 border-t border-line-soft py-3.5 md:py-5">
-        <p class="col-span-12 font-mono text-[13px] leading-relaxed text-muted md:col-span-3">{g.data.group}</p>
-        <p class="col-span-12 mt-0.5 text-lg leading-[1.4] text-ink md:col-span-9 md:mt-0 md:text-[22px] md:tracking-[-0.01em]">
-          {g.data.items.join(', ')}
-        </p>
+    {groups.map(({ group, items }) => (
+      <div data-skill-row class="grid grid-cols-12 gap-x-6 border-t border-line-soft py-5 md:py-7">
+        <p class="col-span-12 pb-3 font-mono text-[13px] leading-relaxed text-muted md:col-span-3 md:pb-0">{group}</p>
+        <div class="relative col-span-12 md:col-span-9">
+          <ul aria-label={group} class="flex flex-wrap items-end gap-x-4 gap-y-5 md:gap-x-6">
+            {items.map((s) => (
+              <li data-cursor-magnet class="skill-tile flex w-[76px] flex-col items-center gap-2 md:w-[88px]">
+                <svg
+                  viewBox={`0 0 ${GRID} ${GRID}`}
+                  aria-hidden="true"
+                  shape-rendering="crispEdges"
+                  data-bits={s.bits}
+                  class={s.primary ? 'size-16 md:size-[76px]' : 'size-11 md:size-12'}
+                >
+                  <path class="fill-ink" d={s.base} />
+                  <g class="skill-hot">
+                    {s.layers.map((l) => (
+                      <path d={l.d} fill={l.color} />
+                    ))}
+                  </g>
+                </svg>
+                <span class="text-center font-mono text-[12px] leading-tight text-ink">{s.name}</span>
+              </li>
+            ))}
+          </ul>
+          <canvas aria-hidden="true" data-skill-canvas class="pointer-events-none absolute inset-0 size-full" />
+        </div>
       </div>
     ))}
   </div>
 </Section>
+
+<style is:global>
+  /* the brand colour wipes in left to right, in pixel steps, on hover or when the cursor magnet locks on */
+  .skill-hot {
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 0.32s steps(6, end);
+  }
+  .skill-tile:hover .skill-hot,
+  .skill-tile[data-magnet-on] .skill-hot {
+    clip-path: inset(0 0 0 0);
+  }
+  [data-skill-row].skill-wait svg {
+    visibility: hidden;
+  }
+</style>
+
+<script>
+  import { mountSkillEntrance } from '@/scripts/skill-entrance';
+  mountSkillEntrance(document.querySelectorAll<HTMLElement>('[data-skill-row]'));
+</script>

@@ -83,6 +83,14 @@ describe('milestoneSchema', () => {
 describe('skillGroupSchema', () => {
   it('requires at least one item', () => {
     expect(skillGroupSchema.safeParse({ group: 'Languages', items: [] }).success).toBe(false);
-    expect(skillGroupSchema.safeParse({ group: 'Languages', items: ['Go'] }).success).toBe(true);
+    expect(skillGroupSchema.safeParse({ group: 'Languages', items: [{ name: 'Go', icon: 'go' }] }).success).toBe(true);
+  });
+  it('needs exactly one way to draw each skill', () => {
+    const parse = (item: object) => skillGroupSchema.safeParse({ group: 'Data', items: [item] }).success;
+    expect(parse({ name: 'Go' })).toBe(false);
+    expect(parse({ name: 'Go', icon: 'go', mono: 'GO' })).toBe(false);
+    expect(parse({ name: 'Modbus', mono: 'MB' })).toBe(true);
+    expect(parse({ name: 'Pi agent', art: 'pi' })).toBe(true);
+    expect(parse({ name: 'Pi agent', art: 'nope' })).toBe(false);
   });
 });

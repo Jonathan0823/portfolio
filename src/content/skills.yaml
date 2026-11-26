@@ -1,16 +1,53 @@
+# Each skill is drawn as a pixel icon: `icon` is a simple-icons slug (https://simpleicons.org),
+# `mono` is 1–3 letters for a monogram, `art` names a hand-drawn mark in src/lib/skill-art.ts.
+# `primary: true` draws it larger. Spoken languages live in the footer.
 - group: Languages
-  items: [Go, Python, Rust, TypeScript]
+  items:
+    - { name: Go, icon: go, primary: true }
+    - { name: TypeScript, icon: typescript, primary: true }
+    - { name: Python, icon: python, primary: true }
+    - { name: Rust, icon: rust }
 - group: Backend
-  items: [Nest.js, Express.js, REST and WebSocket APIs]
+  items:
+    - { name: NestJS, icon: nestjs }
+    - { name: Express, icon: express }
+    - { name: WebSocket, mono: WS }
 - group: Frontend & mobile
-  items: [Next.js, React, React Native, Svelte, SvelteKit, Astro, Vue, Tailwind CSS]
+  items:
+    - { name: Next.js, icon: nextdotjs }
+    - { name: React, icon: react }
+    - { name: React Native, icon: react }
+    - { name: Svelte, icon: svelte }
+    - { name: Astro, icon: astro }
+    - { name: Vue, icon: vuedotjs }
+    - { name: Tailwind CSS, icon: tailwindcss }
 - group: AI & agents
-  items: [Pi agent harness, Claude Code, agentic coding]
+  items:
+    - { name: Claude Code, icon: claude }
+    - { name: Pi agent, art: pi }
 - group: IoT
-  items: [Modbus, MQTT (Mosquitto), Bluetooth, WiFi, Arduino]
+  items:
+    - { name: Modbus, mono: MB }
+    - { name: MQTT, icon: mqtt }
+    - { name: Mosquitto, icon: eclipsemosquitto }
+    - { name: Bluetooth, icon: bluetooth }
+    - { name: Wi-Fi, mono: WI }
+    - { name: Arduino, icon: arduino }
 - group: Data
-  items: [PostgreSQL, 'Redis (caching, Redis Streams)', MySQL, SQL Server, MongoDB]
+  items:
+    - { name: PostgreSQL, icon: postgresql }
+    - { name: Redis, icon: redis }
+    - { name: MySQL, icon: mysql }
+    - { name: SQL Server, mono: SQL }
+    - { name: MongoDB, icon: mongodb }
 - group: DevOps & tools
-  items: [Linux, Neovim, Docker, Podman, Nginx, CI with GitHub Actions, Git, GitHub, GitLab]
-- group: Spoken languages
-  items: [Indonesian (native), English (advanced), Japanese (beginner)]
+  items:
+    - { name: Linux, icon: linux }
+    - { name: Docker, icon: docker }
+    - { name: Podman, icon: podman }
+    - { name: Nginx, icon: nginx }
+    - { name: GitHub Actions, icon: githubactions }
+    - { name: Git, icon: git }
+    - { name: GitHub, icon: github }
+    - { name: GitLab, icon: gitlab }
+    - { name: Neovim, icon: neovim }
