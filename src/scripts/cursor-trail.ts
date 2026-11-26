@@ -1,6 +1,6 @@
 import { HEAT_PALETTE, hash } from './pixel-math';
 import type { HeroField } from './hero-field';
-import { blobGeometry, blobValue, levelForValue, shortestTurn } from './blob-shape';
+import { blobGeometry, blobValue, headingGrow, levelForValue, rectDistance, shortestTurn } from './blob-shape';
 import { decayFactor, easeFactor, frameScale, smoothVelocity } from './timing';
 import { isShapeName, morphShows, shapeCells, type ShapeName } from './cursor-shapes';
 import { MAGNET_LEAN, MAGNET_ZONE, idleRing, magnetPull, ringValue, stepRing, type RingShape } from './cursor-ring';
@@ -121,8 +121,7 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
   let hoveredLink: Element | null = null,
     linkProgress = 0,
     overLink = false;
-  let onHeading = false,
-    overText = false,
+  let overText = false,
     overTextValue = 0,
     visible = 0,
     cell = MAX_CELL;
@@ -445,11 +444,19 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     const named = target?.closest<HTMLElement>('[data-cursor]')?.dataset.cursor;
     shapeTarget = isShapeName(named) ? named : null;
     const link = shapeTarget ? null : (target?.closest('a,button,summary') ?? null);
-    onHeading = !!target?.closest('h1,h2');
+    // grow toward heading size only near the heading's actual text, not anywhere on its row
+    const heading = target?.closest('h1,h2');
+    let grow = 0;
+    if (heading) {
+      const range = document.createRange();
+      range.selectNodeContents(heading);
+      for (const r of Array.from(range.getClientRects()))
+        grow = Math.max(grow, headingGrow(rectDistance(pointerClientX, pointerClientY, r)));
+    }
     const onSquare = !!target?.closest('[data-sq]');
     overLink = !!link && !onSquare && !link.hasAttribute('data-pixel-btn');
     if (link && !onSquare && !link.hasAttribute('data-pixel-btn')) hoveredLink = link;
-    baseRadius = onSquare ? SQUARE_RADIUS : onHeading ? REST_RADIUS * HEADING_SCALE : REST_RADIUS;
+    baseRadius = onSquare ? SQUARE_RADIUS : REST_RADIUS * (1 + (HEADING_SCALE - 1) * grow);
   };
 
   const onMove = (e: MouseEvent) => {
