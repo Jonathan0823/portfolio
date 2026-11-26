@@ -102,6 +102,8 @@ export interface FieldShape {
   cap?: number;
   /** no gaps in the body under the surface; only the loose top and the dithered bottom edge stay ragged */
   solid?: boolean;
+  /** footer wordmark mould, per cell: 1 = letter (forced present, one step hotter), 10+n = letter at heat level n, 2 = foundation (forced present), -1 = carved out, 0 = the field's own */
+  mold?: Int8Array;
 }
 
 export function stepField(
@@ -116,6 +118,7 @@ export function stepField(
   const coverage = Math.max(0, Math.min(1, shape.coverage ?? 1));
   const fadeRows = hostRows * (shape.fadeEdge ?? 0);
   const stamp = shape.stamp?.length === columns * rows ? shape.stamp : null;
+  const mold = shape.mold?.length === columns * rows ? shape.mold : null;
   bucket.fill(-1);
   lowestRow.fill(-1);
   lowestBucket.fill(0);
@@ -142,6 +145,9 @@ export function stepField(
       hottest = Math.max(hottest, heat[i]);
       // overlays are recomputed by their owner every frame, so nothing they draw outlives them
       let h = heat[i];
+      const m = mold ? mold[i] : 0;
+      if (m < 0) continue;
+      const forced = m > 0;
       if (crest > 0 && y < horizonRow && y >= horizonRow - 3) h = Math.max(h, crest);
       // a negative stamp is the clearing around a logo: kept empty above the water so the logo stands apart
       if (swell > 0 && shape.cap && y > shape.cap && !(stamp && stamp[i] > 0)) continue;
@@ -151,7 +157,7 @@ export function stepField(
       // everything under a raised surface is solid water, without the field's gaps, from the first rows it lifts. The
       // dithered bottom edge stays, as it does across the rest of the footer
       const water = (shape.solid || swell > 0.05) && y < horizonRow;
-      if (h < 0.3) {
+      if (h < 0.3 && !forced) {
         if (y >= horizonRow + drip * (0.4 + 0.6 * coverage)) continue;
         if (y < fadeRows) {
           const t = y / fadeRows;
@@ -166,12 +172,14 @@ export function stepField(
       const ridge = Math.exp(-Math.pow(depth - ridgeLine, 2) / 0.018);
       const grain = hash(x, y) - 0.5;
       const value = 0.1 + 0.5 * base + 0.42 * ridge * density + 0.18 * density + (h < 0.3 ? h : 0) + grain * 0.2;
-      if (base + grain * 0.25 < 0.36 + (1 - density) * 0.38 && ridge * density < 0.35 && h < 0.25 && !water) continue;
+      if (base + grain * 0.25 < 0.36 + (1 - density) * 0.38 && ridge * density < 0.35 && h < 0.25 && !water && !forced)
+        continue;
       const level = bucketFor(h >= 0.3 ? Math.max(value, 0.1 + h + grain * 0.1) : value);
-      bucket[i] = level;
+      const lifted = m === 1 ? Math.min(4, level + 1) : m >= 10 ? m - 10 : level;
+      bucket[i] = lifted;
       if (y > lowestRow[x]) {
         lowestRow[x] = y;
-        lowestBucket[x] = level;
+        lowestBucket[x] = lifted;
       }
     }
   }

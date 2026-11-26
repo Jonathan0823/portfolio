@@ -23,3 +23,17 @@ _Avoid_: Proficiency, tech stack item
 **Milestone**:
 A dated moment in Eguin's story, told as narrative. It may link to a Role, Achievement or Project, but never replaces one.
 _Avoid_: Event, timeline item, story entry
+
+## Page effects
+
+**Ignite**:
+The hero field's boot once the intro cover has fully dissolved: a cold, dim field, a spark, then heat flooding outward until the real field takes over.
+_Avoid_: Intro, loading animation, boot
+
+**Drip**:
+After the Ignite, lava gathers above the hero headline's red period and drops fall from it to build the period, which then blinks as a pixel caret.
+_Avoid_: Typing effect, cursor animation
+
+**Wordmark**:
+The word EGUIN standing in the footer field's skyline, made of field cells; it dissolves out around a closing button's logo and back in. On touch it is one step of the footer cycle.
+_Avoid_: Footer logo, footer title

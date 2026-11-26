@@ -111,3 +111,34 @@ describe('stepField', () => {
     expect(f.hottest).toBeCloseTo(0.94, 5);
   });
 });
+
+describe('stepField mold', () => {
+  const at = (f: ReturnType<typeof createField>, x: number, y: number) => f.bucket[y * f.columns + x];
+
+  it('forces letter cells present, one step hotter, and carves cells out', () => {
+    const plain = createField(1440, 336),
+      moulded = createField(1440, 336);
+    // far under the horizon the field is empty by itself
+    const x = 40,
+      deep = plain.hostRows - 1;
+    const carved = 10;
+    stepField(plain, 0, 1.3);
+    expect(at(plain, x, deep)).toBe(-1);
+    const mold = new Int8Array(moulded.columns * moulded.rows);
+    mold[deep * moulded.columns + x] = 1;
+    mold[(deep - 1) * moulded.columns + x] = 12;
+    mold[carved * moulded.columns + x] = -1;
+    stepField(moulded, 0, 1.3, 1, 0.94, { mold });
+    expect(at(moulded, x, deep)).toBeGreaterThanOrEqual(0);
+    expect(at(moulded, x, deep - 1)).toBe(2);
+    expect(at(moulded, x, carved)).toBe(-1);
+  });
+
+  it('ignores a mould of the wrong size', () => {
+    const a = createField(1440, 336),
+      b = createField(1440, 336);
+    stepField(a, 0, 1.3);
+    stepField(b, 0, 1.3, 1, 0.94, { mold: new Int8Array(3) });
+    expect(Array.from(b.bucket)).toEqual(Array.from(a.bucket));
+  });
+});

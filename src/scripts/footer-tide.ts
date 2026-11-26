@@ -5,6 +5,7 @@
 import { BITMAPS, SMALL_BITMAPS, type GlyphName } from './glyph-model';
 import { FINE_POINTER_QUERY, prefersReducedMotion } from './motion';
 import type { HeroField } from './hero-field';
+import { onWordmarkView, wordmarkInView, wordmarkRevealWait } from './footer-wordmark';
 
 /** read by the footer field's shape each step: extra rows over its horizon per column, plus the overlays */
 export const tideSwell = {
@@ -36,9 +37,9 @@ const LEAVE_GRACE_MS = 160;
 /** rows the wave's top keeps clear below the closing headline */
 const HEAD_CLEAR = 3;
 const LOGOS: GlyphName[] = ['mail', 'git', 'linkedin', 'resume'];
-/** touch: how long each logo stands before the next tide, and the first one's delay once the footer shows */
+/** touch: how long each logo stands before the next tide, and how long the EGUIN wordmark rests between them */
 const CYCLE_MS = 4000;
-const CYCLE_FIRST_MS = 600;
+const WORD_REST_MS = 3000;
 /** class on the closing button whose logo is on show while cycling; styled in global.css */
 export const TIDE_SHOWN_CLASS = 'tide-shown';
 
@@ -48,6 +49,21 @@ interface Placed {
   right: number;
   top: number;
   bottom: number;
+}
+
+/** touch cycle: EGUIN (-1), then each logo in turn, then EGUIN again; `count` is the number of logos */
+export function nextCycleIndex(index: number, count: number): number {
+  return ((index + 2) % (count + 1)) - 1;
+}
+
+/** how long the cycle stands on step `index` before moving on: the wordmark rests a little shorter than a logo */
+export function cycleDelay(index: number): number {
+  return index < 0 ? WORD_REST_MS : CYCLE_MS;
+}
+
+/** touch: the cycle shows the contact links only; the résumé button is optional, so it is left out */
+export function inCycle(name: GlyphName): boolean {
+  return name !== 'resume';
 }
 
 /** mounts the tide for the current pointer type; the returned function removes it again */
@@ -234,7 +250,12 @@ export function mountFooterTide(foot: HeroField): () => void {
     };
     stage();
     addEventListener('resize', stage, { signal });
-    stopCycle = cycle(host, buttons, nameFor, submerge, signal);
+    stopCycle = cycle(
+      buttons.filter((b) => inCycle(nameFor(b))),
+      nameFor,
+      submerge,
+      signal,
+    );
   } else if (!stacked) {
     for (const button of buttons) {
       const name = nameFor(button);
@@ -264,48 +285,62 @@ export function mountFooterTide(foot: HeroField): () => void {
   };
 }
 
-/** touch has no hover, and a tap opens the link: cycle the logos on a timer while the footer is on screen */
+/** touch has no hover, and a tap opens the link: cycle the wordmark and the logos on a timer while the footer shows */
 function cycle(
-  host: HTMLElement,
   buttons: HTMLAnchorElement[],
   nameFor: (a: HTMLAnchorElement) => GlyphName,
   submerge: (next: GlyphName | null) => void,
   signal: AbortSignal,
 ): () => void {
   if (!buttons.length) return () => {};
+  // step -1 is the resting wordmark, steps 0.. the buttons' logos
   let index = -1,
     timer = 0,
-    visible = false;
+    visible = wordmarkInView(),
+    shownOnce = false;
   const show = () => {
-    index = (index + 1) % buttons.length;
+    shownOnce = true;
+    index = nextCycleIndex(index, buttons.length);
     buttons.forEach((b, i) => b.classList.toggle(TIDE_SHOWN_CLASS, i === index));
-    submerge(nameFor(buttons[index]));
+    submerge(index < 0 ? null : nameFor(buttons[index]));
   };
-  if (prefersReducedMotion()) {
-    // no cycling: the first logo just stands there
-    show();
-    return () => {};
-  }
+  // no cycling: the wordmark just stands there
+  if (prefersReducedMotion()) return () => {};
   const arm = () => {
     clearTimeout(timer);
     timer = 0;
     if (!visible || document.hidden) return;
+    // the first EGUIN hold counts from the end of the wordmark's entrance reveal
+    const wait = wordmarkRevealWait();
+    if (!Number.isFinite(wait)) {
+      timer = window.setTimeout(arm, 250);
+      return;
+    }
     timer = window.setTimeout(
       () => {
         show();
         arm();
       },
-      index < 0 ? CYCLE_FIRST_MS : CYCLE_MS,
+      cycleDelay(index) + (index < 0 && !shownOnce ? wait : 0),
     );
   };
-  const io = new IntersectionObserver(([entry]) => {
-    visible = entry.isIntersecting;
+  // the cycle follows the wordmark: when it goes down the logos wash away and the cycle pauses, and it restarts
+  // from EGUIN once the next reveal has finished
+  const stopView = onWordmarkView((inView) => {
+    visible = inView;
+    if (!inView) {
+      const showing = index >= 0;
+      index = -1;
+      shownOnce = false;
+      buttons.forEach((b) => b.classList.remove(TIDE_SHOWN_CLASS));
+      if (showing) submerge(null);
+    }
     arm();
   });
-  io.observe(host);
   document.addEventListener('visibilitychange', arm, { signal });
+  arm();
   return () => {
-    io.disconnect();
+    stopView();
     clearTimeout(timer);
   };
 }

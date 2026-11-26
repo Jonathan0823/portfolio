@@ -71,6 +71,24 @@ export function clearCover(): void {
   } catch {}
 }
 
+/** Resolves once the page cover has fully dissolved: its class is gone and its canvas removed. */
+export function whenCoverGone(): Promise<void> {
+  const root = document.documentElement;
+  return new Promise((resolve) => {
+    const dissolved = () => {
+      if (document.querySelector(COVER_SELECTOR)) return void requestAnimationFrame(dissolved);
+      resolve();
+    };
+    if (!root.classList.contains('px-covered')) return dissolved();
+    const watch = new MutationObserver(() => {
+      if (root.classList.contains('px-covered')) return;
+      watch.disconnect();
+      dissolved();
+    });
+    watch.observe(root, { attributes: true, attributeFilter: ['class'] });
+  });
+}
+
 export function reveal(): void {
   const root = document.documentElement;
   if (!root.classList.contains('px-covered')) return;
