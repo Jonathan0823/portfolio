@@ -15,6 +15,21 @@ export function shouldPlayHint(o: { fine: boolean; reduced: boolean; seen: boole
   return o.fine && !o.reduced && !o.seen;
 }
 
+/** storage can be denied: then skip the hint, as the intro does, since "once per session" can't be kept */
+export function hintSeen(): boolean {
+  try {
+    return !!sessionStorage.getItem(DONE_KEY);
+  } catch {
+    return true;
+  }
+}
+
+export function markHintSeen(): void {
+  try {
+    sessionStorage.setItem(DONE_KEY, '1');
+  } catch {}
+}
+
 /** Resolves once the page cover is gone (it always lifts within 2.5s of load). */
 function whenUncovered(root: HTMLElement): Promise<void> {
   if (!root.classList.contains('px-covered')) return Promise.resolve();
@@ -31,7 +46,7 @@ function whenUncovered(root: HTMLElement): Promise<void> {
 /** `spill` is read late: the glyph spill mounts on idle and remounts when motion preferences change. */
 export function mountHeroHint(spill: () => GlyphSpill | null): void {
   const fine = window.matchMedia(FINE_POINTER_QUERY).matches;
-  if (!shouldPlayHint({ fine, reduced: prefersReducedMotion(), seen: !!sessionStorage.getItem(DONE_KEY) })) return;
+  if (!shouldPlayHint({ fine, reduced: prefersReducedMotion(), seen: hintSeen() })) return;
   const links = [...document.querySelectorAll<HTMLElement>('a[data-glyph-for]')];
   const github = links.find((link) => link.dataset.glyphFor === 'git');
   if (!github) return;
@@ -42,7 +57,7 @@ export function mountHeroHint(spill: () => GlyphSpill | null): void {
   const end = () => {
     if (over) return;
     over = true;
-    sessionStorage.setItem(DONE_KEY, '1');
+    markHintSeen();
     clearTimeout(timer);
     github.classList.remove(LIT_CLASS);
     for (const link of links) {
