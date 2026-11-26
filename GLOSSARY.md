@@ -34,3 +34,6 @@ _Avoid_: Intro, loading animation, boot
 After the Ignite, lava gathers above the hero headline's red period and drops fall from it to build the period, which then blinks as a pixel caret.
 _Avoid_: Typing effect, cursor animation
 
+**Wordmark**:
+The word EGUIN standing in the footer field's skyline, made of field cells; it dissolves out around a closing button's logo and back in. On touch it is one step of the footer cycle.
+_Avoid_: Footer logo, footer title

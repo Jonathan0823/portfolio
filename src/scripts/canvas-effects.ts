@@ -13,6 +13,7 @@ import { FIELD_BLEED, fieldShape } from './field-edges';
 import { mountHeroHint } from './hero-hint';
 import { FOOT_BLEED, mountFooterTide, tideSwell } from './footer-tide';
 import { heroLifeShape, mountHeroLife } from './hero-life';
+import { footWordmarkShape } from './footer-wordmark';
 
 const SEEDS: Record<string, number> = { hero: 1.3, strip: 4.7, foot: 8.1 };
 const hosts = [...document.querySelectorAll<HTMLElement>('[data-pixel-field]')];
@@ -39,8 +40,9 @@ if (typeof window.matchMedia === 'function') {
         const field = fields[hosts.indexOf(host)];
         return {
           ...base,
-          // the hero's ignite empties its field until the real one takes over
+          // the hero's ignite empties its field, and the footer's wordmark moulds its cells
           ...(kind === 'hero' ? heroLifeShape(field, motion, base) : {}),
+          ...(kind === 'foot' ? footWordmarkShape(field, motion, base.coverage) : {}),
         };
       },
       // the footer bleeds further up so the tide has room to rise
