@@ -5,11 +5,12 @@ interface Props {
   title: string;
   description: string;
   image?: string;
+  imageAlt?: string;
   jsonLd?: object;
   noindex?: boolean;
 }
 
-const { title, description, image, jsonLd, noindex } = Astro.props;
+const { title, description, image, imageAlt, jsonLd, noindex } = Astro.props;
 const site = Astro.site!.href;
 const canonical = canonicalUrl(site, Astro.url.pathname);
 const imageUrl = image ? canonicalUrl(site, image) : undefined;
@@ -30,7 +31,7 @@ const imageUrl = image ? canonicalUrl(site, image) : undefined;
       <meta property="og:image" content={imageUrl} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
-      <meta property="og:image:alt" content={title} />
+      <meta property="og:image:alt" content={imageAlt ?? title} />
     </>
   )
 }
@@ -38,4 +39,5 @@ const imageUrl = image ? canonicalUrl(site, image) : undefined;
 <meta name="twitter:title" content={title} />
 <meta name="twitter:description" content={description} />
 {imageUrl && <meta name="twitter:image" content={imageUrl} />}
+{imageUrl && <meta name="twitter:image:alt" content={imageAlt ?? title} />}
 {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}

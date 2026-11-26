@@ -8,11 +8,12 @@ interface Props {
   title: string;
   description: string;
   image?: string;
+  imageAlt?: string;
   jsonLd?: object;
   noindex?: boolean;
 }
 
-const { title, description, image, jsonLd, noindex } = Astro.props;
+const { title, description, image, imageAlt, jsonLd, noindex } = Astro.props;
 ---
 
 <!doctype html>
@@ -25,7 +26,7 @@ const { title, description, image, jsonLd, noindex } = Astro.props;
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <SEO {title} {description} {image} {jsonLd} {noindex} />
+    <SEO {title} {description} {image} {imageAlt} {jsonLd} {noindex} />
     <script is:inline>
       (function () {
         try {

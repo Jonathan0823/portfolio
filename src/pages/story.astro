@@ -7,9 +7,10 @@ import { getStoryYears } from '../lib/content';
 import { NOW_LABEL, NOW_YEAR } from '../lib/content-logic';
 import { CONTACT_EMAIL, GITHUB_URL, LINKEDIN_URL, MAILTO_URL } from '../lib/profile';
 import { formatMonth } from '../lib/role-timeline';
-import { pageSeo } from '../lib/seo';
+import { pageSeo, storyJsonLd } from '../lib/seo';
 
 const seo = pageSeo('story');
+const jsonLd = storyJsonLd(Astro.site!.href, Astro.url.pathname);
 
 const groups = await getStoryYears();
 const groupsWithBodies = await Promise.all(
@@ -25,7 +26,7 @@ const navLinks = [
 ];
 ---
 
-<BaseLayout title={seo.title} description={seo.description} image={seo.ogPath}>
+<BaseLayout title={seo.title} description={seo.description} image={seo.ogPath} imageAlt={seo.imageAlt} {jsonLd}>
   <Nav links={navLinks} brandHref="/" />
   <div id="top" data-pixel-field="strip" aria-hidden="true" class="h-[200px] w-full md:h-[240px]"></div>
 
