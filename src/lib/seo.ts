@@ -25,6 +25,15 @@ export function canonicalUrl(site: string, pathname: string): string {
   return new URL(pathname, site).href;
 }
 
+export function websiteJsonLd(site: string) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Eguin Jonathan',
+    url: canonicalUrl(site, '/'),
+  };
+}
+
 export function personJsonLd(site: string, skills: readonly { group: string; items: readonly string[] }[]) {
   return {
     '@context': 'https://schema.org',

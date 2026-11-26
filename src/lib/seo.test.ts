@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalUrl, pageSeo, personJsonLd, storyJsonLd } from './seo';
+import { canonicalUrl, pageSeo, personJsonLd, storyJsonLd, websiteJsonLd } from './seo';
 
 describe('pageSeo', () => {
   it('titles the home page and the story page', () => {
@@ -54,5 +54,14 @@ describe('storyJsonLd', () => {
     expect(ld.url).toBe('https://eguinjonathan.com/story/');
     expect(ld.mainEntity['@type']).toBe('Person');
     expect(ld.mainEntity.name).toBe('Eguin Jonathan');
+  });
+});
+
+describe('websiteJsonLd', () => {
+  it('names the site after the person at the root URL', () => {
+    const ld = websiteJsonLd('https://eguinjonathan.com');
+    expect(ld['@type']).toBe('WebSite');
+    expect(ld.name).toBe('Eguin Jonathan');
+    expect(ld.url).toBe('https://eguinjonathan.com/');
   });
 });

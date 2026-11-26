@@ -7,11 +7,11 @@ import Skills from '../components/Skills.astro';
 import Projects from '../components/Projects.astro';
 import PageEnd from '../components/PageEnd.astro';
 import { getSkills } from '../lib/content';
-import { pageSeo, personJsonLd } from '../lib/seo';
+import { pageSeo, personJsonLd, websiteJsonLd } from '../lib/seo';
 
 const seo = pageSeo('home');
 const skills = (await getSkills()).map((s) => s.data);
-const jsonLd = personJsonLd(Astro.site!.href, skills);
+const jsonLd = [personJsonLd(Astro.site!.href, skills), websiteJsonLd(Astro.site!.href)];
 
 const navLinks = [
   { href: '#experience', label: 'Experience', sec: 'experience' },
