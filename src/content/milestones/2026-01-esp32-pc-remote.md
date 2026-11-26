@@ -8,7 +8,7 @@ label: 'Project'
 title: 'Turned my PC on from bed with my voice.'
 link:
   href: 'https://github.com/Jonathan0823/esp32-pc-remote'
-  text: 'Code on GitHub ↗'
+  text: 'esp32-pc-remote on GitHub ↗'
 refs:
   - kind: 'project'
     id: 'esp32-pc-remote'

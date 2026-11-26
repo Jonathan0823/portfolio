@@ -10,7 +10,7 @@ label: 'Work'
 title: 'One gateway for every Modbus device on the floor.'
 link:
   href: 'https://github.com/Jonathan0823/nexusbus'
-  text: 'Code on GitHub ↗'
+  text: 'NexusBus on GitHub ↗'
 refs:
   - kind: 'achievement'
     id: 'modbus-mqtt-gateway'

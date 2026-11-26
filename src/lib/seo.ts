@@ -34,14 +34,33 @@ export function websiteJsonLd(site: string) {
   };
 }
 
-export function personJsonLd(site: string, skills: readonly { group: string; items: readonly string[] }[]) {
+/** who the site is about: the facts search engines use to tie the site to the person */
+function person(site: string) {
   return {
-    '@context': 'https://schema.org',
     '@type': 'Person',
     name: 'Eguin Jonathan',
     jobTitle: 'Software Engineer',
     url: canonicalUrl(site, '/'),
+    image: canonicalUrl(site, '/og/home.png'),
     sameAs: PROFILE_URLS,
+    homeLocation: {
+      '@type': 'Place',
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: 'Karawang',
+        addressRegion: 'West Java',
+        addressCountry: 'ID',
+      },
+    },
+    alumniOf: { '@type': 'CollegeOrUniversity', name: 'Universitas Singaperbangsa Karawang' },
+    knowsLanguage: ['id', 'en', 'ja'],
+  };
+}
+
+export function personJsonLd(site: string, skills: readonly { group: string; items: readonly string[] }[]) {
+  return {
+    '@context': 'https://schema.org',
+    ...person(site),
     knowsAbout: [...new Set(skills.flatMap((s) => s.items))],
   };
 }
@@ -53,12 +72,6 @@ export function storyJsonLd(site: string, pathname: string) {
     '@type': 'ProfilePage',
     name: story.title,
     url: canonicalUrl(site, pathname),
-    mainEntity: {
-      '@type': 'Person',
-      name: 'Eguin Jonathan',
-      jobTitle: 'Software Engineer',
-      url: canonicalUrl(site, '/'),
-      sameAs: PROFILE_URLS,
-    },
+    mainEntity: person(site),
   };
 }

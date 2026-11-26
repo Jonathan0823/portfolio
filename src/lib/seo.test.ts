@@ -42,6 +42,13 @@ describe('personJsonLd', () => {
       'https://www.linkedin.com/in/eguin-jonathan-37a587290/',
     ]);
   });
+  it('places the person and links them to their university and languages', () => {
+    expect(ld.homeLocation.address.addressLocality).toBe('Karawang');
+    expect(ld.homeLocation.address.addressCountry).toBe('ID');
+    expect(ld.alumniOf.name).toBe('Universitas Singaperbangsa Karawang');
+    expect(ld.knowsLanguage).toEqual(['id', 'en', 'ja']);
+    expect(ld.image).toBe('https://eguinjonathan.com/og/home.png');
+  });
   it('builds knowsAbout from the skills without duplicates', () => {
     expect(ld.knowsAbout).toEqual(['Go', 'Python', 'React']);
   });
