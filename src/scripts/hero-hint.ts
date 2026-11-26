@@ -1,5 +1,5 @@
 // Hero hint: tells desktop visitors that the contact links spill a pixel logo on hover.
-// Once per session, a beat after the headline's caret starts blinking, the GitHub logo spills by itself and retracts.
+// Each visit (every page load), a beat after the drip settles and the caret blinks, the GitHub logo spills by itself and retracts.
 // Any real hover, focus or touch of a link ends it: the visitor has found it.
 import { FINE_POINTER_QUERY, prefersReducedMotion } from './motion';
 import type { GlyphSpill } from './glyph-spill';
@@ -8,27 +8,11 @@ import type { GlyphSpill } from './glyph-spill';
 const AFTER_CARET_MS = 500;
 /** the logo stands this long before it retracts */
 const SHOW_MS = 3500;
-const DONE_KEY = 'px-hint-done';
 /** styled in global.css: accent colour and a stepped underline */
 const LIT_CLASS = 'hint-lit';
 
-export function shouldPlayHint(o: { fine: boolean; reduced: boolean; seen: boolean }): boolean {
-  return o.fine && !o.reduced && !o.seen;
-}
-
-/** storage can be denied: then skip the hint, as the intro does, since "once per session" can't be kept */
-export function hintSeen(): boolean {
-  try {
-    return !!sessionStorage.getItem(DONE_KEY);
-  } catch {
-    return true;
-  }
-}
-
-export function markHintSeen(): void {
-  try {
-    sessionStorage.setItem(DONE_KEY, '1');
-  } catch {}
+export function shouldPlayHint(o: { fine: boolean; reduced: boolean }): boolean {
+  return o.fine && !o.reduced;
 }
 
 /**
@@ -37,7 +21,7 @@ export function markHintSeen(): void {
  */
 export function mountHeroHint(spill: () => GlyphSpill | null, ready: Promise<void>): void {
   const fine = window.matchMedia(FINE_POINTER_QUERY).matches;
-  if (!shouldPlayHint({ fine, reduced: prefersReducedMotion(), seen: hintSeen() })) return;
+  if (!shouldPlayHint({ fine, reduced: prefersReducedMotion() })) return;
   const links = [...document.querySelectorAll<HTMLElement>('a[data-glyph-for]')];
   const github = links.find((link) => link.dataset.glyphFor === 'git');
   if (!github) return;
@@ -48,7 +32,6 @@ export function mountHeroHint(spill: () => GlyphSpill | null, ready: Promise<voi
   const end = () => {
     if (over) return;
     over = true;
-    markHintSeen();
     clearTimeout(timer);
     github.classList.remove(LIT_CLASS);
     for (const link of links) {
@@ -72,8 +55,8 @@ export function mountHeroHint(spill: () => GlyphSpill | null, ready: Promise<voi
       if (over || !glyph) return;
       // the motion preference or pointer may have changed while the page settled
       const fineNow = window.matchMedia(FINE_POINTER_QUERY).matches;
-      if (!shouldPlayHint({ fine: fineNow, reduced: prefersReducedMotion(), seen: false })) return;
-      // scrolled away already: an off-screen demo teaches nothing, so keep it for a later visit
+      if (!shouldPlayHint({ fine: fineNow, reduced: prefersReducedMotion() })) return;
+      // scrolled away already: an off-screen demo teaches nothing, so skip it
       const box = github.getBoundingClientRect();
       if (box.bottom < 0 || box.top > window.innerHeight) return;
       shown = true;
