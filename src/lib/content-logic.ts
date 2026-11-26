@@ -4,27 +4,20 @@ import { findPlaceholder, type Milestone, type Project, type Role } from './sche
 export interface Entry<T> {
   id: string;
   data: T;
-  /** Markdown body, if the entry has one. */
   body?: string;
 }
 export type RoleEntry = Entry<Role>;
 export type ProjectEntry = Entry<Project>;
 export type MilestoneEntry = Entry<Milestone>;
 
-/** Roles, newest start first. */
 export function sortRoles<T extends RoleEntry>(roles: readonly T[]): T[] {
   return [...roles].sort((a, b) => b.data.start.localeCompare(a.data.start));
 }
 
-/** Distinct YYYY-MM months of a role that have an Achievement, oldest first. */
 export function achievementMonths(role: RoleEntry): string[] {
   return [...new Set(role.data.achievements.map((a) => a.month))].sort();
 }
 
-/**
- * Cross-entry rules a single-file schema cannot check. Throws one Error that
- * lists every problem found.
- */
 export function assertContentIntegrity(content: {
   roles: readonly RoleEntry[];
   projects: readonly ProjectEntry[];
@@ -68,28 +61,20 @@ export function assertContentIntegrity(content: {
   if (problems.length) throw new Error(`Content check failed:\n - ${problems.join('\n - ')}`);
 }
 
-/** The Milestone label that puts a Milestone in the closing group, and that group's year key. */
 export const NOW_LABEL = 'Now';
 export const NOW_YEAR = 'now';
 
 export interface YearInfo {
-  /** "2025", or "now" for the closing group. */
   year: string;
   subtitle: string;
   meta?: string | undefined;
 }
 
 export interface YearGroup<T extends MilestoneEntry = MilestoneEntry> extends YearInfo {
-  /** Jan to Dec of the year (empty for the closing group), with how many Milestones fall in each. */
   months: { month: string; count: number }[];
   milestones: T[];
 }
 
-/**
- * Groups Milestones by year, oldest first, each group in date order. Milestones
- * labelled "Now" go in a closing "now" group. Subtitles come from `years`;
- * a group without one is an error.
- */
 export function groupMilestonesByYear<T extends MilestoneEntry>(
   milestones: readonly T[],
   years: readonly YearInfo[],

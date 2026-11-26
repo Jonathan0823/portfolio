@@ -101,8 +101,6 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 </Section>
 
 <script>
-  // Progressive enhancement: squares start empty (only when this script runs) and fill as they scroll into view.
-  // Without JS the markup already shows every square filled.
   const groups = document.querySelectorAll<HTMLElement>('#experience [role=img]');
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
     const squares = document.querySelectorAll<HTMLElement>('#experience [data-sq]');

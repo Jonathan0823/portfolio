@@ -25,7 +25,6 @@ describe('blobValue', () => {
     const ahead = blobValue(g.longRadius * 0.8, 0, 0, g)!;
     const behind = blobValue(-g.longRadius * 0.8, 0, 0, g)!;
     expect(ahead).toBeGreaterThan(behind);
-    // rotating the heading by pi mirrors the blob
     expect(blobValue(-g.longRadius * 0.8, 0, Math.PI, g)!).toBeCloseTo(ahead, 5);
   });
 });

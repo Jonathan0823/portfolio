@@ -18,7 +18,6 @@ const milestones = defineCollection({
   schema: milestoneSchema,
 });
 
-// One YAML list of { group, items[] }; the order in the file is the display order.
 const skills = defineCollection({
   loader: file('src/content/skills.yaml', {
     parser: (text) =>
@@ -27,7 +26,6 @@ const skills = defineCollection({
   schema: skillGroupSchema,
 });
 
-// Subtitle and one-line meta for each year of /story, keyed by year.
 const years = defineCollection({
   loader: file('src/content/years.yaml', {
     parser: (text) => (parse(text) as { year: string }[]).map((y) => ({ id: y.year, ...y })),

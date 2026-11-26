@@ -27,9 +27,6 @@ const { title, description, image, jsonLd, noindex } = Astro.props;
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <SEO {title} {description} {image} {jsonLd} {noindex} />
     <script is:inline>
-      // Decides before first paint whether this page arrives under the pixel cover: once per
-      // session on the home page (the intro), and after an internal link played the cover.
-      // scripts/page-cover.ts dissolves it; the timeout is a safety net if that never runs.
       (function () {
         try {
           if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;

@@ -70,8 +70,8 @@ const cells = calendar.weeks.flatMap((w, i) =>
   import { HEAT_PALETTE } from '../lib/palette';
   import { canRunTrail, prefersReducedMotion } from '../scripts/motion';
 
-  const LENS = 3; // cells: radius of the lift around the pointer
-  const COOL_MS = 900; // how long a passed-over day stays hotter
+  const LENS = 3;
+  const COOL_MS = 900;
 
   for (const fig of document.querySelectorAll<HTMLElement>('[data-calendar]')) {
     const tip = fig.querySelector<HTMLElement>('[data-calendar-tip]');
@@ -85,7 +85,6 @@ const cells = calendar.weeks.flatMap((w, i) =>
     let lifted: SVGRectElement[] = [];
     const cooling = new Map<SVGRectElement, number>();
 
-    // Replay: the year fills in day by day the first time the grid scrolls into view.
     if (!prefersReducedMotion() && 'IntersectionObserver' in window) {
       rects.forEach((r) => (r.style.opacity = '0'));
       const io = new IntersectionObserver((entries) => {
@@ -117,7 +116,6 @@ const cells = calendar.weeks.flatMap((w, i) =>
         tip.style.opacity = '1';
       } else tip.style.opacity = '0';
       if (!lens) return;
-      // Lens: days near the pointer lift, and the day under it heats up, then cools back.
       const svgBox = svg.getBoundingClientRect();
       const size = svgBox.width / columns;
       const px = (e.clientX - svgBox.left) / size, py = (e.clientY - svgBox.top) / size;
@@ -142,7 +140,6 @@ const cells = calendar.weeks.flatMap((w, i) =>
       lifted = [];
     });
 
-    // Legend: hover a colour to see only those days; click to keep it.
     const buttons = [...fig.querySelectorAll<HTMLButtonElement>('[data-legend-level]')];
     let pinned: number | null = null;
     const filter = (level: number | null) => {

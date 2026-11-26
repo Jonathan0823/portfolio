@@ -1,4 +1,3 @@
-// Rewrites src/data/github.json from the live GitHub API. Usage: GH_STATS_TOKEN=... pnpm stats:snapshot
 import { writeFileSync } from 'node:fs';
 import { GITHUB_LOGIN, loadGithubStats } from '../src/lib/github.ts';
 

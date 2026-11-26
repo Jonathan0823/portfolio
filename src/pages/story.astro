@@ -19,7 +19,6 @@ const groupsWithBodies = await Promise.all(
   })),
 );
 
-// One link per year of the story, then contact.
 const navLinks = [
   ...groups.map((g) => ({ href: `#y${g.year}`, label: g.year === NOW_YEAR ? NOW_LABEL : String(g.year), sec: `y${g.year}` })),
   { href: '#contact', label: 'Contact', sec: 'contact' },
@@ -28,8 +27,6 @@ const navLinks = [
 
 <BaseLayout title={seo.title} description={seo.description} image={seo.ogPath}>
   <Nav links={navLinks} brandHref="/" />
-  <!-- As on home, the pixels start at the very top and the nav floats over them, turning solid once
-       they are scrolled past (the nav script looks for id="top"). -->
   <div id="top" data-pixel-field="strip" aria-hidden="true" class="h-[200px] w-full md:h-[240px]"></div>
 
   <main>
@@ -116,7 +113,6 @@ const navLinks = [
 </BaseLayout>
 
 <script>
-  // Month squares fill in as each year scrolls into view (same as Experience). Without JS they show filled.
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
     const lists = document.querySelectorAll<HTMLElement>('main ol[aria-hidden]');
     lists.forEach((l) => l.querySelectorAll('[data-sq]').forEach((s) => s.classList.add('sq-hidden')));

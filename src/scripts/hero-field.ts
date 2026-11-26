@@ -4,11 +4,8 @@ import { decayFactor } from './timing';
 export interface HeroField {
   canvas: HTMLCanvasElement;
   field(): Field;
-  /** animation time, shared with the other effects; stays 0 under reduced motion */
   time(): number;
-  /** bounding box in viewport coordinates */
   rect(): DOMRect;
-  /** true when the host is mirrored vertically (the footer band): row 0 is at the bottom */
   flipped: boolean;
   markDirty(): void;
   resize(): void;
@@ -17,17 +14,12 @@ export interface HeroField {
 }
 
 const SEED = 1.3;
-const STEP_MS = 50; // the reference step the constants below were tuned for
-const MIN_FRAME_MS = 1000 / 60 - 2; // paint at display rate (capped near 60 fps) so cursor heat moves smoothly
-const TIME_STEP = 0.02; // animation time per STEP_MS
-const HEAT_DECAY = 0.965; // heat decay per STEP_MS; cursor heat lingers about 1.5 to 2 s
+const STEP_MS = 50;
+const MIN_FRAME_MS = 1000 / 60 - 2;
+const TIME_STEP = 0.02;
+const HEAT_DECAY = 0.965;
 const MAX_ELAPSED_MS = 200;
 
-/**
- * Mounts the hero pixel field into a fixed-size host element. The host keeps its size
- * before this runs, so nothing shifts. The loop only runs while the canvas is on screen
- * and the tab is visible; under reduced motion it draws one static frame.
- */
 export function mountHeroField(host: HTMLElement, reduced: boolean, options: { seed?: number; flipped?: boolean } = {}): HeroField {
   const seed = options.seed ?? SEED;
   const flipped = !!options.flipped;
@@ -61,8 +53,6 @@ export function mountHeroField(host: HTMLElement, reduced: boolean, options: { s
   const frame = (now: number) => {
     raf = 0;
     if (!wants()) return;
-    // Capped near 60 fps on faster displays. Time and heat decay advance by the real
-    // elapsed time, so the pace is the same at any refresh rate.
     if (!last || now - last >= MIN_FRAME_MS) {
       const elapsed = last ? now - last : STEP_MS;
       last = now;

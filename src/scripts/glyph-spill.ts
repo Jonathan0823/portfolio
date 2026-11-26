@@ -4,12 +4,11 @@ import { FINE_POINTER_QUERY } from './motion';
 import type { HeroField } from './hero-field';
 
 const GLYPH_COLUMNS = 28;
-const GLYPH_ROWS = 28; // tallest icon, in cells
+const GLYPH_ROWS = 28;
 const SHIMMER_INTERVAL_MS = 50;
 const CYCLE_MS = 3500;
 const CYCLE_AFTER_TOUCH_MS = 6000;
 const NAMES: GlyphName[] = ['mail', 'git', 'linkedin'];
-/** Desktop: hero side padding (md:px-24), nav clearance, gap between text and icon. Compact: px-5 and the mobile nav. */
 const DESKTOP = { rightMargin: 96, minTop: 64, gap: 40 };
 const COMPACT = { rightMargin: 20, minTop: 60, gap: 16 };
 
@@ -18,7 +17,6 @@ interface Particle {
   targetRow: number;
   sourceColumn: number;
   sourceRow: number;
-  /** length of the vertical leg of the path, then of the whole path */
   verticalLength: number;
   pathLength: number;
   startedAt: number;
@@ -29,24 +27,14 @@ interface Particle {
   sourceIndex: number;
   fadeFromRow?: number;
   level?: number;
-  /** +1 when the particle falls into place, -1 when it rises; fading out continues that way */
   lift: number;
 }
 interface Source {
   column: number;
   row: number;
-  /** palette bucket of the field cell the particles rise from */
   bucket: number;
 }
 
-/**
- * Glyph spill: pixels leave the hero field and form the icon of a hero link.
- * Desktop: pixels fall from the field to an icon level with the headline block, shown while a link is
- * hovered or focused. Compact screens and touch devices: the icon is drawn at half the field's cell
- * size in the paper beside the headline, pixels still fall from the field, and the icons cycle while
- * the hero is on screen. Under reduced
- * motion the icon appears at once and nothing cycles. Returns a function that removes the listeners.
- */
 export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, reduced = false): () => void {
   const ctx = canvas.getContext('2d')!;
   const section = canvas.closest('section') ?? canvas.parentElement!;
@@ -59,17 +47,14 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
   let current: GlyphName | null = null;
   let cycleIndex = -1;
   let layout: GlyphCanvasLayout;
-  /** icon pixel size, and the field's cell size (the icon uses half of it on phones) */
   let cell = 10, fieldCell = 10;
   let overField = false;
 
   const canRun = () => onScreen && !document.hidden;
   const isCompact = () => hero.field().cellSize < 10;
-  /** Phones, small windows and touch screens have no hover, so the icons show on their own. */
   const autoShow = () => isCompact() || !fineQuery.matches;
   const autoCycle = () => autoShow() && !reduced;
 
-  /** Extent of the headline block's text (not its boxes) relative to the hero. */
   const measureText = (heroRect: DOMRect, blocks: HTMLElement[]) => {
     let right = 0, top = Infinity, bottom = 0;
     for (const block of blocks) {
@@ -87,14 +72,12 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     return { right, top: Number.isFinite(top) ? top : 0, bottom };
   };
 
-  /** Computes the layout from the measured elements and places the canvas. */
   const layoutCanvas = (): GlyphCanvasLayout => {
     const field = hero.field();
     fieldCell = field.cellSize;
     const compact = isCompact();
     cell = compact ? fieldCell / 2 : fieldCell;
     const heroRect = section.getBoundingClientRect();
-    // On phones the icon sits beside the headline only; the lines below it span the full width.
     const text = measureText(heroRect, compact ? textBlocks.slice(0, 1) : textBlocks);
     layout = glyphCanvasLayout({
       heroWidth: heroRect.width,
@@ -112,7 +95,6 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     canvas.style.top = layout.top + 'px';
     canvas.style.width = layout.width + 'px';
     canvas.style.height = layout.height + 'px';
-    // Shown only once it has its size and place, so its first paint is not a layout shift.
     canvas.classList.remove('hidden');
     const ratio = Math.min(2, window.devicePixelRatio || 1);
     const key = [layout.width, layout.height, ratio].join('x');
@@ -129,7 +111,7 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
   const pickSources = (): Source[] => {
     const field = hero.field();
     const usable = field.cellSize === fieldCell;
-    const ratio = fieldCell / cell; // icon pixels per field cell
+    const ratio = fieldCell / cell;
     const fallbackRow = 20 * ratio;
     const originField = layout.left / fieldCell;
     const lowestRows: number[] = [];
@@ -139,7 +121,7 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     }
     return pickSourceColumns(lowestRows).map((column) => ({
       column,
-      row: lowestRows[column] + 1, // canvas rows are the field's rows: it starts at the hero's top
+      row: lowestRows[column] + 1,
       bucket: usable ? field.lowestBucket[Math.floor(originField + column / ratio)] : 1,
     }));
   };
@@ -184,7 +166,6 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     kick();
   };
 
-  /** Position along a particle's path after travelling `distance` cells: toward the target row, then sideways. */
   const positionAt = (p: Particle, distance: number): [number, number] =>
     distance < p.verticalLength
       ? [p.sourceColumn, p.sourceRow + Math.sign(p.targetRow - p.sourceRow) * distance]
@@ -227,7 +208,6 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
       return true;
     });
     if (overField) {
-      // Over the field the icon needs a paper outline, one pixel wide, to stay readable.
       ctx.fillStyle = '#ffffff';
       for (const d of draws) {
         ctx.globalAlpha = d.alpha;
@@ -245,7 +225,6 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     }
     ctx.globalAlpha = 1;
     if (moving) raf = requestAnimationFrame(loop);
-    // Settled particles still shimmer with the field, at a slow rate (not under reduced motion); with none left the loop ends.
     else if (particles.length && !reduced) timer = window.setTimeout(() => { timer = 0; kick(); }, SHIMMER_INTERVAL_MS);
   };
   const kick = () => {
@@ -259,7 +238,6 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     timer = 0;
   };
 
-  // Showing an icon: by hover/focus/touch, or by the cycle on compact and touch screens.
   const stopCycle = () => { clearTimeout(cycleTimer); cycleTimer = 0; };
   const armCycle = (delay: number) => {
     stopCycle();
@@ -272,7 +250,6 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
       armCycle(CYCLE_MS);
     }, delay);
   };
-  /** Starts whatever the screen calls for: the cycle, a static icon, or nothing. */
   const settleMode = () => {
     if (autoCycle()) armCycle(current ? CYCLE_MS : 300);
     else if (autoShow()) { if (!current) { cycleIndex = 0; current = NAMES[0]; } spill(current); }
@@ -289,7 +266,7 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
   };
   const hide = () => {
     hovered = null;
-    if (autoShow()) return; // compact and touch screens keep their icon
+    if (autoShow()) return;
     current = null;
     spill(null);
   };

@@ -2,8 +2,6 @@
 @import '@fontsource-variable/geist';
 @import '@fontsource-variable/geist-mono';
 
-/* Design tokens, from the original design. Use them as utilities: text-ink, bg-accent, border-line, ... */
-/* Pixel buttons (see scripts/pixel-button.ts): the canvas sits behind the label; the label flips once pixels land. */
 @media (hover: hover) {
   [data-pixel-btn] {
     position: relative;
@@ -35,7 +33,6 @@
   --color-accent: #e5484d;
   --color-paper: #ffffff;
 
-  /* Hero pixel field palette */
   --color-pixel-night: #1e1b4b;
   --color-pixel-indigo: #4338ca;
   --color-pixel-violet: #7c5cfa;
@@ -44,7 +41,6 @@
   --color-pixel-mist: #f4f1ff;
 }
 
-/* Month squares start filled; the script in Experience.astro adds .sq-hidden to animate them in. */
 .sq {
   transition: background-color 0.4s;
 }
@@ -52,7 +48,6 @@
   background-color: var(--color-line);
 }
 
-/* Pixel cover (scripts/page-cover.ts): a flat night layer set before first paint, dissolved by the script. */
 html.px-covered body::after {
   content: '';
   position: fixed;
@@ -60,7 +55,6 @@ html.px-covered body::after {
   z-index: 100;
   background: var(--color-pixel-night);
 }
-/* First-visit intro: the headline rises as the cover dissolves. Transform only, so it paints at once. */
 @keyframes px-rise {
   from {
     transform: translateY(0.22em);
@@ -70,7 +64,6 @@ html[data-cover] [data-intro-rise] {
   animation: px-rise 0.9s 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
-/* Smooth in-page anchor jumps; sections carry their own top padding, which clears the sticky nav. */
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;

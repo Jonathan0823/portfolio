@@ -1,12 +1,6 @@
-// Pure data and maths for the cursor blob's shapes. No DOM access here.
 import { hash } from './pixel-math';
 
-/**
- * Shapes the cursor blob can turn into, as 11 x 11 bitmaps centred on the pointer. Elements
- * choose one with data-cursor="name".
- */
 export const SHAPES = {
-  // ↗ external link
   arrow: [
     '...........',
     '....#######',
@@ -20,7 +14,6 @@ export const SHAPES = {
     '.##........',
     '...........',
   ],
-  // → internal link (the story)
   next: [
     '...........',
     '......#....',
@@ -34,7 +27,6 @@ export const SHAPES = {
     '......#....',
     '...........',
   ],
-  // ← back
   back: [
     '...........',
     '....#......',
@@ -48,7 +40,6 @@ export const SHAPES = {
     '....#......',
     '...........',
   ],
-  // + open
   plus: [
     '...........',
     '....###....',
@@ -62,7 +53,6 @@ export const SHAPES = {
     '....###....',
     '...........',
   ],
-  // − close
   minus: [
     '...........',
     '...........',
@@ -76,7 +66,6 @@ export const SHAPES = {
     '...........',
     '...........',
   ],
-  // eye: look at a project
   eye: [
     '...........',
     '...........',
@@ -90,7 +79,6 @@ export const SHAPES = {
     '...........',
     '...........',
   ],
-  // crosshair: inspect a day on the contribution grid
   cross: [
     '.....#.....',
     '.....#.....',
@@ -114,7 +102,6 @@ export function isShapeName(name: string | undefined | null): name is ShapeName 
   return !!name && Object.hasOwn(SHAPES, name);
 }
 
-/** Filled cells of a shape as offsets from its centre cell, with each cell's distance (0..1) from the centre. */
 export function shapeCells(name: ShapeName): { dx: number; dy: number; distance: number }[] {
   const cells: { dx: number; dy: number; distance: number }[] = [];
   SHAPES[name].forEach((line, y) => {
@@ -127,10 +114,6 @@ export function shapeCells(name: ShapeName): { dx: number; dy: number; distance:
   return cells;
 }
 
-/**
- * Whether a cell shows during a morph. Each cell has its own threshold, so the blob breaks up
- * into the shape cell by cell instead of cross-fading. `progress` 0 = blob, 1 = shape.
- */
 export function morphShows(cellX: number, cellY: number, progress: number, inShape: boolean): boolean {
   const threshold = hash(cellX, cellY, 13);
   return inShape ? threshold < progress : threshold >= progress;

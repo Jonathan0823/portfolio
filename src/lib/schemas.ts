@@ -1,6 +1,5 @@
 import { z } from 'astro/zod';
 
-/** Text that must never ship: [ ... ] brackets (not markdown links) or the word "placeholder". */
 const BRACKETS = /\[[^\]]*\](?!\()/;
 const PLACEHOLDER = /placeholder/i;
 
@@ -8,7 +7,6 @@ export function findPlaceholder(text: string): string | undefined {
   return text.match(BRACKETS)?.[0] ?? text.match(PLACEHOLDER)?.[0];
 }
 
-/** Non-empty text with no placeholder markers. */
 const copy = z
   .string()
   .trim()
@@ -18,10 +16,8 @@ const copy = z
     if (hit) ctx.addIssue({ code: 'custom', message: `placeholder text is not allowed: "${hit}"` });
   });
 
-/** A Role's `end` while it is still open. */
 export const PRESENT = 'present';
 
-/** YYYY-MM */
 export const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'must be a month like 2025-08');
 
 const url = z.url();
@@ -61,11 +57,8 @@ export const roleSchema = z.object({
 
 export const projectSchema = z.object({
   name: copy,
-  /** One plain sentence on what it does for someone, shown large in the row. */
   hook: copy.optional(),
-  /** Short state shown with a coloured square: "Open source", "On npm", "Daily use". */
   status: copy.optional(),
-  /** Your part in it, for example "Solo, built at work first". */
   role: copy.optional(),
   order: z.number().int(),
   month,
@@ -94,7 +87,6 @@ export const skillGroupSchema = z.object({
   items: z.array(copy).min(1),
 });
 
-/** Subtitle for one year of the story page; "now" is the closing group. */
 export const storyYearSchema = z.object({
   year: z.string().regex(/^(\d{4}|now)$/, 'must be a year like 2025, or "now"'),
   subtitle: copy,
