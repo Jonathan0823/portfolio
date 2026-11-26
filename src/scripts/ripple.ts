@@ -37,6 +37,11 @@ export function liveWaves(waves: readonly Wave[], now: number): Wave[] {
   return waves.filter((w) => (now - w.at) / 1000 < w.life);
 }
 
+/** Move `value` toward `target` by at most `step`, landing exactly on it. */
+export function stepToward(value: number, target: number, step: number): number {
+  return value + Math.max(-step, Math.min(step, target - value));
+}
+
 /** The grid cell under a point given in SVG user units, clamped to the grid. */
 export function gridCell(x: number, y: number, columns: number): { col: number; row: number } {
   return {

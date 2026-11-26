@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { gridCell, gridPoint, lift, LIFT_RADIUS, liveWaves, SPOT, spotlight, waveStrength, type Wave } from './ripple';
+import {
+  gridCell,
+  gridPoint,
+  lift,
+  LIFT_RADIUS,
+  liveWaves,
+  SPOT,
+  spotlight,
+  stepToward,
+  waveStrength,
+  type Wave,
+} from './ripple';
 
 const wave = (over: Partial<Wave> = {}): Wave => ({ col: 10, row: 3, at: 0, speed: 10, life: 2, amp: 1, ...over });
 
@@ -45,6 +56,13 @@ describe('ripple', () => {
 
   it('turns a point into fractional cell units', () => {
     expect(gridPoint(26 + 24, 16 + 6)).toEqual({ col: 2, row: 0.5 });
+  });
+
+  it('eases toward a target without overshooting it', () => {
+    expect(stepToward(0, 1, 0.25)).toBe(0.25);
+    expect(stepToward(0.9, 1, 0.25)).toBe(1);
+    expect(stepToward(1, 0, 0.25)).toBe(0.75);
+    expect(stepToward(0.1, 0, 1)).toBe(0);
   });
 
   it('raises the cells under the cursor most and leaves the ones past the hill flat', () => {

@@ -52,7 +52,7 @@ const dayLabels = [
 ];
 ---
 
-<figure class="relative" data-calendar data-cursor="cross" data-cursor-quiet>
+<figure class="relative" data-calendar data-cursor-quiet>
   <div class="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
     <div class="flex items-center gap-4 md:gap-5">
       <svg viewBox="0 0 16 16" aria-hidden="true" class="size-9 shrink-0 md:size-14">
@@ -81,6 +81,7 @@ const dayLabels = [
   <div class="overflow-x-auto pb-1">
     <svg
       data-graph
+      data-cursor-hide
       role="img"
       aria-label={calendarLabel(calendar.total)}
       viewBox={'0 0 ' + (gutter + cols * cell) + ' ' + (labelH + 7 * cell)}
@@ -141,13 +142,26 @@ const dayLabels = [
 <script>
   import { HEAT_PALETTE } from '@/lib/palette';
   import { prefersReducedMotion } from '@/scripts/motion';
-  import { gridCell, gridPoint, lift, liveWaves, spotlight, waveStrength, WAVES, type Wave } from '@/scripts/ripple';
+  import {
+    gridCell,
+    gridPoint,
+    lift,
+    liveWaves,
+    spotlight,
+    stepToward,
+    waveStrength,
+    WAVES,
+    type Wave,
+  } from '@/scripts/ripple';
 
   // The graph only ripples at moments that mean something (arriving, leaving, a click, and once as it scrolls into view);
   // moving across it just shows the tooltip.
   const EDGE_COOLDOWN_MS = 900;
   // while the mouse is over the graph the cells away from it dim, so the cursor stays readable against the heat colours
   const SPOT_FADE_MS = 150;
+  // the day under the pointer is the pointer: it grows, rises and gets an outline, easing in and out per cell
+  const PICK_FADE_MS = 120;
+  const PICK_SCALE = 1.6;
 
   for (const fig of document.querySelectorAll<HTMLElement>('[data-calendar]')) {
     const svg = fig.querySelector<SVGSVGElement>('svg[data-graph]');
@@ -159,7 +173,10 @@ const dayLabels = [
       row: Number(el.dataset.row),
       level: Number(el.dataset.level),
       fill: el.getAttribute('fill')!,
+      /** 0..1: how selected the cell is, easing toward its target */
+      pick: 0,
     }));
+    const byPosition = new Map(cells.map((c) => [c.col + ',' + c.row, c]));
     const columns = Math.max(...cells.map((c) => c.col)) + 1;
     const reduced = prefersReducedMotion();
     let waves: Wave[] = [];
@@ -170,12 +187,19 @@ const dayLabels = [
     layer.style.pointerEvents = 'none';
     svg.appendChild(layer);
     const raised = new Map<SVGRectElement, SVGRectElement>();
+    let selected: (typeof cells)[number] | null = null;
 
     const frame = (now: number) => {
-      const step = reduced ? 1 : Math.min(1, (now - (spot.last || now)) / SPOT_FADE_MS);
+      const dt = now - (spot.last || now);
+      const step = reduced ? 1 : Math.min(1, dt / SPOT_FADE_MS);
       spot.last = now;
-      spot.amount += Math.max(-step, Math.min(step, spot.target - spot.amount));
+      spot.amount = stepToward(spot.amount, spot.target, step);
+      const pickStep = reduced ? 1 : Math.min(1, dt / PICK_FADE_MS);
+      let settling = false;
       for (const c of cells) {
+        const pickTarget = c === selected ? 1 : 0;
+        c.pick = stepToward(c.pick, pickTarget, pickStep);
+        if (c.pick !== pickTarget) settling = true;
         const w = waveStrength(waves, c.col, c.row, now);
         // a wave lights the cell back up through the dim
         const dim =
@@ -185,20 +209,31 @@ const dayLabels = [
           spot.amount > 0 ? lift(Math.hypot(c.col + 0.5 - spot.col, c.row + 0.5 - spot.row), spot.amount) : 0;
         const level = c.level < 0 ? (w > 0.35 ? 1 : -1) : Math.min(5, c.level + Math.round(w * 3));
         const fill = level < 0 ? c.fill : HEAT_PALETTE[level];
-        const scale = 1 + 0.8 * w + 0.5 * rise;
+        const pick = c.pick;
+        const base = 1 + 0.8 * w + 0.5 * rise;
+        const scale = base + (PICK_SCALE - base) * pick;
         let clone = raised.get(c.el);
-        if (rise > 0.02) {
+        if (rise > 0.02 || pick > 0.01) {
           if (!clone) {
-            clone = c.el.cloneNode() as SVGRectElement;
-            clone.removeAttribute('data-tip');
-            layer.appendChild(clone);
-            raised.set(c.el, clone);
+            const body = c.el.cloneNode() as SVGRectElement;
+            body.removeAttribute('data-tip');
+            layer.append(body);
+            raised.set(c.el, (clone = body));
           }
+          const body = clone;
+          const raise = Math.max(rise, pick);
+          const lifted = 2.5 * rise + 1.5 * pick;
+          const shadow = 0.45 + 0.2 * pick;
           c.el.style.opacity = '0';
-          clone.style.opacity = '1';
-          clone.setAttribute('fill', fill);
-          clone.style.transform = `translateY(${-2.5 * rise}px) scale(${scale})`;
-          clone.style.filter = `drop-shadow(0 ${3 * rise}px ${1.5 * rise}px rgba(17,17,17,0.45))`;
+          body.style.opacity = '1';
+          body.setAttribute('fill', fill);
+          // the stroke is divided by the scale so it stays 2px on screen
+          body.setAttribute('stroke', '#ffffff');
+          body.setAttribute('stroke-width', String(2 / scale));
+          body.setAttribute('stroke-opacity', String(pick));
+          const transform = `translateY(${-lifted}px) scale(${scale})`;
+          body.style.transform = transform;
+          body.style.filter = `drop-shadow(0 ${3 * raise + 2 * pick}px ${1.5 * raise + pick}px rgba(17,17,17,${shadow}))`;
           continue;
         }
         if (clone) {
@@ -209,8 +244,11 @@ const dayLabels = [
         c.el.style.transform = w > 0.03 ? `scale(${scale})` : '';
         c.el.setAttribute('fill', fill);
       }
+      // the selected day stays on top of its raised neighbours, or their edges would cut across its outline
+      const top = selected && raised.get(selected.el);
+      if (top && layer.lastChild !== top) layer.append(top);
       waves = liveWaves(waves, now);
-      raf = waves.length || spot.amount !== spot.target ? requestAnimationFrame(frame) : 0;
+      raf = waves.length || spot.amount !== spot.target || settling ? requestAnimationFrame(frame) : 0;
       if (!raf) spot.last = 0;
     };
     const ripple = (col: number, row: number, kind: keyof typeof WAVES) => {
@@ -247,9 +285,13 @@ const dayLabels = [
         spot.col = p.col;
         spot.row = p.row;
         spot.target = 1;
+        const { col, row } = under(e);
+        selected = byPosition.get(col + ',' + row) ?? null;
         raf ||= requestAnimationFrame(frame);
       }
-      const text = (e.target as Element).getAttribute?.('data-tip');
+      // a mouse reads the selected day, so the tip holds across the gaps between cells; touch reads what it hit
+      const text =
+        e.pointerType === 'mouse' ? selected?.el.dataset.tip : (e.target as Element).getAttribute?.('data-tip');
       const box = fig.getBoundingClientRect();
       if (!text) {
         tip.style.opacity = '0';
@@ -268,6 +310,7 @@ const dayLabels = [
     svg.addEventListener('pointerleave', () => {
       tip.style.opacity = '0';
       spot.target = 0;
+      selected = null;
       raf ||= requestAnimationFrame(frame);
     });
     svg.addEventListener('pointermove', move);
