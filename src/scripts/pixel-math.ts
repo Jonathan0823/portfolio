@@ -92,6 +92,12 @@ export interface FieldShape {
   skyline?: number;
   /** share of the host rows next to row 0 that dither out into paper */
   fadeEdge?: number;
+  /** footer tide: extra rows per column added on top of the horizon; the raised body fills solid */
+  swell?: Float32Array;
+  /** footer tide: heat per column for the few rows just under the swollen surface; drawn, never stored */
+  crest?: Float32Array;
+  /** footer tide: heat per cell drawn only above the surface (what the water has uncovered); never stored */
+  stamp?: Float32Array;
 }
 
 export function stepField(
@@ -105,6 +111,7 @@ export function stepField(
   const { columns, rows, hostRows, heat, bucket, lowestRow, lowestBucket } = field;
   const coverage = Math.max(0, Math.min(1, shape.coverage ?? 1));
   const fadeRows = hostRows * (shape.fadeEdge ?? 0);
+  const stamp = shape.stamp?.length === columns * rows ? shape.stamp : null;
   bucket.fill(-1);
   lowestRow.fill(-1);
   lowestBucket.fill(0);
@@ -112,7 +119,10 @@ export function stepField(
   for (let x = 0; x < columns; x++) {
     const across = x / columns;
     const sky = shape.skyline ? (noise(x * 0.06, seed * 3 + time * 0.08) - 0.5) * hostRows * shape.skyline * 2 : 0;
-    const horizonRow = (field.horizonRow + sky) * coverage;
+    const surface = (field.horizonRow + sky) * coverage;
+    const swell = shape.swell?.[x] ?? 0;
+    const horizonRow = surface + swell;
+    const crest = shape.crest?.[x] ?? 0;
     const drip = Math.floor(
       Math.max(0, noise(x * 0.17, 3.1 + seed + time * 0.15) - 0.35) * 16 * density + hash(x, 7) * 2,
     );
@@ -120,7 +130,12 @@ export function stepField(
       const i = y * columns + x;
       heat[i] *= decay;
       hottest = Math.max(hottest, heat[i]);
-      if (heat[i] < 0.3) {
+      // overlays are recomputed by their owner every frame, so nothing they draw outlives them
+      let h = heat[i];
+      if (crest > 0 && y < horizonRow && y >= horizonRow - 3) h = Math.max(h, crest);
+      if (stamp && y >= horizonRow) h = Math.max(h, stamp[i]);
+      const water = swell > 0.5 && y >= surface && y < horizonRow;
+      if (h < 0.3) {
         if (y >= horizonRow + drip * (0.4 + 0.6 * coverage)) continue;
         if (y < fadeRows) {
           const t = y / fadeRows;
@@ -134,10 +149,9 @@ export function stepField(
       const ridgeLine = 0.42 + 0.2 * Math.sin(across * 6.2 + time * 0.6 + seed) + 0.08 * Math.sin(across * 17 - time);
       const ridge = Math.exp(-Math.pow(depth - ridgeLine, 2) / 0.018);
       const grain = hash(x, y) - 0.5;
-      const value =
-        0.1 + 0.5 * base + 0.42 * ridge * density + 0.18 * density + (heat[i] < 0.3 ? heat[i] : 0) + grain * 0.2;
-      if (base + grain * 0.25 < 0.36 + (1 - density) * 0.38 && ridge * density < 0.35 && heat[i] < 0.25) continue;
-      const level = bucketFor(heat[i] >= 0.3 ? Math.max(value, 0.1 + heat[i] + grain * 0.1) : value);
+      const value = 0.1 + 0.5 * base + 0.42 * ridge * density + 0.18 * density + (h < 0.3 ? h : 0) + grain * 0.2;
+      if (base + grain * 0.25 < 0.36 + (1 - density) * 0.38 && ridge * density < 0.35 && h < 0.25 && !water) continue;
+      const level = bucketFor(h >= 0.3 ? Math.max(value, 0.1 + h + grain * 0.1) : value);
       bucket[i] = level;
       if (y > lowestRow[x]) {
         lowestRow[x] = y;

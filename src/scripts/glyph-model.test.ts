@@ -42,7 +42,7 @@ describe('assignPixels', () => {
 
 describe('BITMAPS', () => {
   it('has well-formed rectangular bitmaps for every hero link, all at scale 1 and at most 28 wide', () => {
-    expect(Object.keys(BITMAPS).sort()).toEqual(['git', 'linkedin', 'mail']);
+    expect(Object.keys(BITMAPS).sort()).toEqual(['git', 'linkedin', 'mail', 'resume']);
     for (const g of Object.values(BITMAPS)) {
       expect(g.scale).toBe(1);
       expect(g.rows[0].length).toBeLessThanOrEqual(28);

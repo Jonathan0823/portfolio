@@ -22,10 +22,7 @@ const COMPACT = { rightMargin: 20, minTop: 60, gap: 16 };
 interface Particle {
   targetColumn: number;
   targetRow: number;
-  sourceColumn: number;
   sourceRow: number;
-  verticalLength: number;
-  pathLength: number;
   startedAt: number;
   delay: number;
   fadingOut: boolean;
@@ -34,7 +31,10 @@ interface Particle {
   sourceIndex: number;
   fadeFromRow?: number;
   level?: number;
-  lift: number;
+  /** the glyph row the drop leaves the field at: a hot spout above it, else the field's bottom edge */
+  lavaFrom?: number;
+  /** the glyph column of that spout; the drop drifts from it to its own column as it falls */
+  lavaColumn?: number;
 }
 interface Source {
   column: number;
@@ -43,6 +43,10 @@ interface Source {
 }
 
 const SPILL_SPEED = 1.6;
+/** molten drops ooze off the field, fall under gravity with a glowing streak, splat, and cool into place bottom-up */
+const LAVA_GRAVITY = 150; // cells/s²
+const LAVA_OOZE = 0.14; // s hanging at the field before letting go
+const LAVA_COOL = 0.16; // s per heat level while cooling
 
 export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, reduced = false): () => void {
   const ctx = canvas.getContext('2d')!;
@@ -163,40 +167,66 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
         sources.map((s) => s.column),
         layout.rising,
       );
+      // where the field's bottom edge sits over each glyph column, in glyph rows
+      const field = hero.field();
+      const ratio = fieldCell / cell;
+      const lavaEdge = Array.from({ length: GLYPH_COLUMNS }, (_, i) => {
+        const fieldRow =
+          field.cellSize === fieldCell ? field.lowestRow[Math.floor(layout.left / fieldCell + i / ratio)] : -1;
+        return fieldRow !== undefined && fieldRow >= 0 ? ((fieldRow + 1) * fieldCell - layout.top) / cell - 1 : -1;
+      });
+      // spouts: the bottom of each orange/yellow run in the field, per glyph column, in glyph rows
+      const fieldColumnOf = (i: number) => Math.floor(layout.left / fieldCell + i / ratio);
+      const toGlyphRow = (fieldRow: number) => ((fieldRow + 1) * fieldCell - layout.top) / cell - 1;
+      const spouts = Array.from({ length: GLYPH_COLUMNS }, (_, i) => {
+        const found: number[] = [];
+        const fc = fieldColumnOf(i);
+        if (field.cellSize !== fieldCell || fc < 0 || fc >= field.columns) return found;
+        for (let r = 0; r < field.rows; r++) {
+          const hot = field.bucket[r * field.columns + fc] >= 4;
+          const below = r + 1 < field.rows && field.bucket[(r + 1) * field.columns + fc] >= 4;
+          if (hot && !below) found.push(toGlyphRow(r));
+        }
+        return found;
+      });
+      /** the nearest hot spout above a pixel: its column and row, searching outward a few columns */
+      const spoutFor = (column: number, row: number): [number, number] | null => {
+        for (let reach = 0; reach <= 6; reach++) {
+          for (const c of reach ? [column - reach, column + reach] : [column]) {
+            const rows = spouts[c]?.filter((r) => r < row - 1);
+            if (rows?.length) return [c, Math.max(...rows)];
+          }
+        }
+        return null;
+      };
       pixelsBySource.forEach((pixels, sourceIndex) => {
         const source = sources[sourceIndex];
-        pixels.forEach((pixel, order) => {
-          const verticalLength = Math.abs(pixel.row - source.row);
+        pixels.forEach((pixel) => {
           particles.push({
             targetColumn: pixel.column,
             targetRow: pixel.row,
-            sourceColumn: source.column,
+            ...(() => {
+              const spout = spoutFor(pixel.column, pixel.row);
+              return spout
+                ? { lavaFrom: spout[1], lavaColumn: spout[0] }
+                : { lavaFrom: lavaEdge[pixel.column], lavaColumn: pixel.column };
+            })(),
             sourceRow: source.row,
-            verticalLength,
-            pathLength: verticalLength + Math.abs(pixel.column - source.column),
             startedAt: reduced ? now - 1e6 : now,
-            delay: (order / pixels.length) * 0.9 + sourceIndex * 0.03,
+            // the glyph fills from the bottom up, like a pouring mould
+            delay:
+              (pixel.row <= lavaEdge[pixel.column] ? 0 : 0.15 + (1 - pixel.row / layout.rows) * 0.6) +
+              hash(pixel.column, pixel.row, 7) * 0.18,
             fadingOut: false,
             column: source.column,
             row: source.row - (layout.rising ? -1 : 1),
             sourceIndex,
-            lift: layout.rising ? -1 : 1,
           });
         });
       });
     }
     kick();
   };
-
-  const positionAt = (p: Particle, distance: number): [number, number] =>
-    distance < p.verticalLength
-      ? [p.sourceColumn, p.sourceRow + Math.sign(p.targetRow - p.sourceRow) * distance]
-      : [
-          p.sourceColumn +
-            Math.sign(p.targetColumn - p.sourceColumn) *
-              Math.min(Math.abs(p.targetColumn - p.sourceColumn), distance - p.verticalLength),
-          p.targetRow,
-        ];
 
   const loop = (now: number) => {
     raf = 0;
@@ -205,24 +235,57 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     const fieldTime = hero.time() || fallbackTime;
     ctx.clearRect(0, 0, layout.width, layout.height);
     let moving = false;
-    const draws: Array<{ column: number; row: number; alpha: number; level: number; trail: [number, number] | null }> =
-      [];
+    const draws: Array<{
+      column: number;
+      row: number;
+      alpha: number;
+      level: number;
+      streak: number;
+      falling: boolean;
+    }> = [];
     particles = particles.filter((p) => {
       const elapsed = ((now - p.startedAt) / 1000) * SPILL_SPEED - p.delay;
       let alpha = 1,
-        inMotion = false,
-        trailPos: [number, number] | null = null;
+        inMotion = false;
+      let falling = false,
+        heat = -1,
+        streak = 0;
       if (!p.fadingOut) {
         if (elapsed < 0) return true;
-        const distance = Math.min(p.pathLength, (fieldCell / cell) * (26 * elapsed + 30 * elapsed * elapsed));
-        const [column, row] = positionAt(p, distance);
-        p.column = column;
-        p.row = row;
-        inMotion = distance < p.pathLength;
-        if (inMotion) trailPos = positionAt(p, Math.max(0, distance - 1.2));
+        const from = Math.min(p.lavaFrom ?? -1, p.targetRow);
+        // under the field the pixel drips from the field's edge; inside it, it melts out where it is
+        const span = p.targetRow - from;
+        const fall = Math.max(0, elapsed - LAVA_OOZE);
+        const drop = 0.5 * LAVA_GRAVITY * fall * fall;
+        const fallTime = Math.sqrt((2 * span) / LAVA_GRAVITY);
+        p.column = p.targetColumn;
+        falling = false;
+        if (span <= 0) {
+          p.row = p.targetRow;
+          heat = 5 - Math.floor(Math.max(0, elapsed - LAVA_OOZE) / LAVA_COOL);
+          inMotion = heat >= 0;
+        } else if (drop < span) {
+          // oozing out of the field, then falling with a streak that grows with speed
+          p.row = from + (elapsed < LAVA_OOZE ? (elapsed / LAVA_OOZE) * 0.8 : 0.8 + drop);
+          const t = Math.min(1, drop / span);
+          p.column = (p.lavaColumn ?? p.targetColumn) + (p.targetColumn - (p.lavaColumn ?? p.targetColumn)) * t * t;
+          falling = true;
+          streak = Math.min(4, Math.round(LAVA_GRAVITY * fall * 0.035));
+          heat = 5;
+          inMotion = true;
+        } else {
+          const landed = fall - fallTime;
+          // splat: a one-cell squash past the spot, then settle
+          p.row = p.targetRow + (landed < 0.05 ? 1 : 0);
+          heat = 5 - Math.floor(landed / LAVA_COOL);
+          inMotion = heat >= 0;
+        }
       } else if (elapsed > 0) {
         const progress = elapsed / 0.55;
-        p.row = (p.fadeFromRow ?? p.row) + p.lift * (fieldCell / cell) * 30 * progress * progress;
+        p.row = (p.fadeFromRow ?? p.row) + (fieldCell / cell) * 30 * progress * progress;
+        // on the way out it re-melts and runs off, glowing
+        heat = 4 - Math.floor(progress * 3);
+        streak = Math.min(3, Math.round(progress * 6));
         alpha = Math.max(0, 1 - progress * 1.6);
         inMotion = true;
         if (alpha <= 0) return false;
@@ -237,22 +300,32 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
           bucket - (fbm(Math.round(p.column) * 0.3 - fieldTime * 0.9, Math.floor(p.row) * 0.3) < 0.45 ? 1 : 0),
         ),
       );
-      draws.push({ column: Math.round(p.column), row: Math.floor(p.row), alpha, level, trail: trailPos });
+      draws.push({
+        column: Math.round(p.column),
+        row: Math.floor(p.row),
+        alpha,
+        level: heat >= 0 ? Math.max(level, heat) : level,
+        streak,
+        falling,
+      });
       return true;
     });
     if (overField) {
       ctx.fillStyle = '#ffffff';
       for (const d of draws) {
+        if (d.falling) continue;
         ctx.globalAlpha = d.alpha;
         ctx.fillRect((d.column - 1) * cell, (d.row - 1) * cell, cell * 3, cell * 3);
       }
     }
     for (const d of draws) {
-      ctx.fillStyle = HEAT_PALETTE[d.level];
-      if (d.trail) {
-        ctx.globalAlpha = d.alpha * 0.5;
-        ctx.fillRect(Math.round(d.trail[0]) * cell + 1, Math.floor(d.trail[1]) * cell + 1, cell - 1, cell - 1);
+      // a molten streak trails behind a falling drop, cooling toward its tail
+      for (let k = 1; k <= d.streak; k++) {
+        ctx.globalAlpha = d.alpha * (1 - k / (d.streak + 1));
+        ctx.fillStyle = HEAT_PALETTE[Math.max(0, Math.min(5, d.level - k))];
+        ctx.fillRect(d.column * cell + 1, (d.row - k) * cell + 1, cell - 1, cell - 1);
       }
+      ctx.fillStyle = HEAT_PALETTE[d.level];
       ctx.globalAlpha = d.alpha;
       ctx.fillRect(d.column * cell + 1, d.row * cell + 1, cell - 1, cell - 1);
     }
