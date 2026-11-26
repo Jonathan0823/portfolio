@@ -29,6 +29,11 @@ describe('createField', () => {
     const narrow = createField(390, 300);
     expect([narrow.cellSize, narrow.columns, narrow.rows, narrow.horizonRow]).toEqual([8, 49, 38, 25]);
   });
+
+  it('adds bleed rows past the host without moving the horizon', () => {
+    const f = createField(1440, 336, 200);
+    expect([f.hostRows, f.rows, f.horizonRow]).toEqual([34, 54, 23]);
+  });
 });
 
 describe('stepField', () => {
@@ -55,6 +60,45 @@ describe('stepField', () => {
       if (low >= 0) expect(f.lowestBucket[x]).toBe(f.bucket[low * f.columns + x]);
     }
     expect(f.bucket.some((k) => k >= 0)).toBe(true);
+  });
+
+  const lit = (f: ReturnType<typeof createField>, from: number, to: number) => {
+    let n = 0;
+    for (let y = from; y < to; y++) for (let x = 0; x < f.columns; x++) if (f.bucket[y * f.columns + x] >= 0) n++;
+    return n;
+  };
+
+  it('drains toward row 0 as coverage drops', () => {
+    const full = createField(1440, 336),
+      half = createField(1440, 336);
+    stepField(full, 0, 1.3);
+    stepField(half, 0, 1.3, 1, 0.94, { coverage: 0.5 });
+    expect(Math.max(...half.lowestRow)).toBeLessThan(Math.max(...full.lowestRow));
+    expect(lit(half, 0, half.rows)).toBeLessThan(lit(full, 0, full.rows));
+  });
+
+  it('dithers the rows next to row 0 with fadeEdge', () => {
+    const plain = createField(1440, 336),
+      faded = createField(1440, 336);
+    stepField(plain, 0, 1.3);
+    stepField(faded, 0, 1.3, 1, 0.94, { fadeEdge: 0.35 });
+    expect(lit(faded, 0, 4)).toBeLessThan(lit(plain, 0, 4) * 0.5);
+    expect(lit(faded, 20, 23)).toBe(lit(plain, 20, 23));
+  });
+
+  it('makes the horizon wander per column with skyline', () => {
+    const f = createField(1440, 336);
+    stepField(f, 0, 1.3, 1, 0.94, { skyline: 0.22, coverage: 1 });
+    const flat = createField(1440, 336);
+    stepField(flat, 0, 1.3);
+    const spread = (r: Int16Array) => Math.max(...r) - Math.min(...Array.from(r).filter((v) => v >= 0));
+    expect(spread(f.lowestRow)).toBeGreaterThan(spread(flat.lowestRow));
+  });
+
+  it('never lights bleed rows on its own', () => {
+    const f = createField(1440, 336, 200);
+    stepField(f, 0, 1.3, 1, 0.94, { skyline: 0.22 });
+    expect(lit(f, f.hostRows + 4, f.rows)).toBe(0);
   });
 
   it('decays heat by 0.94 per step and paints hot cells in the top bucket', () => {

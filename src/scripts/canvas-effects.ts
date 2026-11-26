@@ -9,6 +9,7 @@ import {
 import { mountHeroField, type HeroField } from './hero-field';
 import { mountCursorTrail } from './cursor-trail';
 import { mountGlyphSpill } from './glyph-spill';
+import { FIELD_BLEED, fieldShape } from './field-edges';
 
 const SEEDS: Record<string, number> = { hero: 1.3, strip: 4.7, foot: 8.1 };
 const hosts = [...document.querySelectorAll<HTMLElement>('[data-pixel-field]')];
@@ -16,7 +17,12 @@ const hosts = [...document.querySelectorAll<HTMLElement>('[data-pixel-field]')];
 if (typeof window.matchMedia === 'function') {
   const fields: HeroField[] = hosts.map((host) => {
     const kind = host.dataset.pixelField ?? 'hero';
-    return mountHeroField(host, prefersReducedMotion(), { seed: SEEDS[kind] ?? 2.2, flipped: kind === 'foot' });
+    return mountHeroField(host, prefersReducedMotion(), {
+      seed: SEEDS[kind] ?? 2.2,
+      flipped: kind === 'foot',
+      shape: (motion) => fieldShape(kind, host.getBoundingClientRect(), scrollY, innerHeight, motion),
+      bleed: FIELD_BLEED,
+    });
   });
   const hero = fields[hosts.findIndex((h) => h.dataset.pixelField === 'hero')] ?? null;
   const glyphCanvas = document.querySelector<HTMLCanvasElement>('canvas[data-glyph]');
