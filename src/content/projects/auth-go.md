@@ -4,12 +4,15 @@ hook: "The login service I drop into every new project, with safe defaults."
 status: "Open source"
 role: "Solo"
 order: 2
-month: "2024-01"
+month: "2025-01"
 result: "The login service I drop into every new project."
 repo: "https://github.com/Jonathan0823/auth-go"
 tags:
   - "Go"
   - "Gin"
+  - "PostgreSQL"
+  - "Redis"
+  - "Docker"
 visual:
   kind: "diagram"
   label: "login → access + refresh token → rotation → replay detection"

@@ -1,10 +1,16 @@
 - group: Languages
-  items: [Go, Python, TypeScript, Rust]
-- group: Backend & data
-  items: [PostgreSQL, Redis Streams, FastAPI, Gin]
-- group: IoT & protocols
-  items: [Modbus TCP/RTU, MQTT, ESP32]
-- group: Frontend
-  items: [Next.js, React]
-- group: Tooling
-  items: [Docker, Podman, Linux, GitHub Actions]
+  items: [Go, Python, Rust, TypeScript]
+- group: Backend
+  items: [Nest.js, Express.js, REST and WebSocket APIs]
+- group: Frontend & mobile
+  items: [Next.js, React, React Native, Svelte, SvelteKit, Astro, Vue, Tailwind CSS]
+- group: AI & agents
+  items: [Pi agent harness, Claude Code, agentic coding]
+- group: IoT
+  items: [Modbus, MQTT (Mosquitto), Bluetooth, WiFi, Arduino]
+- group: Data
+  items: [PostgreSQL, Redis (caching, Redis Streams), MySQL, SQL Server, MongoDB]
+- group: DevOps & tools
+  items: [Linux, Neovim, Docker, Podman, Nginx, CI with GitHub Actions, Git, GitHub, GitLab]
+- group: Spoken languages
+  items: [Indonesian (native), English (advanced), Japanese (beginner)]
