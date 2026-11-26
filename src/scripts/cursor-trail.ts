@@ -4,39 +4,26 @@ import { blobGeometry, blobValue, levelForValue, shortestTurn } from './blob-sha
 import { decayFactor, easeFactor, frameScale, smoothVelocity } from './timing';
 import { isShapeName, morphShows, shapeCells, type ShapeName } from './cursor-shapes';
 
-const MAX_CELL = 10; // largest cell size in CSS px (desktop hero field); canvases are sized for it
+const MAX_CELL = 10;
 const TEXT_SELECTOR = 'p,li,dt,dd,span,h3,h4,figcaption,blockquote';
-const BLOB_CELLS = 64; // blob overlay cells per side
-const BLOB_CENTER = 32; // cursor cell inside the blob overlay
+const BLOB_CELLS = 64;
+const BLOB_CENTER = 32;
 const BLOB_SIZE = BLOB_CELLS * MAX_CELL;
-const TRAIL_CELLS = 120; // trail overlay cells per side
+const TRAIL_CELLS = 120;
 const TRAIL_CENTER = 60;
 const TRAIL_SIZE = TRAIL_CELLS * MAX_CELL;
-const REST_RADIUS = 5; // cells; about 10 across (~100 px)
+const REST_RADIUS = 5;
 const SQUARE_RADIUS = 2;
 const UNDERLINE_LEVEL = 0;
-const HEADING_SCALE = 2.4; // blob radius multiplier over headings (3.6 / 1.5)
-// Light, low-contrast greys for the blob drawn behind text, by heat level 0..5.
+const HEADING_SCALE = 2.4;
 const UNDER_PALETTE = ['#f3f3f3', '#efefef', '#ebebeb', '#e6e6e6', '#e1e1e1', '#dcdcdc'];
 
 interface TrailCell {
   cellX: number;
   cellY: number;
-  /** 0..1, fades as the cell ages */
   strength: number;
 }
 
-/**
- * The cursor blob: one round pixel blob in heat colours that follows the pointer, stretches
- * into an oval along its travel with the hot core toward the leading edge. Over the hero it
- * heats the field instead of drawing an overlay, and leaving the hero drags a fading drip of
- * cells out behind it. Overlays are fixed-position and ignore pointer events; the system
- * cursor is never hidden. Over an element with data-cursor="name" the blob breaks up, cell by
- * cell, into that shape (see cursor-shapes.ts), and back. Every pixel field on the page (hero,
- * story strip, footer band) takes heat the same way. The loop only runs while the pointer is
- * over the page, the tab is visible and something is still moving; otherwise it stops.
- * Returns a function that removes everything.
- */
 export function mountCursorTrail(fields: HeroField[]): () => void {
   const shapeCache = new Map<ShapeName, ReturnType<typeof shapeCells>>();
   const cellsOf = (name: ShapeName) => {
@@ -44,7 +31,6 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     if (!cells) shapeCache.set(name, (cells = shapeCells(name)));
     return cells;
   };
-  /** The field under the pointer, or else the nearest one on screen; its grid is the blob's grid. */
   const pickField = (y: number): { field: HeroField; rect: DOMRect } | null => {
     let best: { field: HeroField; rect: DOMRect } | null = null, bestDistance = Infinity;
     for (const field of fields) {
@@ -56,8 +42,6 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     return best;
   };
   const dpr = Math.min(2, window.devicePixelRatio || 1);
-  // Two blob canvases: heat colours above the content, and light greys behind it (z-index -1,
-  // so text keeps its own colour). An eased "overText" value cross-fades between them.
   const makeBlobCanvas = (zIndex: number) => {
     const canvas = document.createElement('canvas');
     canvas.setAttribute('aria-hidden', 'true');
@@ -83,8 +67,8 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
   document.body.insertBefore(trailCanvas, document.body.firstChild);
 
   const trail = new Map<string, TrailCell>();
-  let targetX = 0, targetY = 0; // where the pointer is
-  let cursorX = 0, cursorY = 0; // the eased position the blob follows
+  let targetX = 0, targetY = 0;
+  let cursorX = 0, cursorY = 0;
   let speed = 0, heading = 0, clock = 0;
   let radius = REST_RADIUS, targetRadius = REST_RADIUS;
   let raf = 0, pointerInside = false;
@@ -101,7 +85,6 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
   const frame = (now: number) => {
     raf = 0;
     if (document.hidden) return;
-    // Everything eases by real elapsed time, relative to a 60 fps frame.
     const scale = lastFrameTime ? frameScale(now - lastFrameTime) : 1;
     lastFrameTime = now;
     const picked = pickField(targetY);
@@ -114,7 +97,7 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     clock += 0.12 * scale;
     radius += (targetRadius - radius) * easeFactor(0.25, scale);
     const dx = cursorX - prevX, dy = cursorY - prevY, stepLength = Math.hypot(dx, dy);
-    const perFrame = scale > 0 ? 1 / scale : 0; // step in px per 60 fps frame
+    const perFrame = scale > 0 ? 1 / scale : 0;
     const smooth = smoothVelocity({ x: smoothDx, y: smoothDy }, { x: dx * perFrame, y: dy * perFrame }, 0.18, scale);
     smoothDx = smooth.x;
     smoothDy = smooth.y;
@@ -127,7 +110,6 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     linkProgress += ((overLink ? 1 : 0) - linkProgress) * easeFactor(0.3, scale);
     overTextValue += ((overText ? 1 : 0) - overTextValue) * easeFactor(0.25, scale);
     visible += ((pointerInside ? 1 : 0) - visible) * easeFactor(0.35, scale);
-    // Shape morph: dissolve back to the blob first, then into the new shape.
     if (shapeTarget !== shape) {
       shapeProgress -= shapeProgress * easeFactor(0.3, scale);
       if (shapeProgress < 0.04) { shape = shapeTarget; shapeProgress = 0; }
@@ -137,7 +119,6 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     heat.canvas.style.opacity = String(visible * (1 - overTextValue));
     mono.canvas.style.opacity = String(visible * overTextValue);
 
-    // Cells sit on the field's grid: its origin is the field's top-left corner (bottom-left when flipped).
     const heroRect = picked?.rect ?? null;
     const flipped = !!hero?.flipped;
     const offsetX = heroRect ? ((heroRect.left % cell) + cell) % cell : 0;
@@ -154,7 +135,6 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
       cursorX >= heroRect.left && cursorX <= heroRect.right && cursorY >= heroRect.top && cursorY <= heroRect.bottom;
     const flickerTime = Math.floor(clock * 2);
 
-    // Over a link the blob turns into an underline.
     if (linkProgress > 0.02 && hoveredLink && hoveredLink.isConnected) {
       const rect = hoveredLink.getBoundingClientRect();
       const row = Math.floor((rect.bottom + 5 - offsetY) / cell);
@@ -166,7 +146,6 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
       }
     }
     const blobAlpha = linkProgress < 0.5 ? 1 - linkProgress / 0.5 : 0;
-    // The hero shows the blob through its own cells, so the overlay is skipped there.
     const morphing = !!shape && shapeProgress > 0.02;
     if (morphing && !insideHero) {
       for (const c of cellsOf(shape!)) {
@@ -199,7 +178,6 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
       }
     }
 
-    // Heat stamped into the hero field, and fading cells dragged out when leaving it.
     const steps = Math.max(1, Math.min(12, Math.ceil(stepLength / cell)));
     if (hero && heroRect && insideHero && blobAlpha > 0.05) {
       const field = hero.field();
@@ -253,8 +231,6 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
       trailCtx.fillRect(localX * cell + 1, localY * cell + 1, cell - 1, cell - 1);
     });
 
-    // Keep going only while something is still changing. Idle, the loop stops and the next
-    // mouse move wakes it.
     const busy =
       trail.size > 0 ||
       Math.abs(targetX - cursorX) + Math.abs(targetY - cursorY) > 0.2 || speed > 0.15 ||
@@ -267,7 +243,6 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
   const wake = () => {
     if (!raf && pointerInside && !document.hidden) raf = requestAnimationFrame(frame);
   };
-  /** True when (x, y) is over rendered text, not just inside a text element's padding. */
   const pointOverText = (x: number, y: number, target: Element | null): boolean => {
     const doc = document as Document & {
       caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node } | null;
@@ -286,7 +261,6 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     return false;
   };
 
-  /** Re-reads what is under the pointer: link, heading and month-square state. */
   const evaluate = (target: Element | null) => {
     overText = !!target && pointOverText(pointerClientX, pointerClientY, target);
     const named = target?.closest<HTMLElement>('[data-cursor]')?.dataset.cursor;
@@ -294,7 +268,6 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     const link = shapeTarget ? null : (target?.closest('a,button,summary') ?? null);
     onHeading = !!target?.closest('h1,h2');
     const onSquare = !!target?.closest('[data-sq]');
-    // Pixel buttons draw their own hover; skip the underline there.
     overLink = !!link && !onSquare && !link.hasAttribute('data-pixel-btn');
     if (link && !onSquare && !link.hasAttribute('data-pixel-btn')) hoveredLink = link;
     targetRadius = onSquare ? SQUARE_RADIUS : onHeading ? REST_RADIUS * HEADING_SCALE : REST_RADIUS;
@@ -311,7 +284,6 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     evaluate(e.target instanceof Element ? e.target : null);
     wake();
   };
-  // Overlays are fixed, so scrolling moves content under a still pointer.
   const onScroll = () => {
     if (scrollRaf || !pointerInside) return;
     scrollRaf = requestAnimationFrame(() => {

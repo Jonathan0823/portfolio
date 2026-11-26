@@ -5,9 +5,7 @@ import { getProjects } from '../lib/content';
 import { GITHUB_REPOS_URL } from '../lib/profile';
 import { projectAnchor, projectLinks, projectYear, splitProjectBody } from '../lib/projects';
 
-// Colour of the status square, by status text.
 const STATUS_COLOR: Record<string, string> = { 'Open source': '#4338CA', 'On npm': '#E5484D', 'Daily use': '#FF7A28' };
-// Hover-preview backgrounds while a project has no screenshot yet.
 const PEEK_BG = [
   'linear-gradient(160deg, #F4F1FF, #7C5CFA)',
   'linear-gradient(200deg, #1E1B4B, #111111)',
@@ -88,7 +86,6 @@ const projects = await Promise.all(
   ))}
   <div class="border-t border-ink"></div>
 
-  <!-- Hover preview: follows the pointer over a project row (fine pointers only, see scripts/project-peek.ts). -->
   <div data-peek aria-hidden="true" class="pointer-events-none fixed top-0 left-0 z-[45] hidden aspect-[16/10] w-[min(380px,32vw)] overflow-hidden">
     <div data-peek-content class="absolute inset-0">
     {projects.map(({ p }, index) => (
@@ -110,7 +107,6 @@ const projects = await Promise.all(
   import { createAssembler } from '../scripts/pixel-assemble';
   import { prefersReducedMotion } from '../scripts/motion';
 
-  // Progressive enhancement: details are open without JS; with JS they start collapsed behind a real button.
   document.querySelectorAll<HTMLElement>('[data-project]').forEach((project) => {
     const button = project.querySelector<HTMLButtonElement>('[data-toggle]');
     const detail = project.querySelector<HTMLElement>('[data-detail]');
@@ -128,7 +124,6 @@ const projects = await Promise.all(
     button.addEventListener('click', () => {
       const open = button.getAttribute('aria-expanded') !== 'true';
       set(open);
-      // Opening a row builds its picture out of pixels.
       assembler.reset();
       if (open && !prefersReducedMotion()) assembler.show(0, 'left', 700, assembler.reset);
     });

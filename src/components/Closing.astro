@@ -1,12 +1,9 @@
 ---
-// The sign-off, as exactly one screen: centred in the space left above the pixel band and footer
-// line. Sizes follow the screen height; on screens too short for the content it grows instead.
 import { CONTACT_EMAIL, GITHUB_URL, LINKEDIN_URL, MAILTO_URL } from '../lib/profile';
 import { cvAvailable } from '../lib/site-data';
 import PixelFooter from './PixelFooter.astro';
 
 interface Props {
-  /** without the closing full stop, which is added in the accent colour */
   headline: string;
 }
 const { headline } = Astro.props;

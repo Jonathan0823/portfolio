@@ -8,7 +8,7 @@ const REDUCE = '(prefers-reduced-motion: reduce)';
 describe('motion rules', () => {
   it('runs the trail only for a hovering fine pointer', () => {
     expect(canRunTrail(media([FINE]))).toBe(true);
-    expect(canRunTrail(media([]))).toBe(false); // touch
+    expect(canRunTrail(media([]))).toBe(false);
   });
 
   it('turns the trail off under reduced motion even with a mouse', () => {

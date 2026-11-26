@@ -1,14 +1,10 @@
-// Builds pictures out of pixels: heat-coloured cells land one by one and each turns into its
-// piece of the picture, so there is no box until the cells have made one. Switching to another
-// picture or scattering runs the same wave from wherever the cells are (see pixel-wave.ts).
 import { HEAT_PALETTE } from './pixel-math';
 import { cellDelays, cellsPath, coverLevel, SPREAD, type Side } from './pixel-wipe';
 import { createCells, flightProgress, NONE, retarget, type Cells } from './pixel-wave';
 
 export { NONE };
-const CELL = 14; // px
+const CELL = 14;
 
-/** `layers` are same-sized pictures stacked in one box; `canvas` lies on top of them. */
 export function createAssembler(layers: HTMLElement[], canvas: HTMLCanvasElement) {
   const ctx = canvas.getContext('2d')!;
   let cells: Cells | null = null;
@@ -39,7 +35,6 @@ export function createAssembler(layers: HTMLElement[], canvas: HTMLCanvasElement
       const p = flightProgress(state, i, now);
       if (p < 1) flying = true;
       if (p > 0 && p < 1) {
-        // Hot as it appears and cooling as it settles; the reverse on the way out.
         ctx.fillStyle = HEAT_PALETTE[coverLevel((state.to[i] === NONE ? 1 - p : p) * 0.8)];
         ctx.fillRect((i % columns) * CELL, Math.floor(i / columns) * CELL, CELL + 0.5, CELL + 0.5);
         continue;
@@ -63,7 +58,6 @@ export function createAssembler(layers: HTMLElement[], canvas: HTMLCanvasElement
   };
 
   return {
-    /** Moves the box to layer `layer` (NONE takes it apart), the wave entering from `side`. */
     show(layer: number, side: Side, duration: number, onDone?: () => void) {
       measure();
       const now = performance.now();
@@ -71,10 +65,9 @@ export function createAssembler(layers: HTMLElement[], canvas: HTMLCanvasElement
       retarget(cells!, layer, waits, now, (1 - SPREAD) * duration);
       done = onDone;
       cancelAnimationFrame(raf);
-      draw(now); // before the next paint, so a whole picture never flashes
+      draw(now);
       raf = requestAnimationFrame(frame);
     },
-    /** Drops all state: no cells on the canvas, the pictures unclipped. */
     reset() {
       cancelAnimationFrame(raf);
       raf = 0;

@@ -1,10 +1,6 @@
 ---
-// Top navigation, shared by pages. Desktop: a row of links. Mobile: a <details> menu that works
-// without JS. Each page passes its own links; a link with `sec` gets aria-current="true" while
-// the element with that id is on screen (set by the script below). sec "contact" is the dark button.
 interface Props {
   links: { href: string; label: string; sec?: string }[];
-  /** where the name goes: the top of this page, or back to the home page */
   brandHref?: string;
 }
 const { links, brandHref = '#top' } = Astro.props;
@@ -12,7 +8,6 @@ const { links, brandHref = '#top' } = Astro.props;
 
 <nav aria-label="Main" class="sticky top-0 z-40 h-0">
   <div class="relative flex items-start justify-between px-3 pt-3 md:items-center md:px-24 md:pt-4">
-    <!-- Solid backdrop, faded in together with the progress bar once the hero is scrolled past. -->
     <div
       data-nav-bg
       aria-hidden="true"
@@ -50,7 +45,6 @@ const { links, brandHref = '#top' } = Astro.props;
       </div>
     </details>
 
-    <!-- Pixel scroll progress, filled in by the script below. Hidden while the hero is on screen. -->
     <div
       data-progress
       aria-hidden="true"
@@ -69,7 +63,6 @@ const { links, brandHref = '#top' } = Astro.props;
     .filter((el): el is HTMLElement => !!el);
 
   const mark = () => {
-    // The last section whose top has passed 45% of the viewport is the one on screen.
     let current: string | null = null;
     for (const el of sections) if (el.getBoundingClientRect().top < innerHeight * 0.45) current = el.id;
     for (const a of links) a.setAttribute('aria-current', String(a.dataset.sec === current));
@@ -77,7 +70,6 @@ const { links, brandHref = '#top' } = Astro.props;
   addEventListener('scroll', mark, { passive: true });
   mark();
 
-  // Pixel progress bar: 9 x 4 px cells on a 10 px pitch, hot to cool; lit cells follow page scroll.
   const bar = document.querySelector<HTMLElement>('[data-progress]');
   const navBg = document.querySelector<HTMLElement>('[data-nav-bg]');
   if (bar) {
@@ -119,7 +111,6 @@ const { links, brandHref = '#top' } = Astro.props;
     update();
   }
 
-  // Picking a mobile menu entry closes the menu.
   const menu = document.querySelector<HTMLDetailsElement>('details[data-menu]');
   menu?.addEventListener('click', (e) => {
     if ((e.target as HTMLElement).closest('a')) menu.open = false;

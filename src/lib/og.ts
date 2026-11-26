@@ -16,7 +16,6 @@ const el = (type: string, style: Record<string, unknown>, children?: unknown) =>
   props: { style: { display: 'flex', ...style }, children },
 });
 
-/** 1200x630 PNG: ink on white, accent pixels. */
 export async function renderOgImage(headline: string, sub: string): Promise<Uint8Array> {
   const [regular, semi] = await Promise.all([font(400), font(600)]);
   const pixels = PIXELS.map((c, i) => el('div', { width: 40, height: 40, background: c, marginLeft: i ? 8 : 0 }));

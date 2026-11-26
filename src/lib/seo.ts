@@ -19,7 +19,6 @@ export function pageSeo(page: SeoPage) {
   return { ...PAGES[page], ogPath: `/og/${page}.png` };
 }
 
-/** Absolute URL for a path on the site. */
 export function canonicalUrl(site: string, pathname: string): string {
   return new URL(pathname, site).href;
 }

@@ -15,7 +15,6 @@ const githubStatsSchema = z.object({
 
 export type GithubStats = z.infer<typeof githubStatsSchema>;
 
-/** Validates the committed snapshot (src/data/github.json). */
 export function parseGithubStats(raw: unknown): GithubStats {
   return githubStatsSchema.parse(raw);
 }
@@ -38,7 +37,6 @@ const responseSchema = z.object({
   }),
 });
 
-/** Maps the GraphQL payload to the stats shape; throws on errors or an unexpected shape. */
 export function parseGithubResponse(body: unknown): GithubStats {
   const { user } = responseSchema.parse(body).data;
   const cal = user.contributionsCollection.contributionCalendar;
@@ -73,7 +71,6 @@ export type LoadOptions = {
   now?: Date;
 };
 
-/** Fetches live stats at build time; falls back to the snapshot and never throws. */
 export async function loadGithubStats(opts: LoadOptions): Promise<GithubStats> {
   const { token, snapshot, fetchFn = fetch, warn = console.warn, now = new Date() } = opts;
   if (!token) {
@@ -103,7 +100,6 @@ export async function loadGithubStats(opts: LoadOptions): Promise<GithubStats> {
   }
 }
 
-/** -1 for an empty day, then 0..5 using fixed thresholds. */
 export function contributionLevel(count: number): number {
   if (count <= 0) return -1;
   if (count < 3) return 0;
@@ -114,10 +110,6 @@ export function contributionLevel(count: number): number {
   return 5;
 }
 
-/**
- * Level thresholds from this year's own spread: the 15th, 35th, 55th, 75th and 90th percentile
- * of active days. With fixed thresholds a busy year turns almost every day the hottest colour.
- */
 export function levelThresholds(counts: readonly number[]): number[] {
   const active = counts.filter((c) => c > 0).sort((a, b) => a - b);
   if (active.length === 0) return [1, 2, 3, 4, 5];
@@ -125,14 +117,12 @@ export function levelThresholds(counts: readonly number[]): number[] {
   return [0.15, 0.35, 0.55, 0.75, 0.9].map(at);
 }
 
-/** -1 for an empty day, then 0..5 against thresholds from levelThresholds. */
 export function relativeLevel(count: number, thresholds: readonly number[]): number {
   if (count <= 0) return -1;
   const level = thresholds.findIndex((t) => count < t);
   return level === -1 ? 5 : level;
 }
 
-/** Grid position of a day: column = week index, row = weekday with Sunday at the top. */
 export function cellPosition(date: string, weekIndex: number): { col: number; row: number } {
   return { col: weekIndex, row: new Date(`${date}T00:00:00Z`).getUTCDay() };
 }

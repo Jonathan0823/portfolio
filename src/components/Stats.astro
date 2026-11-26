@@ -30,8 +30,6 @@ const stats = [
 </section>
 
 <script>
-  // Numbers count up once when they scroll into view, in step with the calendar replay. The
-  // markup keeps the final value, so without JS (or with reduced motion) nothing changes.
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
     const els = [...document.querySelectorAll<HTMLElement>('#github [data-count-up]')].filter((el) => /^[\d,]+$/.test(el.textContent!.trim()));
     const io = new IntersectionObserver((entries) => {

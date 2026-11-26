@@ -1,4 +1,3 @@
-// Pure maths for the pixel canvases. No DOM access here.
 
 export { HEAT_PALETTE } from '../lib/palette';
 
@@ -7,7 +6,6 @@ export function hash(a: number, b: number, c = 0): number {
   return h - Math.floor(h);
 }
 
-/** Smooth value noise: the lattice hash blended with a smoothstep. */
 export function noise(x: number, y: number): number {
   const cellX = Math.floor(x), cellY = Math.floor(y);
   const fracX = x - cellX, fracY = y - cellY;
@@ -22,23 +20,14 @@ export function noise(x: number, y: number): number {
   );
 }
 
-/** Three octaves of noise. */
 export function fbm(x: number, y: number): number {
   return 0.6 * noise(x, y) + 0.3 * noise(x * 2.1 + 5, y * 2.1) + 0.1 * noise(x * 4.3, y * 4.3 + 9);
 }
 
-/** Palette bucket for a heat value. */
 export function bucketFor(value: number): number {
   return value < 0.46 ? 0 : value < 0.6 ? 1 : value < 0.7 ? 2 : value < 0.82 ? 3 : value < 0.94 ? 4 : 5;
 }
 
-/**
- * Palette level for a cell under the cursor blob.
- * @param distance 0 at the blob centre, 1 at its edge
- * @param speedFactor 0..1, how fast the cursor is moving
- * @param fieldTime animation time shared with the hero field
- * @param warmth 0..1, how close the cursor is to a pixel canvas; caps how hot the cell can get
- */
 export function heatLevel(
   cellX: number,
   cellY: number,
@@ -56,20 +45,14 @@ export function heatLevel(
 export interface Field {
   width: number;
   height: number;
-  /** cell size in CSS px */
   cellSize: number;
   columns: number;
   rows: number;
-  /** the horizon row, where the painted band ends and drips begin */
   horizonRow: number;
   heat: Float32Array;
-  /** palette bucket per cell, -1 when the cell is empty */
   bucket: Int8Array;
-  /** lowest painted row per column (-1 if none) */
   lowestRow: Int16Array;
-  /** palette bucket of that lowest painted cell */
   lowestBucket: Int8Array;
-  /** the highest heat value after the last step */
   hottest: number;
 }
 
@@ -91,7 +74,6 @@ export function createField(width: number, height: number): Field {
   };
 }
 
-/** Advance heat decay (by \`decay\` per call) and recompute which cells are painted, and in which bucket. */
 export function stepField(field: Field, time: number, seed: number, density = 1, decay = 0.94): void {
   const { columns, rows, horizonRow, heat, bucket, lowestRow, lowestBucket } = field;
   bucket.fill(-1);
@@ -118,7 +100,6 @@ export function stepField(field: Field, time: number, seed: number, density = 1,
       const grain = hash(x, y) - 0.5;
       const value = 0.1 + 0.5 * base + 0.42 * ridge * density + 0.18 * density + (heat[i] < 0.3 ? heat[i] : 0) + grain * 0.2;
       if (base + grain * 0.25 < 0.36 + (1 - density) * 0.38 && ridge * density < 0.35 && heat[i] < 0.25) continue;
-      // Cursor heat (>= 0.3) reads as its own rings: dark rim up to a hot core, merging into the field as it cools.
       const level = bucketFor(heat[i] >= 0.3 ? Math.max(value, 0.1 + heat[i] + grain * 0.1) : value);
       bucket[i] = level;
       if (y > lowestRow[x]) {
