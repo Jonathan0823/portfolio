@@ -108,9 +108,16 @@ export function createHeroStamper(fields: HeroField[]): HeroStamper {
 
 /**
  * A click inside a field sends a ring of heat out through it; the field's own decay fades it, so nothing is cleaned up.
- * A held click (`charge`) makes it bigger.
+ * `charge` and `impact` (the page-impact ramp) make it bigger.
  */
-export function injectFieldRing(fields: HeroField[], x: number, y: number, strong: boolean, charge: number): void {
+export function injectFieldRing(
+  fields: HeroField[],
+  x: number,
+  y: number,
+  strong: boolean,
+  charge: number,
+  impact: number,
+): void {
   const picked = pickField(fields, y);
   if (!picked || !inside(picked.rect, x, y)) return;
   const { field: hero, rect } = picked;
@@ -121,7 +128,7 @@ export function injectFieldRing(fields: HeroField[], x: number, y: number, stron
     const field = hero.field();
     const column = (x - rect.left) / field.cellSize;
     const row = (hero.flipped ? rect.bottom - y : y - rect.top) / field.cellSize;
-    const radius = fieldRingRadius(strong, charge, t);
+    const radius = fieldRingRadius(strong, charge, impact, t);
     const reach = Math.ceil(radius + 2);
     for (let r = Math.max(0, Math.floor(row - reach)); r < Math.min(field.rows, row + reach); r++) {
       for (let c = Math.max(0, Math.floor(column - reach)); c < Math.min(field.columns, column + reach); c++) {

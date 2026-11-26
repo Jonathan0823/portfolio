@@ -1,17 +1,28 @@
 import { describe, expect, it } from 'vitest';
 import {
   CHARGE_MS,
+  IMPACT_FROM,
+  KICK_CAP,
+  MIN_WAVE_SPEED,
   MOTE_FROM,
   POP_MS,
   TAP_MS,
+  arrivalMs,
   chargeAt,
   chargeScale,
   clampLevel,
+  farthestCorner,
   fieldRingHeat,
   fieldRingRadius,
+  impactRamp,
+  impactStrength,
+  kickFalloff,
   moteRadius,
   popScale,
+  ringRadius,
   shockwaveShape,
+  springValue,
+  waveSpeed,
 } from './cursor-math';
 
 describe('chargeAt', () => {
@@ -30,6 +41,65 @@ describe('chargeAt', () => {
   it('grows the pointer to about 1.8x', () => {
     expect(chargeScale(0)).toBe(1);
     expect(chargeScale(1)).toBeCloseTo(1.8);
+  });
+});
+
+describe('impact', () => {
+  it('does nothing up to the threshold, then ramps to 1', () => {
+    expect(impactRamp(IMPACT_FROM)).toBe(0);
+    expect(impactRamp(0)).toBe(0);
+    expect(impactRamp(1)).toBe(1);
+    expect(impactRamp(0.675)).toBeCloseTo(0.5);
+  });
+  it('is inert below the threshold and strongest at full charge', () => {
+    expect(impactStrength(0.3)).toEqual({ ramp: 0, kick: 0, rotate: 0, shake: 0, flash: false });
+    const mid = impactStrength(0.6),
+      full = impactStrength(1);
+    expect(mid.kick).toBeGreaterThan(0);
+    expect(full.kick).toBeGreaterThan(mid.kick);
+    expect(full.shake).toBeGreaterThan(mid.shake);
+    expect(full.rotate).toBeGreaterThan(mid.rotate);
+  });
+  it('flashes only near full charge', () => {
+    expect(impactStrength(0.7).flash).toBe(false);
+    expect(impactStrength(0.85).flash).toBe(true);
+  });
+  it('caps how much content gets kicked', () => {
+    expect(KICK_CAP).toBe(150);
+  });
+});
+
+describe('the front', () => {
+  it('measures to the farthest corner', () => {
+    expect(farthestCorner(0, 0, 300, 400)).toBe(500);
+    expect(farthestCorner(300, 400, 300, 400)).toBe(500);
+    expect(farthestCorner(150, 200, 300, 400)).toBe(250);
+  });
+  it('never crosses slower than the minimum, and speeds up for far corners', () => {
+    expect(waveSpeed(500)).toBe(MIN_WAVE_SPEED);
+    expect(waveSpeed(3000)).toBeGreaterThan(MIN_WAVE_SPEED);
+    expect(arrivalMs(3000, waveSpeed(3000))).toBeCloseTo(700);
+  });
+  it('grows linearly with time', () => {
+    expect(ringRadius(0, 2000)).toBe(0);
+    expect(ringRadius(500, 2000)).toBe(1000);
+    expect(ringRadius(-5, 2000)).toBe(0);
+  });
+  it('reaches content at distance / speed', () => {
+    expect(arrivalMs(900, 1800)).toBe(500);
+  });
+  it('kicks near content hardest but never leaves far content still', () => {
+    expect(kickFalloff(0, 1000)).toBe(1);
+    expect(kickFalloff(500, 1000)).toBeLessThan(kickFalloff(100, 1000));
+    expect(kickFalloff(5000, 1000)).toBe(0.25);
+  });
+});
+
+describe('springValue', () => {
+  it('starts displaced, overshoots, and settles', () => {
+    expect(springValue(0)).toBe(1);
+    expect(springValue(0.5)).toBeLessThan(0);
+    expect(Math.abs(springValue(1))).toBeLessThan(0.01);
   });
 });
 
@@ -60,11 +130,11 @@ describe('shockwaveShape', () => {
 
 describe('hero field ring', () => {
   it('expands fast then slows, and a bigger click reaches further', () => {
-    const half = fieldRingRadius(true, 0, 0.5),
-      end = fieldRingRadius(true, 0, 1);
+    const half = fieldRingRadius(true, 0, 0, 0.5),
+      end = fieldRingRadius(true, 0, 0, 1);
     expect(half).toBeGreaterThan(end / 2);
-    expect(fieldRingRadius(true, 1, 1)).toBeGreaterThan(end);
-    expect(fieldRingRadius(false, 0, 1)).toBeLessThan(end);
+    expect(fieldRingRadius(true, 1, 1, 1)).toBeGreaterThan(end);
+    expect(fieldRingRadius(false, 0, 0, 1)).toBeLessThan(end);
   });
   it('heats only cells on the ring, and fades as it ages', () => {
     expect(fieldRingHeat(10, 4, true, 0)).toBe(0);

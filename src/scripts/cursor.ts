@@ -1,9 +1,10 @@
 import type { HeroField } from './hero-field';
-import { TAP_MS } from './cursor-math';
+import { TAP_MS, impactRamp } from './cursor-math';
 import { isShapeName } from './cursor-shapes';
 import { startCharge, type Charger } from './charger';
 import { createHeroStamper, injectFieldRing } from './hero-stamp';
 import { mountMagnetRing } from './magnet-ring';
+import { pageImpact } from './page-impact';
 import { createPixelPointer } from './pixel-pointer';
 import { pointerStateFor } from './pointer-sprite';
 import { spawnShockwave } from './shockwave';
@@ -20,7 +21,7 @@ const TEXT_FIELD = 'input,textarea,select,[contenteditable]';
 /**
  * The site's only cursor, for a hovering mouse without reduced motion: a small pixel arrow locked 1:1 to the pointer
  * that becomes the hot arrow or a named shape over clickable things, a ring around logos, a shockwave on click,
- * and a hold-to-charge. Its one mark on the page is heat in the hero fields.
+ * and a hold-to-charge that can hit the whole page. Its one mark on the page is heat in the hero fields.
  */
 export function mountCursor(fields: HeroField[]): () => void {
   const pointer = createPixelPointer();
@@ -110,7 +111,8 @@ export function mountCursor(fields: HeroField[]): () => void {
     const at = { x: e.clientX, y: e.clientY };
     const charge = result.held < TAP_MS ? 0 : result.charge;
     spawnShockwave(at.x, at.y, chargeStrong, charge);
-    injectFieldRing(fields, at.x, at.y, chargeStrong, charge);
+    injectFieldRing(fields, at.x, at.y, chargeStrong, charge, impactRamp(charge));
+    pageImpact(at.x, at.y, charge);
   };
   // a drag that starts selecting text is a selection, not a charge
   const onSelection = () => {
