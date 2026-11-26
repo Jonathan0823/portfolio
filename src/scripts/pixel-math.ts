@@ -100,6 +100,8 @@ export interface FieldShape {
   stamp?: Float32Array;
   /** footer tide: highest row a raised surface may reach; the wandering skyline plus a swell can't lift it past this */
   cap?: number;
+  /** no gaps in the body under the surface; only the loose top and the dithered bottom edge stay ragged */
+  solid?: boolean;
 }
 
 export function stepField(
@@ -148,7 +150,7 @@ export function stepField(
       h = Math.max(h, stamped);
       // everything under a raised surface is solid water, without the field's gaps, from the first rows it lifts. The
       // dithered bottom edge stays, as it does across the rest of the footer
-      const water = swell > 0.05 && y < horizonRow;
+      const water = (shape.solid || swell > 0.05) && y < horizonRow;
       if (h < 0.3) {
         if (y >= horizonRow + drip * (0.4 + 0.6 * coverage)) continue;
         if (y < fadeRows) {

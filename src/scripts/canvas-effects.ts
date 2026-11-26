@@ -30,11 +30,14 @@ if (typeof window.matchMedia === 'function') {
               crest: tideSwell.crest,
               stamp: tideSwell.stamp,
               cap: tideSwell.cap,
+              solid: true,
             }
           : {}),
       }),
       // the footer bleeds further up so the tide has room to rise
       bleed: kind === 'foot' ? FOOT_BLEED : FIELD_BLEED,
+      // on touch the footer cycles its logos on a timer, and sparks drifting over them only read as stray pixels
+      embers: () => kind !== 'foot' || window.matchMedia(FINE_POINTER_QUERY).matches,
     });
   });
   const hero = fields[hosts.findIndex((h) => h.dataset.pixelField === 'hero')] ?? null;

@@ -32,6 +32,8 @@ export function mountHeroField(
     shape?: (motion: boolean) => FieldShape;
     /** px the canvas reaches past the host, behind the content; embers fall there */
     bleed?: number;
+    /** whether sparks may fly off the field this frame; defaults to yes */
+    embers?: () => boolean;
   } = {},
 ): HeroField {
   const seed = options.seed ?? SEED;
@@ -112,7 +114,7 @@ export function mountHeroField(
     const steps = Math.min(Math.max(elapsed, 0), MAX_ELAPSED_MS) / STEP_MS;
     if (!reduced) t += TIME_STEP * steps;
     stepField(field, t, seed, 1, decayFactor(HEAT_DECAY, steps), options.shape?.(!reduced) ?? {});
-    if (bleed && !reduced) shedEmbers(steps);
+    if (bleed && !reduced && (options.embers?.() ?? true)) shedEmbers(steps);
     else embers = [];
     const { columns, rows, cellSize, bucket } = field;
     ctx.clearRect(0, 0, columns * cellSize, rows * cellSize);
