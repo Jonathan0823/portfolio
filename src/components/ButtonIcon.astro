@@ -1,0 +1,22 @@
+---
+// The pixel icon before a closing button's label; takes the button's heat colour (global.css) on hover, focus and
+// while the footer cycle shows its logo.
+import type { PixelIcon } from '@/scripts/glyph-model';
+
+interface Props {
+  icon: PixelIcon;
+}
+const { icon } = Astro.props;
+---
+
+<svg
+  class="btn-icon"
+  aria-hidden="true"
+  shape-rendering="crispEdges"
+  fill="currentColor"
+  viewBox={icon.viewBox}
+  width={icon.width}
+  height={icon.height}
+>
+  <path d={icon.d} />
+</svg>
