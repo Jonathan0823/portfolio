@@ -47,6 +47,8 @@ interface TrailCell {
   cellX: number;
   cellY: number;
   strength: number;
+  /** laid while the cursor was grey over text, so it stays grey too */
+  mono: boolean;
 }
 
 export function mountCursorTrail(fields: HeroField[]): () => void {
@@ -365,6 +367,7 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     const wake = !magnet;
     if (pointerInside && !insideHero && (heroContact > 0.05 || wake) && speed > 1.2) {
       // just out of a field the wake carries the field's heat; elsewhere it is cool
+      const mono = overTextValue > 0.5;
       const amount = Math.max(heroContact, wake ? WAKE_HEAT : 0) * Math.min(1, 0.3 + speed / 16),
         brushRadius = Math.max(2, Math.min(3.2, radius * 0.55));
       for (let step = 1; step <= steps; step++) {
@@ -377,7 +380,7 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
             const key = cellX + ',' + cellY,
               strength = amount * (1 - distance * distance * 0.8) * (0.8 + 0.2 * hash(cellX, cellY, 3));
             const existing = trail.get(key);
-            if (!existing || existing.strength < strength) trail.set(key, { cellX, cellY, strength });
+            if (!existing || existing.strength < strength) trail.set(key, { cellX, cellY, strength, mono });
           }
         }
       }
@@ -396,7 +399,7 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
       // fresh wake holds steady so it reads as one tail; only the fading end flickers
       const flicker = entry.strength < 0.45 && hash(entry.cellX, entry.cellY, Math.floor(clock * 3)) < 0.3 ? 1 : 0;
       const level = Math.max(0, Math.min(5, Math.round(entry.strength * 5 - flicker)));
-      trailCtx.fillStyle = HEAT_PALETTE[level];
+      trailCtx.fillStyle = (entry.mono ? UNDER_PALETTE : HEAT_PALETTE)[level];
       trailCtx.fillRect(localX * cell + 1, localY * cell + 1, cell - 1, cell - 1);
     });
 
