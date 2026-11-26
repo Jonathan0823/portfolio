@@ -31,6 +31,8 @@ const COOL_MS = 280;
 const CREST_HEAT = 0.85;
 /** how long the pointer may be between buttons before it counts as leaving them */
 const LEAVE_GRACE_MS = 160;
+/** rows the wave's top keeps clear below the closing headline */
+const HEAD_CLEAR = 3;
 const LOGOS: GlyphName[] = ['mail', 'git', 'linkedin', 'resume'];
 
 interface Placed {
@@ -76,6 +78,15 @@ export function mountFooterTide(foot: HeroField): void {
   const easeOut = (t: number) => 1 - (1 - t) ** 3;
   const easeInOut = (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
 
+  /** highest row the wave may reach: a few rows under the closing headline's bottom edge */
+  const ceiling = (): number => {
+    const heading = document.querySelector('#contact h2');
+    const field = foot.field();
+    if (!heading) return field.rows - 1;
+    const gap = foot.rect().bottom - heading.getBoundingClientRect().bottom;
+    return Math.max(0, Math.min(field.rows - 1, Math.floor(gap / field.cellSize) - HEAD_CLEAR));
+  };
+
   // place a logo right of the buttons, standing just above the field's skyline
   const place = (name: GlyphName): Placed => {
     const field = foot.field();
@@ -90,7 +101,11 @@ export function mountFooterTide(foot: HeroField): void {
     );
     const left = Math.round(centerPx / field.cellSize - w / 2);
     // a few rows clear of the field's highest skyline, so the logo stands apart instead of merging into it
-    const bottom = Math.min(field.rows - h - OVER_TOP - 1, Math.round(field.hostRows * 0.92) + 4);
+    // lowered when needed so the wave that covers it (OVER_TOP rows above) still stays under the headline
+    const bottom = Math.max(
+      0,
+      Math.min(field.rows - h - OVER_TOP - 1, Math.round(field.hostRows * 0.92) + 4, ceiling() - OVER_TOP - h + 1),
+    );
     const cells: Array<[number, number]> = [];
     bitmap.forEach((row, i) =>
       [...row].forEach((c, j) => {
@@ -128,7 +143,7 @@ export function mountFooterTide(foot: HeroField): void {
     const extent = LOGOS.map(place);
     const left = Math.min(...extent.map((s) => s.left)) - SIDE_MARGIN;
     const right = Math.max(...extent.map((s) => s.right)) + SIDE_MARGIN;
-    const top = Math.max(...extent.map((s) => s.top)) + OVER_TOP;
+    const top = Math.min(Math.max(...extent.map((s) => s.top)) + OVER_TOP, ceiling());
     const shoulder = (right - left) * 0.35;
     // the crest glows while the water rises and fades shortly after; it is never written into the field's heat
     const glow = CREST_HEAT * Math.max(0, 1 - (now - crestAt) / CREST_FADE_MS);
