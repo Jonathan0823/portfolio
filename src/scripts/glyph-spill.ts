@@ -4,6 +4,7 @@ import {
   assignPixels,
   glyphCanvasLayout,
   pickSourceColumns,
+  sourceBucket,
   type GlyphCanvasLayout,
   type GlyphName,
 } from './glyph-model';
@@ -146,11 +147,14 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
       const fieldRow = field.lowestRow[Math.floor(originField + i / ratio)];
       lowestRows.push(usable && fieldRow !== undefined && fieldRow >= 0 ? (fieldRow + 1) * ratio - 1 : fallbackRow);
     }
-    return pickSourceColumns(lowestRows).map((column) => ({
-      column,
-      row: lowestRows[column] + 1,
-      bucket: usable ? field.lowestBucket[Math.floor(originField + column / ratio)] : 1,
-    }));
+    return pickSourceColumns(lowestRows).map((column) => {
+      const fieldColumn = Math.floor(originField + column / ratio);
+      return {
+        column,
+        row: lowestRows[column] + 1,
+        bucket: usable ? sourceBucket(field.lowestRow[fieldColumn], field.lowestBucket[fieldColumn]) : 1,
+      };
+    });
   };
 
   const spill = (name: GlyphName | null) => {

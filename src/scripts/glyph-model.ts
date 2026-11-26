@@ -186,6 +186,14 @@ export function pixelIcon(rows: string[], size: number): PixelIcon {
   return { viewBox: `0 0 ${w} ${h}`, width: Math.round(w * scale), height: Math.round(h * scale), d };
 }
 
+/** heat bucket of a spill whose field column holds no lava right now (the ignite holds the field empty) */
+export const WARM_BUCKET = 4;
+
+/** the heat a spill takes from its field column; a column without terrain gives a warm one, not the coldest */
+export function sourceBucket(lowestRow: number | undefined, lowestBucket: number): number {
+  return lowestRow === undefined || lowestRow < 0 ? WARM_BUCKET : lowestBucket;
+}
+
 export function pickSourceColumns(lowestRows: number[]): number[] {
   const columnCount = lowestRows.length;
   const peaks: number[] = [];
