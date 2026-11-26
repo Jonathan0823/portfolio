@@ -79,7 +79,10 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
                         <>
                           {' '}
                           I also published an open-source version:{' '}
-                          <a href={`#${projectAnchor(published.id)}`} class="text-ink">
+                          <a
+                            href={`#${projectAnchor(published.id)}`}
+                            class="text-ink underline decoration-[#d4d4d4] underline-offset-4 hover:decoration-ink"
+                          >
                             {published.data.name} ↓
                           </a>
                         </>
