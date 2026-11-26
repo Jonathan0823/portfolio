@@ -28,7 +28,7 @@ export function personJsonLd(site: string, skills: readonly { group: string; ite
     '@context': 'https://schema.org',
     '@type': 'Person',
     name: 'Eguin Jonathan',
-    jobTitle: 'Backend Engineer',
+    jobTitle: 'Software Engineer',
     url: canonicalUrl(site, '/'),
     sameAs: PROFILE_URLS,
     knowsAbout: [...new Set(skills.flatMap((s) => s.items))],

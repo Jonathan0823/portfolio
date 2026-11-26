@@ -30,7 +30,7 @@ describe('personJsonLd', () => {
     expect(ld['@context']).toBe('https://schema.org');
     expect(ld['@type']).toBe('Person');
     expect(ld.name).toBe('Eguin Jonathan');
-    expect(ld.jobTitle).toBe('Backend Engineer');
+    expect(ld.jobTitle).toBe('Software Engineer');
     expect(ld.url).toBe('https://eguinjonathan.com/');
     expect(ld.sameAs).toEqual([
       'https://github.com/Jonathan0823',
