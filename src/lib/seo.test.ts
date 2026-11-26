@@ -3,7 +3,7 @@ import { canonicalUrl, pageSeo, personJsonLd } from './seo';
 
 describe('pageSeo', () => {
   it('titles the home page and the story page', () => {
-    expect(pageSeo('home').title).toBe('Eguin Jonathan — Backend Engineer');
+    expect(pageSeo('home').title).toBe('Eguin Jonathan — Software Engineer (Backend & Full-Stack)');
     expect(pageSeo('story').title).toBe('Story — Eguin Jonathan');
   });
   it('gives every page a description and an image path', () => {

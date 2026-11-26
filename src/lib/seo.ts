@@ -4,14 +4,14 @@ export type SeoPage = 'home' | 'story';
 
 const PAGES: Record<SeoPage, { title: string; description: string }> = {
   home: {
-    title: 'Eguin Jonathan — Backend Engineer',
+    title: 'Eguin Jonathan — Software Engineer (Backend & Full-Stack)',
     description:
-      'Eguin Jonathan is a backend engineer in Karawang, Indonesia, building device gateways, data pipelines and fast dashboards in Go, Python and TypeScript. Open to remote roles.',
+      'Eguin Jonathan is a software engineer (backend and full-stack) in Karawang, Indonesia, building device gateways, data pipelines and fast dashboards in Go, Python and TypeScript. Open to remote roles.',
   },
   story: {
     title: 'Story — Eguin Jonathan',
     description:
-      'How Eguin Jonathan went from informatics student to backend engineer writing software for factory machines and the people who watch them.',
+      'How Eguin Jonathan went from informatics student to software engineer writing software for factory machines and the people who watch them.',
   },
 };
 
