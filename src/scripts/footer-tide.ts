@@ -13,6 +13,8 @@ export const tideSwell = {
   crest: new Float32Array(0),
   /** the logo's heat per cell, drawn only where the water has uncovered it; rewritten every frame */
   stamp: new Float32Array(0),
+  /** how far below the surface the water is solid: follows the wave's level */
+  flood: 0,
 };
 export const FOOT_BLEED = 320;
 
@@ -176,6 +178,7 @@ export function mountFooterTide(foot: HeroField): () => void {
       tideSwell.crest[x] = level > 0.05 && falloff > 0.2 ? glow * falloff : 0;
     }
 
+    tideSwell.flood = level;
     tideSwell.stamp.fill(0);
     if (logo) {
       if (level === 0 && logo.shownAt === Infinity) logo.shownAt = now;
@@ -256,6 +259,7 @@ export function mountFooterTide(foot: HeroField): () => void {
     tideSwell.rows.fill(0);
     tideSwell.crest.fill(0);
     tideSwell.stamp.fill(0);
+    tideSwell.flood = 0;
     foot.markDirty();
   };
 }

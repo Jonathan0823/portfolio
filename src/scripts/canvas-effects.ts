@@ -24,7 +24,9 @@ if (typeof window.matchMedia === 'function') {
       flipped: kind === 'foot',
       shape: (motion) => ({
         ...fieldShape(kind, host.getBoundingClientRect(), scrollY, innerHeight, motion),
-        ...(kind === 'foot' ? { swell: tideSwell.rows, crest: tideSwell.crest, stamp: tideSwell.stamp } : {}),
+        ...(kind === 'foot'
+          ? { swell: tideSwell.rows, crest: tideSwell.crest, stamp: tideSwell.stamp, flood: tideSwell.flood }
+          : {}),
       }),
       // the footer bleeds further up so the tide has room to rise
       bleed: kind === 'foot' ? FOOT_BLEED : FIELD_BLEED,
