@@ -4,6 +4,14 @@ import { isShapeName, shapeCells, type ShapeName } from './cursor-shapes';
 
 /** the plain arrow's outline, so it stays readable over any page colour */
 export const INK = '#111111';
+/** the outline of the inverted look the pointer wears inside a pixel field */
+export const FIELD_OUTLINE = '#ffffff';
+
+/** the inverted look of a sprite cell: outline cells turn white, fill cells turn ink, so it reads over any heat colour */
+export const invertedColor = (cell: { ink: boolean }): string => (cell.ink ? FIELD_OUTLINE : INK);
+
+/** only the plain and hot arrows are restyled in a field; named shapes keep their own look */
+export const hasFieldLook = (state: PointerState): boolean => state === 'arrow' || state === 'hot';
 const WHITE = '#ffffff';
 
 /** 'X' is outline, 'o' fill; the tip is the top-left X, which is the hotspot */

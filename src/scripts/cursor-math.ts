@@ -31,6 +31,9 @@ export interface ShockwaveDetail {
 }
 
 export const clampLevel = (n: number): number => Math.max(0, Math.min(5, Math.round(n)));
+/** moves `value` toward `target` by at most `step`, without overshooting */
+export const approach = (value: number, target: number, step: number): number =>
+  value + Math.max(-step, Math.min(step, target - value));
 export const smoothstep = (t: number): number => t * t * (3 - 2 * t);
 
 /** Charge 0..1 after holding for `heldMs`: nothing during the tap window, then ease-out so the first half-second does most of the work. */

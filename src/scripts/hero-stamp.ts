@@ -30,6 +30,12 @@ export function pickField(fields: HeroField[], y: number): { field: HeroField; r
 const inside = (rect: DOMRect, x: number, y: number) =>
   x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
 
+/** true when a viewport point is inside the rect of the field nearest to it */
+export function pointInField(fields: HeroField[], x: number, y: number): boolean {
+  const picked = pickField(fields, y);
+  return !!picked && inside(picked.rect, x, y);
+}
+
 export interface HeroStamper {
   /** the pointer moved to (x, y) at `time` ms; stamps heat along the way if it is inside a field */
   move(x: number, y: number, time: number): void;

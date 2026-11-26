@@ -2,7 +2,7 @@ import type { HeroField } from './hero-field';
 import { TAP_MS, impactRamp } from './cursor-math';
 import { isShapeName } from './cursor-shapes';
 import { startCharge, type Charger } from './charger';
-import { createHeroStamper, injectFieldRing } from './hero-stamp';
+import { createHeroStamper, injectFieldRing, pointInField } from './hero-stamp';
 import { mountMagnetRing } from './magnet-ring';
 import { pageImpact } from './page-impact';
 import { createPixelPointer } from './pixel-pointer';
@@ -47,6 +47,7 @@ export function mountCursor(fields: HeroField[]): () => void {
     const named = target?.closest<HTMLElement>('[data-cursor]')?.dataset.cursor;
     overShape = isShapeName(named);
     pointer.setState(pointerStateFor(named, !!target?.closest(CLICKABLE)));
+    pointer.setInField(pointInField(fields, x, y));
     syncVisible();
   };
 
@@ -73,6 +74,7 @@ export function mountCursor(fields: HeroField[]): () => void {
   };
   const onLeave = () => {
     inside = false;
+    pointer.setInField(false);
     // leaving the window cancels a charge: the release would land somewhere we cannot see
     charger?.cancel();
     stamper.reset();

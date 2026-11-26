@@ -7,6 +7,7 @@ import {
   MOTE_FROM,
   POP_MS,
   TAP_MS,
+  approach,
   arrivalMs,
   chargeAt,
   chargeScale,
@@ -157,5 +158,14 @@ describe('clampLevel', () => {
     expect(clampLevel(-3)).toBe(0);
     expect(clampLevel(2.6)).toBe(3);
     expect(clampLevel(9)).toBe(5);
+  });
+});
+
+describe('approach', () => {
+  it('steps toward the target without overshooting', () => {
+    expect(approach(0, 1, 0.25)).toBe(0.25);
+    expect(approach(1, 0, 0.25)).toBe(0.75);
+    expect(approach(0.9, 1, 0.25)).toBe(1);
+    expect(approach(0.1, 0, 1)).toBe(0);
   });
 });

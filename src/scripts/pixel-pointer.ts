@@ -1,6 +1,6 @@
 import { HEAT_PALETTE } from './pixel-math';
-import { POP_MS, chargeScale, clampLevel, popScale, smoothstep } from './cursor-math';
-import { INK, spriteFor, type PointerState } from './pointer-sprite';
+import { POP_MS, approach, chargeScale, clampLevel, popScale, smoothstep } from './cursor-math';
+import { INK, hasFieldLook, invertedColor, spriteFor, type PointerState } from './pointer-sprite';
 
 /** css px per sprite cell: the 9x11 arrow is 18x22px */
 const CELL = 2;
@@ -10,6 +10,8 @@ const CANVAS = 88;
 /** shrink out plus grow in is about 120ms */
 const SWAP_MS = 60;
 const PRESS_SQUASH = 0.8;
+/** crossfade to and from the inverted in-field look, ms */
+const FIELD_MS = 150;
 /** how fast the squash settles, ms */
 const SQUASH_MS = 45;
 
@@ -24,6 +26,8 @@ export interface PixelPointer {
   setCharge(charge: number, jitterX?: number, jitterY?: number): void;
   /** the release pop without a preceding squash (a charged pointer snapping back) */
   pop(): void;
+  /** inside a pixel field the arrow crossfades to an inverted look (ink fill, white outline); snaps under reduced motion */
+  setInField(on: boolean): void;
   destroy(): void;
 }
 
@@ -50,6 +54,9 @@ export function createPixelPointer(): PixelPointer {
   let charge = 0,
     jitterX = 0,
     jitterY = 0;
+  let fieldTarget = 0,
+    field = 0;
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   let raf = 0,
     last = 0;
 
@@ -58,6 +65,7 @@ export function createPixelPointer(): PixelPointer {
     if (grow < 0.1) return;
     const scale = smoothstep(grow) * squash * chargeScale(charge);
     const sprite = spriteFor(current, down);
+    const inverted = hasFieldLook(current);
     // charge heats the whole fill through the palette; the outline keeps its colour
     const tint = charge > 0 ? HEAT_PALETTE[clampLevel(charge * 5)] : null;
     for (const c of sprite.cells) {
@@ -65,8 +73,21 @@ export function createPixelPointer(): PixelPointer {
         y0 = Math.round(PAD + (c.y - sprite.ay) * CELL * scale);
       const x1 = Math.round(PAD + (c.x + 1 - sprite.ax) * CELL * scale),
         y1 = Math.round(PAD + (c.y + 1 - sprite.ay) * CELL * scale);
-      ctx.fillStyle = tint && c.color !== INK ? tint : c.color;
-      ctx.fillRect(x0 + jitterX, y0 + jitterY, Math.max(1, x1 - x0), Math.max(1, y1 - y0));
+      const base = tint && c.color !== INK ? tint : c.color;
+      const w = Math.max(1, x1 - x0),
+        h = Math.max(1, y1 - y0);
+      if (inverted && field > 0) {
+        ctx.globalAlpha = 1 - field;
+        ctx.fillStyle = base;
+        ctx.fillRect(x0 + jitterX, y0 + jitterY, w, h);
+        ctx.globalAlpha = field;
+        ctx.fillStyle = invertedColor(c);
+        ctx.fillRect(x0 + jitterX, y0 + jitterY, w, h);
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.fillStyle = base;
+        ctx.fillRect(x0 + jitterX, y0 + jitterY, w, h);
+      }
     }
   };
 
@@ -82,6 +103,7 @@ export function createPixelPointer(): PixelPointer {
         current = wanted;
       }
     } else if (grow < 1) grow = Math.min(1, grow + dt / SWAP_MS);
+    field = approach(field, fieldTarget, reducedMotion.matches ? 1 : dt / FIELD_MS);
     if (down) squash += (squashTarget() - squash) * Math.min(1, dt / SQUASH_MS);
     else if (popAt >= 0) {
       popAt += dt;
@@ -90,7 +112,7 @@ export function createPixelPointer(): PixelPointer {
     }
     draw();
     const settling = down ? Math.abs(squash - squashTarget()) > 0.01 : popAt >= 0;
-    if (current !== wanted || grow < 1 || settling) raf = requestAnimationFrame(tick);
+    if (current !== wanted || grow < 1 || settling || field !== fieldTarget) raf = requestAnimationFrame(tick);
     else last = 0;
   };
   const wake = () => {
@@ -133,6 +155,10 @@ export function createPixelPointer(): PixelPointer {
       draw();
     },
     pop: startPop,
+    setInField(on) {
+      fieldTarget = on ? 1 : 0;
+      wake();
+    },
     destroy() {
       cancelAnimationFrame(raf);
       canvas.remove();

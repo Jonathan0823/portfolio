@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { HEAT_PALETTE } from './pixel-math';
-import { INK, pointerStateFor, spriteFor } from './pointer-sprite';
+import { FIELD_OUTLINE, INK, hasFieldLook, invertedColor, pointerStateFor, spriteFor } from './pointer-sprite';
 
 describe('pointerStateFor', () => {
   it('uses the named shape for [data-cursor] targets', () => {
@@ -38,6 +38,16 @@ describe('spriteFor', () => {
     const eye = spriteFor('eye');
     expect([eye.ax, eye.ay]).toEqual([5.5, 5.5]);
     expect(eye.cells.every((c) => c.x >= 0 && c.x < 11 && c.y >= 0 && c.y < 11)).toBe(true);
+  });
+  it('inverts the arrow for a pixel field: white outline, ink fill', () => {
+    const cells = spriteFor('arrow').cells;
+    expect(invertedColor(cells.find((c) => c.ink)!)).toBe(FIELD_OUTLINE);
+    expect(invertedColor(cells.find((c) => !c.ink)!)).toBe(INK);
+  });
+  it('restyles only the plain and hot arrows in a field', () => {
+    expect(hasFieldLook('arrow')).toBe(true);
+    expect(hasFieldLook('hot')).toBe(true);
+    expect(hasFieldLook('eye')).toBe(false);
   });
   it('caches', () => {
     expect(spriteFor('plus')).toBe(spriteFor('plus'));
