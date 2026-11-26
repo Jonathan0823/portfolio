@@ -235,8 +235,10 @@ export function footWordmarkShape(foot: HeroField | undefined, motion: boolean, 
   }
 
   // while a closing button's logo is on show (or being washed in or out) the word dissolves out
-  if (tideBusy()) busyUntil = now + RETURN_MS;
-  const want = inView && now >= busyUntil;
+  // the return delay only paces the animation: without motion no later paint would come to end it
+  const busy = tideBusy();
+  if (busy) busyUntil = now + RETURN_MS;
+  const want = inView && (motion ? now >= busyUntil : !busy);
   const dt = lastNow ? Math.min(MAX_DT_MS, now - lastNow) : 16;
   lastNow = now;
   clock = advanceClock(clock, dt, want, motion);

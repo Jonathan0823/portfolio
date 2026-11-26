@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { tideSwell } from './footer-tide';
+import type { HeroField } from './hero-field';
 import {
   advanceClock,
   coverageDrop,
+  footWordmarkShape,
   advanceSink,
   cellThreshold,
   layoutWordmark,
@@ -127,5 +130,26 @@ describe('popLevel', () => {
 
   it('never glows while dissolving out', () => {
     expect(popLevel(0, false)).toBe(0);
+  });
+});
+
+describe('footWordmarkShape without motion', () => {
+  it('stands the word again on the very paint that clears a closing logo', () => {
+    vi.stubGlobal('window', { matchMedia: () => ({ matches: true }) });
+    vi.stubGlobal('document', { querySelector: () => null });
+    const foot = {
+      field: () => ({ columns: 120, rows: 40, hostRows: 40, cellSize: 8, horizonRow: 20 }),
+    } as unknown as HeroField;
+    const stamp = tideSwell.stamp;
+    try {
+      expect(footWordmarkShape(foot, false).mold).toBeDefined();
+      tideSwell.stamp = new Float32Array([1]);
+      expect(footWordmarkShape(foot, false).mold).toBeUndefined();
+      tideSwell.stamp = new Float32Array([0]);
+      expect(footWordmarkShape(foot, false).mold).toBeDefined();
+    } finally {
+      tideSwell.stamp = stamp;
+      vi.unstubAllGlobals();
+    }
   });
 });
