@@ -34,6 +34,11 @@ const LEAVE_GRACE_MS = 160;
 /** rows the wave's top keeps clear below the closing headline */
 const HEAD_CLEAR = 3;
 const LOGOS: GlyphName[] = ['mail', 'git', 'linkedin', 'resume'];
+/** touch: how long each logo stands before the next tide, and the first one's delay once the footer shows */
+const CYCLE_MS = 4000;
+const CYCLE_FIRST_MS = 600;
+/** class on the closing button whose logo is on show while cycling; styled in global.css */
+export const TIDE_SHOWN_CLASS = 'tide-shown';
 
 interface Placed {
   cells: Array<[number, number]>;
@@ -43,7 +48,6 @@ interface Placed {
 }
 
 export function mountFooterTide(foot: HeroField): void {
-  if (!window.matchMedia(FINE_POINTER_QUERY).matches) return;
   const buttons = [...document.querySelectorAll<HTMLAnchorElement>('#contact a[data-pixel-btn]')];
   const nameFor = (a: HTMLAnchorElement): GlyphName =>
     a.href.startsWith('mailto:')
@@ -68,6 +72,12 @@ export function mountFooterTide(foot: HeroField): void {
   let wanted: GlyphName | null = null;
   let swapPending = false;
 
+  // touch: the buttons stack across the full width, so the logo stands centred above the field, in a stage made
+  // for it under the buttons. The wave stops just under the buttons instead of under the headline
+  const stacked = !window.matchMedia(FINE_POINTER_QUERY).matches;
+  const overTop = stacked ? 2 : OVER_TOP;
+  const skyGap = stacked ? 1 : 4;
+
   const head = (to: number, now: number) => {
     if (to === goal && duration) return;
     from = level;
@@ -78,16 +88,20 @@ export function mountFooterTide(foot: HeroField): void {
   const easeOut = (t: number) => 1 - (1 - t) ** 3;
   const easeInOut = (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
 
-  /** highest row the wave may reach: a few rows under the closing headline's bottom edge */
+  /** highest row the wave may reach: a few rows under the closing headline's bottom edge (touch: the buttons') */
   const ceiling = (): number => {
-    const heading = document.querySelector('#contact h2');
     const field = foot.field();
-    if (!heading) return field.rows - 1;
-    const gap = foot.rect().bottom - heading.getBoundingClientRect().bottom;
-    return Math.max(0, Math.min(field.rows - 1, Math.floor(gap / field.cellSize) - HEAD_CLEAR));
+    const above = stacked
+      ? Math.max(...buttons.map((b) => b.getBoundingClientRect().bottom))
+      : document.querySelector('#contact h2')?.getBoundingClientRect().bottom;
+    if (above === undefined || !Number.isFinite(above)) return field.rows - 1;
+    const gap = foot.rect().bottom - above;
+    return Math.max(0, Math.min(field.rows - 1, Math.floor(gap / field.cellSize) - (stacked ? 1 : HEAD_CLEAR)));
   };
+  /** the lowest row a logo may stand on: a little clear of the field's highest skyline */
+  const skyline = () => Math.round(foot.field().hostRows * 0.92) + skyGap;
 
-  // place a logo right of the buttons, standing just above the field's skyline
+  // place a logo right of the buttons (touch: centred), standing just above the field's skyline
   const place = (name: GlyphName): Placed => {
     const field = foot.field();
     const rect = foot.rect();
@@ -95,17 +109,13 @@ export function mountFooterTide(foot: HeroField): void {
     const h = bitmap.length,
       w = bitmap[0].length;
     const buttonsRight = Math.max(...buttons.map((b) => b.getBoundingClientRect().right)) - rect.left;
-    const centerPx = Math.min(
-      rect.width - 96 - (w * field.cellSize) / 2,
-      Math.max(buttonsRight + 200, rect.width * 0.8),
-    );
+    const centerPx = stacked
+      ? rect.width / 2
+      : Math.min(rect.width - 96 - (w * field.cellSize) / 2, Math.max(buttonsRight + 200, rect.width * 0.8));
     const left = Math.round(centerPx / field.cellSize - w / 2);
     // a few rows clear of the field's highest skyline, so the logo stands apart instead of merging into it
-    // lowered when needed so the wave that covers it (OVER_TOP rows above) still stays under the headline
-    const bottom = Math.max(
-      0,
-      Math.min(field.rows - h - OVER_TOP - 1, Math.round(field.hostRows * 0.92) + 4, ceiling() - OVER_TOP - h + 1),
-    );
+    // lowered when needed so the wave that covers it (overTop rows above) still stays under the headline
+    const bottom = Math.max(0, Math.min(field.rows - h - overTop - 1, skyline(), ceiling() - overTop - h + 1));
     const cells: Array<[number, number]> = [];
     bitmap.forEach((row, i) =>
       [...row].forEach((c, j) => {
@@ -143,7 +153,7 @@ export function mountFooterTide(foot: HeroField): void {
     const extent = LOGOS.map(place);
     const left = Math.min(...extent.map((s) => s.left)) - SIDE_MARGIN;
     const right = Math.max(...extent.map((s) => s.right)) + SIDE_MARGIN;
-    const top = Math.min(Math.max(...extent.map((s) => s.top)) + OVER_TOP, ceiling());
+    const top = Math.min(Math.max(...extent.map((s) => s.top)) + overTop, ceiling());
     const shoulder = (right - left) * 0.35;
     // the crest glows while the water rises and fades shortly after; it is never written into the field's heat
     const glow = CREST_HEAT * Math.max(0, 1 - (now - crestAt) / CREST_FADE_MS);
@@ -194,6 +204,21 @@ export function mountFooterTide(foot: HeroField): void {
     head(1, performance.now());
     run();
   };
+  if (stacked) {
+    // grow the gap between the buttons and the field until the tallest logo and its wave fit under the buttons
+    const host = document.querySelector<HTMLElement>('[data-pixel-field="foot"]');
+    if (!host) return;
+    const tallest = Math.max(...LOGOS.map((n) => BITMAPS[n].rows.length));
+    const stage = () => {
+      const short = skyline() + tallest - 1 + overTop - ceiling();
+      const margin = parseFloat(host.style.marginTop) || 0;
+      host.style.marginTop = `${Math.max(0, margin + short * foot.field().cellSize)}px`;
+    };
+    stage();
+    addEventListener('resize', stage);
+    cycle(host, buttons, nameFor, submerge);
+    return;
+  }
   for (const button of buttons) {
     const name = nameFor(button);
     button.addEventListener('mouseenter', () => submerge(name));
@@ -206,4 +231,44 @@ export function mountFooterTide(foot: HeroField): void {
     button.addEventListener('mouseleave', leave);
     button.addEventListener('blur', leave);
   }
+}
+
+/** touch has no hover, and a tap opens the link: cycle the logos on a timer while the footer is on screen */
+function cycle(
+  host: HTMLElement,
+  buttons: HTMLAnchorElement[],
+  nameFor: (a: HTMLAnchorElement) => GlyphName,
+  submerge: (next: GlyphName | null) => void,
+): void {
+  if (!buttons.length) return;
+  let index = -1,
+    timer = 0,
+    visible = false;
+  const show = () => {
+    index = (index + 1) % buttons.length;
+    buttons.forEach((b, i) => b.classList.toggle(TIDE_SHOWN_CLASS, i === index));
+    submerge(nameFor(buttons[index]));
+  };
+  if (prefersReducedMotion()) {
+    // no cycling: the first logo just stands there
+    show();
+    return;
+  }
+  const arm = () => {
+    clearTimeout(timer);
+    timer = 0;
+    if (!visible || document.hidden) return;
+    timer = window.setTimeout(
+      () => {
+        show();
+        arm();
+      },
+      index < 0 ? CYCLE_FIRST_MS : CYCLE_MS,
+    );
+  };
+  new IntersectionObserver(([entry]) => {
+    visible = entry.isIntersecting;
+    arm();
+  }).observe(host);
+  document.addEventListener('visibilitychange', arm);
 }
