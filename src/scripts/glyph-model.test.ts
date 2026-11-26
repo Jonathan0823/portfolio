@@ -1,5 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { BITMAPS, SMALL_BITMAPS, assignPixels, glyphCanvasLayout, pickSourceColumns } from './glyph-model';
+import { BITMAPS, SMALL_BITMAPS, assignPixels, glyphCanvasLayout, pickSourceColumns, pixelIcon } from './glyph-model';
+
+describe('pixelIcon', () => {
+  it('merges each row into runs of cells', () => {
+    expect(pixelIcon(['##.#', '....'], 8).d).toBe('M0 0h2v1h-2zM3 0h1v1h-1z');
+  });
+
+  it('fits the longer side to the size and keeps the aspect ratio', () => {
+    const icon = pixelIcon(SMALL_BITMAPS.git, 14);
+    expect(icon.viewBox).toBe('0 0 13 13');
+    expect(icon.height).toBe(14);
+    const wide = pixelIcon(['########', '########'], 16);
+    expect([wide.width, wide.height]).toEqual([16, 4]);
+  });
+
+  it('covers every lit cell of a small bitmap', () => {
+    for (const rows of Object.values(SMALL_BITMAPS)) {
+      const lit = rows.join('').split('#').length - 1;
+      const covered = [...pixelIcon(rows, 14).d.matchAll(/h(\d+)v/g)].reduce((n, m) => n + Number(m[1]), 0);
+      expect(covered).toBe(lit);
+    }
+  });
+});
 
 describe('pickSourceColumns', () => {
   it('picks the highest local peaks first, at least 5 columns apart, at most 5', () => {

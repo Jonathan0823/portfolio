@@ -71,6 +71,15 @@ a[data-glyph-for].hint-lit {
     background-size: 100% 2px;
   }
 }
+/* the small pixel icon before each link takes the link's heat colour */
+.link-icon {
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: -2px;
+}
+a[data-glyph-for]:is(:hover, :focus-visible, .hint-lit) .link-icon {
+  color: var(--heat);
+}
 /* the closing button whose logo the footer tide is showing (touch) */
 [data-pixel-btn].tide-shown {
   box-shadow: 0 0 0 2px var(--color-accent);

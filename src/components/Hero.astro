@@ -1,5 +1,19 @@
 ---
 import { CONTACT_EMAIL, GITHUB_URL, LINKEDIN_URL, MAILTO_URL } from '@/lib/profile';
+import { HEAT_PALETTE } from '@/lib/palette';
+import { SMALL_BITMAPS, pixelIcon, type GlyphName } from '@/scripts/glyph-model';
+
+const ICON_PX = 14;
+// each icon warms to its brand colour when its link is hovered or focused
+const icon = (name: GlyphName, heat: string) => ({
+  ...pixelIcon(SMALL_BITMAPS[name], ICON_PX),
+  style: `--heat:${heat}`,
+});
+const icons = {
+  mail: icon('mail', HEAT_PALETTE[3]),
+  git: icon('git', HEAT_PALETTE[4]),
+  linkedin: icon('linkedin', HEAT_PALETTE[2]),
+};
 ---
 
 <section id="top" class="relative flex h-svh min-h-[660px] flex-col md:min-h-[800px]">
@@ -28,18 +42,51 @@ import { CONTACT_EMAIL, GITHUB_URL, LINKEDIN_URL, MAILTO_URL } from '@/lib/profi
       </p>
     </div>
     <p class="flex flex-col gap-2 font-mono text-sm leading-relaxed text-muted md:flex-row md:gap-0">
-      <a href={MAILTO_URL} data-glyph-for="mail" class="text-ink">
+      <a href={MAILTO_URL} data-glyph-for="mail" class="text-ink" style={icons.mail.style}>
+        <svg
+          class="link-icon"
+          aria-hidden="true"
+          shape-rendering="crispEdges"
+          fill="currentColor"
+          viewBox={icons.mail.viewBox}
+          width={icons.mail.width}
+          height={icons.mail.height}
+        >
+          <path d={icons.mail.d} />
+        </svg>
         {CONTACT_EMAIL}
       </a>
       <span class="hidden md:inline">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
       <span>
-        <a href={GITHUB_URL} data-glyph-for="git" class="text-ink">
+        <a href={GITHUB_URL} data-glyph-for="git" class="text-ink" style={icons.git.style}>
+          <svg
+            class="link-icon"
+            aria-hidden="true"
+            shape-rendering="crispEdges"
+            fill="currentColor"
+            viewBox={icons.git.viewBox}
+            width={icons.git.width}
+            height={icons.git.height}
+          >
+            <path d={icons.git.d} />
+          </svg>
           GitHub
         </a>
       </span>
       <span class="hidden md:inline">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
       <span>
-        <a href={LINKEDIN_URL} data-glyph-for="linkedin" class="text-ink">
+        <a href={LINKEDIN_URL} data-glyph-for="linkedin" class="text-ink" style={icons.linkedin.style}>
+          <svg
+            class="link-icon"
+            aria-hidden="true"
+            shape-rendering="crispEdges"
+            fill="currentColor"
+            viewBox={icons.linkedin.viewBox}
+            width={icons.linkedin.width}
+            height={icons.linkedin.height}
+          >
+            <path d={icons.linkedin.d} />
+          </svg>
           LinkedIn
         </a>
       </span>
