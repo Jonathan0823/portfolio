@@ -25,7 +25,12 @@ if (typeof window.matchMedia === 'function') {
       shape: (motion) => ({
         ...fieldShape(kind, host.getBoundingClientRect(), scrollY, innerHeight, motion),
         ...(kind === 'foot'
-          ? { swell: tideSwell.rows, crest: tideSwell.crest, stamp: tideSwell.stamp, flood: tideSwell.flood }
+          ? {
+              swell: tideSwell.rows,
+              crest: tideSwell.crest,
+              stamp: tideSwell.stamp,
+              cap: tideSwell.cap,
+            }
           : {}),
       }),
       // the footer bleeds further up so the tide has room to rise
