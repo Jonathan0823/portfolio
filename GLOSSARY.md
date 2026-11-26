@@ -37,3 +37,7 @@ _Avoid_: Typing effect, cursor animation
 **Wordmark**:
 The word EGUIN standing in the footer field's skyline, made of field cells; it dissolves out around a closing button's logo and back in. On touch it is one step of the footer cycle.
 _Avoid_: Footer logo, footer title
+
+**Mould**:
+The ghost outline of a contact link's logo in the hero that drops of lava fill, inviting visitors to the links. On a fine pointer it stays part-filled until a link is hovered or focused; on touch a small one fills and cycles by itself.
+_Avoid_: Hint, placeholder, footer mold (the field mask that forms the Wordmark)
