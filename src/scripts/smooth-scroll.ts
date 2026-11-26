@@ -1,8 +1,8 @@
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
-import { canRunTrail } from './motion';
+import { canRunCursor } from './motion';
 
-if (canRunTrail()) {
+if (canRunCursor()) {
   new Lenis({
     autoRaf: true,
     lerp: 0.12,

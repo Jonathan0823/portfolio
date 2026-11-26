@@ -20,7 +20,7 @@ export function prefersReducedMotion(mm: MatchMedia = browserMedia()): boolean {
   return mm(REDUCE_QUERY).matches;
 }
 
-export function canRunTrail(mm: MatchMedia = browserMedia()): boolean {
+export function canRunCursor(mm: MatchMedia = browserMedia()): boolean {
   return !prefersReducedMotion(mm) && mm(FINE_POINTER_QUERY).matches;
 }
 

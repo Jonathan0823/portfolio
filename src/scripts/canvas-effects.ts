@@ -1,13 +1,13 @@
 import {
   FINE_POINTER_QUERY,
   REDUCE_QUERY,
-  canRunTrail,
+  canRunCursor,
   prefersReducedMotion,
   watchPixelRatio,
   whenIdle,
 } from './motion';
 import { mountHeroField, type HeroField } from './hero-field';
-import { mountCursorTrail } from './cursor-trail';
+import { mountCursor } from './cursor';
 import { mountGlyphSpill } from './glyph-spill';
 import { FIELD_BLEED, fieldShape } from './field-edges';
 import { mountHeroHint } from './hero-hint';
@@ -34,18 +34,19 @@ if (typeof window.matchMedia === 'function') {
   });
   const hero = fields[hosts.findIndex((h) => h.dataset.pixelField === 'hero')] ?? null;
   const glyphCanvas = document.querySelector<HTMLCanvasElement>('canvas[data-glyph]');
-  let stopTrail: (() => void) | null = null;
+  let stopCursor: (() => void) | null = null;
   let stopGlyph: (() => void) | null = null;
   let glyphReduced: boolean | null = null;
 
   const sync = () => {
     const reduced = prefersReducedMotion();
     fields.forEach((f) => f.setReduced(reduced));
-    const trail = canRunTrail();
-    if (trail && !stopTrail) stopTrail = mountCursorTrail(fields);
-    if (!trail && stopTrail) {
-      stopTrail();
-      stopTrail = null;
+    // reduced motion keeps the system cursor: it never gets the pixel pointer, the charge or the page impact
+    const cursor = canRunCursor();
+    if (cursor && !stopCursor) stopCursor = mountCursor(fields);
+    if (!cursor && stopCursor) {
+      stopCursor();
+      stopCursor = null;
     }
     if (hero && glyphCanvas && reduced !== glyphReduced) {
       stopGlyph?.();

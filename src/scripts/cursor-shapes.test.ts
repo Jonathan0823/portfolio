@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SHAPES, SHAPE_SIZE, isShapeName, morphShows, shapeCells, type ShapeName } from './cursor-shapes';
+import { SHAPES, SHAPE_SIZE, isShapeName, shapeCells } from './cursor-shapes';
 
 describe('cursor shapes', () => {
   it('are all square bitmaps of the same size', () => {
@@ -17,14 +17,5 @@ describe('cursor shapes', () => {
     expect(isShapeName('eye')).toBe(true);
     expect(isShapeName('toString')).toBe(false);
     expect(isShapeName(undefined)).toBe(false);
-  });
-  it('hands each cell from the blob to the shape exactly once', () => {
-    for (const progress of [0, 0.3, 0.7, 1]) {
-      for (let x = -5; x <= 5; x++) {
-        expect(morphShows(x, 2, progress, true)).toBe(!morphShows(x, 2, progress, false));
-      }
-    }
-    const all = (Object.keys(SHAPES) as ShapeName[]).flatMap(shapeCells);
-    expect(all.every((c) => !morphShows(c.dx, c.dy, 0, true) && morphShows(c.dx, c.dy, 1, true))).toBe(true);
   });
 });

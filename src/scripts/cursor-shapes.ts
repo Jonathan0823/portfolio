@@ -1,19 +1,4 @@
-import { hash } from './pixel-math';
-
 export const SHAPES = {
-  arrow: [
-    '...........',
-    '....#######',
-    '.......####',
-    '......#####',
-    '.....###.##',
-    '....###..##',
-    '...###....#',
-    '..###......',
-    '.###.......',
-    '.##........',
-    '...........',
-  ],
   next: [
     '...........',
     '......#....',
@@ -100,9 +85,4 @@ export function shapeCells(name: ShapeName): { dx: number; dy: number; distance:
     }
   });
   return cells;
-}
-
-export function morphShows(cellX: number, cellY: number, progress: number, inShape: boolean): boolean {
-  const threshold = hash(cellX, cellY, 13);
-  return inShape ? threshold < progress : threshold >= progress;
 }

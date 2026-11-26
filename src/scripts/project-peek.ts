@@ -1,5 +1,5 @@
 import { createAssembler, NONE } from './pixel-assemble';
-import { canRunTrail } from './motion';
+import { canRunCursor } from './motion';
 import { easeFactor, frameScale } from './timing';
 
 const BUILD_MS = 560;
@@ -11,7 +11,7 @@ const GAP = 28;
 const peek = document.querySelector<HTMLElement>('[data-peek]');
 const list = document.getElementById('projects');
 
-if (peek && list && canRunTrail()) {
+if (peek && list && canRunCursor()) {
   const items = [...peek.querySelectorAll<HTMLElement>('[data-peek-item]')];
   const assembler = createAssembler(items, peek.querySelector<HTMLCanvasElement>('[data-peek-px]')!);
   items.forEach((el) => (el.hidden = false));
