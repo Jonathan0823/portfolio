@@ -11,6 +11,7 @@ import { mountCursorTrail } from './cursor-trail';
 import { mountGlyphSpill } from './glyph-spill';
 import { FIELD_BLEED, fieldShape } from './field-edges';
 import { mountHeroHint } from './hero-hint';
+import { FOOT_BLEED, mountFooterTide, tideSwell } from './footer-tide';
 
 const SEEDS: Record<string, number> = { hero: 1.3, strip: 4.7, foot: 8.1 };
 const hosts = [...document.querySelectorAll<HTMLElement>('[data-pixel-field]')];
@@ -21,8 +22,12 @@ if (typeof window.matchMedia === 'function') {
     return mountHeroField(host, prefersReducedMotion(), {
       seed: SEEDS[kind] ?? 2.2,
       flipped: kind === 'foot',
-      shape: (motion) => fieldShape(kind, host.getBoundingClientRect(), scrollY, innerHeight, motion),
-      bleed: FIELD_BLEED,
+      shape: (motion) => ({
+        ...fieldShape(kind, host.getBoundingClientRect(), scrollY, innerHeight, motion),
+        ...(kind === 'foot' ? { swell: tideSwell.rows, crest: tideSwell.crest, stamp: tideSwell.stamp } : {}),
+      }),
+      // the footer bleeds further up so the tide has room to rise
+      bleed: kind === 'foot' ? FOOT_BLEED : FIELD_BLEED,
     });
   });
   const hero = fields[hosts.findIndex((h) => h.dataset.pixelField === 'hero')] ?? null;
@@ -48,6 +53,8 @@ if (typeof window.matchMedia === 'function') {
   };
   whenIdle(sync);
   whenIdle(mountHeroHint);
+  const foot = fields[hosts.findIndex((h) => h.dataset.pixelField === 'foot')];
+  if (foot) whenIdle(() => mountFooterTide(foot));
   for (const q of [REDUCE_QUERY, FINE_POINTER_QUERY]) window.matchMedia(q).addEventListener('change', sync);
   watchPixelRatio(() => fields.forEach((f) => f.resize()));
 }
