@@ -17,6 +17,13 @@ const REST_RADIUS = 5;
 const SQUARE_RADIUS = 2;
 const UNDERLINE_LEVEL = 0;
 const HEADING_SCALE = 2.4;
+// the blob stays fairly rigid: it stretches a little at speed and turns in 45° steps
+const STRETCH_SPEED = 32;
+const MAX_STRETCH = 0.5;
+const TURN_STEP = Math.PI / 4;
+// the wake: a short, cool tail the cursor leaves everywhere
+const WAKE_HEAT = 0.5;
+const WAKE_DECAY = 0.86;
 // [data-cursor-magnet] elements pull the cursor in; it morphs into a ring drawn behind them
 const visibleMagnets = () =>
   [...document.querySelectorAll<HTMLElement>('[data-cursor-magnet]')].filter((el) => el.offsetParent !== null);
@@ -195,7 +202,8 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     if (smoothSpeed > 0.6) {
       heading += shortestTurn(heading, Math.atan2(smoothDy, smoothDx)) * easeFactor(0.3, scale);
     }
-    const stretch = Math.min(speed / 18, 1);
+    const stretch = Math.min(speed / STRETCH_SPEED, 1) * MAX_STRETCH;
+    const facing = Math.round(heading / TURN_STEP) * TURN_STEP;
     linkProgress += ((overLink ? 1 : 0) - linkProgress) * easeFactor(0.3, scale);
     overTextValue += ((overText ? 1 : 0) - overTextValue) * easeFactor(0.25, scale);
     visible += ((pointerInside ? 1 : 0) - visible) * easeFactor(0.35, scale);
@@ -274,7 +282,7 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
           const value = blobValue(
             cellX + 0.5 - (cursorX - offsetX) / cell,
             cellY + 0.5 - (cursorY - offsetY) / cell,
-            heading,
+            facing,
             shaped,
           );
           if (value === null) continue;
@@ -331,7 +339,8 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
         under.ctx.globalAlpha = 1;
       }
     }
-    const steps = Math.max(1, Math.min(12, Math.ceil(stepLength / cell)));
+    // sample every half cell so a fast flick leaves an unbroken wake
+    const steps = Math.max(1, Math.min(32, Math.ceil(stepLength / (cell * 0.5))));
     if (hero && heroRect && insideHero && blobAlpha > 0.05) {
       const field = hero.field();
       const shaped = blobGeometry(radius, stretch);
@@ -342,7 +351,7 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
         const row = (flipped ? heroRect.bottom - pointY : pointY - heroRect.top) / field.cellSize;
         for (let r = Math.max(0, Math.floor(row - reach)); r < Math.min(field.rows, row + reach); r++) {
           for (let c = Math.max(0, Math.floor(column - reach)); c < Math.min(field.columns, column + reach); c++) {
-            const value = blobValue(c + 0.5 - column, (r + 0.5 - row) * (flipped ? -1 : 1), heading, shaped);
+            const value = blobValue(c + 0.5 - column, (r + 0.5 - row) * (flipped ? -1 : 1), facing, shaped);
             if (value === null) continue;
             const index = r * field.columns + c;
             const jitter = (hash(c, r, flickerTime) * 2 - 1) * 0.06;
@@ -353,9 +362,11 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
       hero.markDirty();
     }
     heroContact = insideHero ? 1 : heroContact * decayFactor(0.95, scale);
-    if (pointerInside && !insideHero && heroContact > 0.05 && speed > 1.2) {
-      const amount = heroContact * Math.min(1, speed / 14),
-        brushRadius = 3.2;
+    const wake = !magnet;
+    if (pointerInside && !insideHero && (heroContact > 0.05 || wake) && speed > 1.2) {
+      // just out of a field the wake carries the field's heat; elsewhere it is cool
+      const amount = Math.max(heroContact, wake ? WAKE_HEAT : 0) * Math.min(1, 0.3 + speed / 16),
+        brushRadius = Math.max(2, Math.min(3.2, radius * 0.55));
       for (let step = 1; step <= steps; step++) {
         const column = (prevX - offsetX + (dx * step) / steps) / cell,
           row = (prevY - offsetY + (dy * step) / steps) / cell;
@@ -374,7 +385,7 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     trailCanvas.style.transform = `translate(${(cursorCellX - TRAIL_CENTER) * cell + offsetX}px,${(cursorCellY - TRAIL_CENTER) * cell + offsetY}px)`;
     trailCtx.clearRect(0, 0, TRAIL_SIZE, TRAIL_SIZE);
     trail.forEach((entry, key) => {
-      entry.strength *= decayFactor(0.955, scale);
+      entry.strength *= decayFactor(WAKE_DECAY, scale);
       if (entry.strength < 0.08) {
         trail.delete(key);
         return;
@@ -382,7 +393,8 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
       const localX = entry.cellX - cursorCellX + TRAIL_CENTER,
         localY = entry.cellY - cursorCellY + TRAIL_CENTER;
       if (localX < 0 || localY < 0 || localX >= TRAIL_CELLS || localY >= TRAIL_CELLS) return;
-      const flicker = hash(entry.cellX, entry.cellY, Math.floor(clock * 3)) < 0.3 ? 1 : 0;
+      // fresh wake holds steady so it reads as one tail; only the fading end flickers
+      const flicker = entry.strength < 0.45 && hash(entry.cellX, entry.cellY, Math.floor(clock * 3)) < 0.3 ? 1 : 0;
       const level = Math.max(0, Math.min(5, Math.round(entry.strength * 5 - flicker)));
       trailCtx.fillStyle = HEAT_PALETTE[level];
       trailCtx.fillRect(localX * cell + 1, localY * cell + 1, cell - 1, cell - 1);
