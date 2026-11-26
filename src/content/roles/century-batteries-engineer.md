@@ -22,6 +22,14 @@ achievements:
     month: "2025-11"
     text: "Built a reusable Python Modbus connector for collecting data from different industrial IoT devices."
     tags: ["Python","Modbus"]
+  - id: "redis-caching"
+    month: "2026-06"
+    text: "Implemented Redis caching and Redis Streams for an event-driven telemetry data pipeline."
+    tags: ["Redis"]
+  - id: "react-native-telemetry-app"
+    month: "2026-08"
+    text: "Built a pre-release React Native consumer app for device telemetry over WiFi, Bluetooth and MQTT, and wrote the Arduino IDE firmware connector that links the IoT devices to it."
+    tags: ["React Native","Arduino","MQTT"]
   - id: "modbus-mqtt-gateway"
     month: "2025-08"
     text: "Built the Modbus-to-MQTT gateway and a Redis Streams pipeline that keeps every reading through network drops."
