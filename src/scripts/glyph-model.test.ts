@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BITMAPS, assignPixels, glyphCanvasLayout, pickSourceColumns } from './glyph-model';
+import { BITMAPS, SMALL_BITMAPS, assignPixels, glyphCanvasLayout, pickSourceColumns } from './glyph-model';
 
 describe('pickSourceColumns', () => {
   it('picks the highest local peaks first, at least 5 columns apart, at most 5', () => {
@@ -50,6 +50,16 @@ describe('BITMAPS', () => {
       for (const row of g.rows) {
         expect(row).toMatch(/^[#.]+$/);
         expect(row.length).toBe(g.rows[0].length);
+      }
+    }
+  });
+  it('has a rectangular half-size version of every logo, at most 14 rows tall', () => {
+    expect(Object.keys(SMALL_BITMAPS).sort()).toEqual(Object.keys(BITMAPS).sort());
+    for (const rows of Object.values(SMALL_BITMAPS)) {
+      expect(rows.length).toBeLessThanOrEqual(14);
+      for (const row of rows) {
+        expect(row).toMatch(/^[#.]+$/);
+        expect(row.length).toBe(rows[0].length);
       }
     }
   });

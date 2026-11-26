@@ -98,6 +98,8 @@ export interface FieldShape {
   crest?: Float32Array;
   /** footer tide: heat per cell drawn only above the surface (what the water has uncovered); never stored */
   stamp?: Float32Array;
+  /** footer tide: how far down from the surface the water under a swell is solid, 0 (none) .. 1 (to the bottom) */
+  flood?: number;
 }
 
 export function stepField(
@@ -112,6 +114,7 @@ export function stepField(
   const coverage = Math.max(0, Math.min(1, shape.coverage ?? 1));
   const fadeRows = hostRows * (shape.fadeEdge ?? 0);
   const stamp = shape.stamp?.length === columns * rows ? shape.stamp : null;
+  const flood = Math.max(0, Math.min(1, shape.flood ?? 0));
   bucket.fill(-1);
   lowestRow.fill(-1);
   lowestBucket.fill(0);
@@ -133,8 +136,13 @@ export function stepField(
       // overlays are recomputed by their owner every frame, so nothing they draw outlives them
       let h = heat[i];
       if (crest > 0 && y < horizonRow && y >= horizonRow - 3) h = Math.max(h, crest);
-      if (stamp && y >= horizonRow) h = Math.max(h, stamp[i]);
-      const water = swell > 0.5 && y >= surface && y < horizonRow;
+      // a negative stamp is the clearing around a logo: kept empty above the water so the logo stands apart
+      const stamped = stamp && y >= horizonRow ? stamp[i] : 0;
+      if (stamped < 0) continue;
+      h = Math.max(h, stamped);
+      // under a raised wave the water is solid, without the field's gaps; it floods down from the surface as the wave
+      // rises (flood). The dithered bottom edge stays, as it does across the rest of the footer
+      const water = swell > 0.5 && y < horizonRow && y >= surface * (1 - flood);
       if (h < 0.3) {
         if (y >= horizonRow + drip * (0.4 + 0.6 * coverage)) continue;
         if (y < fadeRows) {
