@@ -166,6 +166,26 @@ export const SMALL_BITMAPS: Record<GlyphName, string[]> = {
   ],
 };
 
+export interface PixelIcon {
+  viewBox: string;
+  width: number;
+  height: number;
+  /** one path of 1-unit cells, merged into horizontal runs */
+  d: string;
+}
+
+/** A bitmap as one inline-SVG path, scaled so its longer side is `size` px. */
+export function pixelIcon(rows: string[], size: number): PixelIcon {
+  const w = Math.max(...rows.map((row) => row.length));
+  const h = rows.length;
+  const scale = size / Math.max(w, h);
+  let d = '';
+  rows.forEach((row, y) => {
+    for (const run of row.matchAll(/#+/g)) d += `M${run.index} ${y}h${run[0].length}v1h-${run[0].length}z`;
+  });
+  return { viewBox: `0 0 ${w} ${h}`, width: Math.round(w * scale), height: Math.round(h * scale), d };
+}
+
 export function pickSourceColumns(lowestRows: number[]): number[] {
   const columnCount = lowestRows.length;
   const peaks: number[] = [];

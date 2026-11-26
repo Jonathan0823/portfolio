@@ -12,15 +12,16 @@ const easeOut = (t: number) => 1 - (1 - t) ** 3;
  * When a Skills row scrolls into view, every lit pixel of its icons flies in on one canvas,
  * cooling through the heat palette to ink, then the static SVGs take over.
  * Rows are only hidden once JS runs, so without JS or with reduced motion the icons just show.
+ * `onReady` fires when a row's icons have landed.
  */
-export function mountSkillEntrance(rows: Iterable<HTMLElement>): void {
+export function mountSkillEntrance(rows: Iterable<HTMLElement>, onReady?: (row: HTMLElement) => void): void {
   if (prefersReducedMotion() || !('IntersectionObserver' in window)) return;
   const io = new IntersectionObserver(
     (entries) => {
       for (const e of entries) {
         if (!e.isIntersecting) continue;
         io.unobserve(e.target);
-        play(e.target as HTMLElement);
+        play(e.target as HTMLElement, onReady);
       }
     },
     { threshold: 0.3 },
@@ -31,10 +32,13 @@ export function mountSkillEntrance(rows: Iterable<HTMLElement>): void {
   }
 }
 
-function play(row: HTMLElement) {
+function play(row: HTMLElement, onReady?: (row: HTMLElement) => void) {
   const canvas = row.querySelector<HTMLCanvasElement>('[data-skill-canvas]');
   const ctx = canvas?.getContext('2d');
-  if (!canvas || !ctx) return row.classList.remove('skill-wait');
+  if (!canvas || !ctx) {
+    row.classList.remove('skill-wait');
+    return onReady?.(row);
+  }
   const box = canvas.getBoundingClientRect();
   const dpr = Math.min(2, devicePixelRatio || 1);
   canvas.width = Math.round(box.width * dpr);
@@ -84,6 +88,7 @@ function play(row: HTMLElement) {
     if (elapsed < end) return void requestAnimationFrame(frame);
     row.classList.remove('skill-wait');
     ctx.clearRect(0, 0, box.width, box.height);
+    onReady?.(row);
   };
   requestAnimationFrame(frame);
 }

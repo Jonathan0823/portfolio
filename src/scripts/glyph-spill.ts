@@ -48,7 +48,14 @@ const LAVA_GRAVITY = 150; // cells/s²
 const LAVA_OOZE = 0.14; // s hanging at the field before letting go
 const LAVA_COOL = 0.16; // s per heat level while cooling
 
-export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, reduced = false): () => void {
+export interface GlyphSpill {
+  /** spill a logo as if its link were hovered; `hide` retracts it */
+  show(name: GlyphName): void;
+  hide(): void;
+  stop(): void;
+}
+
+export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, reduced = false): GlyphSpill {
   const ctx = canvas.getContext('2d')!;
   const section = canvas.closest('section') ?? canvas.parentElement!;
   const textBlocks = [...section.querySelectorAll<HTMLElement>('[data-glyph-text]')];
@@ -451,7 +458,7 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     removers.push(() => events.forEach(([type, handler]) => link.removeEventListener(type, handler)));
   });
 
-  return () => {
+  const stop = () => {
     removers.forEach((remove) => remove());
     document.removeEventListener('visibilitychange', onVisibility);
     window.removeEventListener('resize', onResize);
@@ -463,4 +470,5 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     ctx.clearRect(0, 0, layout.width, layout.height);
     canvas.classList.add('hidden');
   };
+  return { show, hide, stop };
 }

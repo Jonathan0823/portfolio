@@ -8,7 +8,7 @@ import {
 } from './motion';
 import { mountHeroField, type HeroField } from './hero-field';
 import { mountCursor } from './cursor';
-import { mountGlyphSpill } from './glyph-spill';
+import { mountGlyphSpill, type GlyphSpill } from './glyph-spill';
 import { FIELD_BLEED, fieldShape } from './field-edges';
 import { mountHeroHint } from './hero-hint';
 import { FOOT_BLEED, mountFooterTide, tideSwell } from './footer-tide';
@@ -43,7 +43,7 @@ if (typeof window.matchMedia === 'function') {
   const hero = fields[hosts.findIndex((h) => h.dataset.pixelField === 'hero')] ?? null;
   const glyphCanvas = document.querySelector<HTMLCanvasElement>('canvas[data-glyph]');
   let stopCursor: (() => void) | null = null;
-  let stopGlyph: (() => void) | null = null;
+  let glyph: GlyphSpill | null = null;
   let glyphReduced: boolean | null = null;
 
   const sync = () => {
@@ -57,13 +57,13 @@ if (typeof window.matchMedia === 'function') {
       stopCursor = null;
     }
     if (hero && glyphCanvas && reduced !== glyphReduced) {
-      stopGlyph?.();
-      stopGlyph = mountGlyphSpill(glyphCanvas, hero, reduced);
+      glyph?.stop();
+      glyph = mountGlyphSpill(glyphCanvas, hero, reduced);
       glyphReduced = reduced;
     }
   };
   whenIdle(sync);
-  whenIdle(mountHeroHint);
+  whenIdle(() => mountHeroHint(() => glyph));
   const foot = fields[hosts.findIndex((h) => h.dataset.pixelField === 'foot')];
   // hover drives the tide on a fine pointer and a timer on touch, so switching pointer (or motion) remounts it
   let stopTide: (() => void) | null = null;
