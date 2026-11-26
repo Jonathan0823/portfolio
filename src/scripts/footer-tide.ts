@@ -2,7 +2,7 @@
 // that button's pixel logo standing where the wave reached. Switching buttons submerges the old logo
 // completely before the new one is uncovered; leaving washes the logo back down. Mirrors the hero's lava
 // spill (which pours down from above) by rising from below.
-import { BITMAPS, type GlyphName } from './glyph-model';
+import { BITMAPS, SMALL_BITMAPS, type GlyphName } from './glyph-model';
 import { FINE_POINTER_QUERY, prefersReducedMotion } from './motion';
 import type { HeroField } from './hero-field';
 
@@ -78,6 +78,8 @@ export function mountFooterTide(foot: HeroField): () => void {
   const stacked = !window.matchMedia(FINE_POINTER_QUERY).matches;
   const overTop = stacked ? 2 : OVER_TOP;
   const skyGap = stacked ? 1 : 4;
+  // half-size logos on touch, so the closing screen still fits a phone
+  const rowsOf = (name: GlyphName) => (stacked ? SMALL_BITMAPS[name] : BITMAPS[name].rows);
 
   const head = (to: number, now: number) => {
     if (to === goal && duration) return;
@@ -106,7 +108,7 @@ export function mountFooterTide(foot: HeroField): () => void {
   const place = (name: GlyphName): Placed => {
     const field = foot.field();
     const rect = foot.rect();
-    const bitmap = BITMAPS[name].rows;
+    const bitmap = rowsOf(name);
     const h = bitmap.length,
       w = bitmap[0].length;
     const buttonsRight = Math.max(...buttons.map((b) => b.getBoundingClientRect().right)) - rect.left;
@@ -212,7 +214,7 @@ export function mountFooterTide(foot: HeroField): () => void {
   let stopCycle = () => {};
   if (stacked && host) {
     // grow the gap between the buttons and the field until the tallest logo and its wave fit under the buttons
-    const tallest = Math.max(...LOGOS.map((n) => BITMAPS[n].rows.length));
+    const tallest = Math.max(...LOGOS.map((n) => rowsOf(n).length));
     const stage = () => {
       const short = skyline() + tallest - 1 + overTop - ceiling();
       const margin = parseFloat(host.style.marginTop) || 0;
