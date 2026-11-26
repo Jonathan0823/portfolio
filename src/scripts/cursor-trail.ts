@@ -133,6 +133,11 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     targetRadius = REST_RADIUS;
   let raf = 0,
     pointerInside = false;
+  // [data-cursor-quiet] regions leave no wake: it would show through their gaps as stray pixels
+  let quiet = false;
+  // [data-cursor-hide] regions mark their own pointer (the graph's hovered day), so the drawn cursor shrinks away over them
+  let hidden = false,
+    hideValue = 0;
   let heroContact = 0;
   let smoothDx = 0,
     smoothDy = 0,
@@ -206,7 +211,7 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
       targetY += (r.top + r.height / 2 - pointerClientY) * near.pull;
     }
     const iconCells = magnetRect ? magnetRect.width / (window.innerWidth < 700 ? 8 : MAX_CELL) : 0;
-    targetRadius = magnet ? Math.max(3, iconCells * 0.45) : baseRadius;
+    targetRadius = magnet ? Math.max(3, iconCells * 0.45) : baseRadius * (hidden ? 0 : 1);
     const picked = pickField(targetY);
     const hero = picked?.field ?? null;
     cell = hero ? hero.field().cellSize : window.innerWidth < 700 ? 8 : MAX_CELL;
@@ -233,6 +238,7 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     const facing = Math.round(heading / TURN_STEP) * TURN_STEP;
     linkProgress += ((overLink ? 1 : 0) - linkProgress) * easeFactor(0.3, scale);
     overTextValue += ((overText ? 1 : 0) - overTextValue) * easeFactor(0.25, scale);
+    hideValue += ((hidden ? 1 : 0) - hideValue) * easeFactor(0.25, scale);
     visible += ((pointerInside ? 1 : 0) - visible) * easeFactor(0.35, scale);
     if (!pointerInside && visible < 0.02) visible = 0;
     if (shapeTarget !== shape) {
@@ -245,9 +251,10 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
       shapeProgress += (1 - shapeProgress) * easeFactor(0.2, scale);
     }
     // near a logo everything draws behind the content; the blob↔ring crossfade happens inside the under layer
-    heat.canvas.style.opacity = String(visible * (1 - overTextValue) * (magnet ? 0 : 1 - ring.mix));
-    under.canvas.style.opacity = String(visible);
-    mono.canvas.style.opacity = String(visible * overTextValue);
+    const shown = visible * (1 - hideValue);
+    heat.canvas.style.opacity = String(shown * (1 - overTextValue) * (magnet ? 0 : 1 - ring.mix));
+    under.canvas.style.opacity = String(shown);
+    mono.canvas.style.opacity = String(shown * overTextValue);
 
     const heroRect = picked?.rect ?? null;
     const flipped = !!hero?.flipped;
@@ -375,7 +382,14 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
         }
       }
     }
-    if (!guiding && blobAlpha > 0.05 && !insideHero && ring.mix <= 0.99 && !(morphing && shapeProgress > 0.98)) {
+    if (
+      !guiding &&
+      blobAlpha > 0.05 &&
+      radius > 0.5 &&
+      !insideHero &&
+      ring.mix <= 0.99 &&
+      !(morphing && shapeProgress > 0.98)
+    ) {
       const shaped = blobGeometry(radius * Math.max(0.3, blobAlpha), morphing ? 0 : stretch);
       const reach = Math.ceil(shaped.longRadius + shaped.shift) + 1;
       for (let cellY = cursorCellY - reach; cellY <= cursorCellY + reach; cellY++) {
@@ -464,7 +478,7 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     }
     heroContact = insideHero ? 1 : heroContact * decayFactor(0.95, scale);
     const wake = !magnet;
-    if (pointerInside && !insideHero && (heroContact > 0.05 || wake) && speed > 1.2) {
+    if (pointerInside && !insideHero && !quiet && (heroContact > 0.05 || wake) && speed > 1.2) {
       // just out of a field the wake carries the field's heat; elsewhere it is cool
       const mono = overTextValue > 0.5;
       const amount = Math.max(heroContact, wake ? WAKE_HEAT : 0) * Math.min(1, 0.3 + speed / 16),
@@ -507,6 +521,7 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
       Math.abs(targetX - cursorX) + Math.abs(targetY - cursorY) > 0.2 ||
       speed > 0.15 ||
       Math.abs(targetRadius - radius) > 0.02 ||
+      Math.abs((hidden ? 1 : 0) - hideValue) > 0.01 ||
       (linkProgress > 0.02 && linkProgress < 0.98) ||
       Math.abs((overText ? 1 : 0) - overTextValue) > 0.01 ||
       !!magnet ||
@@ -544,6 +559,9 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
   const evaluate = (target: Element | null) => {
     const onMagnet = !!target?.closest('[data-cursor-magnet]');
     overText = !onMagnet && !!target && pointOverText(pointerClientX, pointerClientY, target);
+    quiet = !!target?.closest('[data-cursor-quiet]');
+    if (quiet) trail.clear();
+    hidden = !!target?.closest('[data-cursor-hide]');
     const named = target?.closest<HTMLElement>('[data-cursor]')?.dataset.cursor;
     shapeTarget = isShapeName(named) ? named : null;
     const link = shapeTarget ? null : (target?.closest('a,button,summary') ?? null);
