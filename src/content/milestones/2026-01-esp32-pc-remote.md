@@ -3,7 +3,7 @@ tags:
   - "Rust"
   - "ESP32-S3"
   - "MQTT"
-date: "2024-09"
+date: "2026-01"
 label: "Project"
 title: "Turned my PC on from bed with my voice."
 link:

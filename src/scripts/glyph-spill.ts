@@ -35,6 +35,8 @@ interface Source {
   bucket: number;
 }
 
+const SPILL_SPEED = 1.6;
+
 export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, reduced = false): () => void {
   const ctx = canvas.getContext('2d')!;
   const section = canvas.closest('section') ?? canvas.parentElement!;
@@ -183,7 +185,7 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     let moving = false;
     const draws: Array<{ column: number; row: number; alpha: number; level: number; trail: [number, number] | null }> = [];
     particles = particles.filter((p) => {
-      const elapsed = (now - p.startedAt) / 1000 - p.delay;
+      const elapsed = ((now - p.startedAt) / 1000) * SPILL_SPEED - p.delay;
       let alpha = 1, inMotion = false, trailPos: [number, number] | null = null;
       if (!p.fadingOut) {
         if (elapsed < 0) return true;

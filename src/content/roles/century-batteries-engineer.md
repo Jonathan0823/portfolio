@@ -1,6 +1,6 @@
 ---
-title: "Software Engineer"
-org: "Century Batteries Indonesia"
+title: "Software Engineer (Contract), Product Engineering"
+org: "PT Century Batteries Indonesia"
 location: "Karawang"
 start: "2025-07"
 end: "present"
@@ -18,6 +18,18 @@ achievements:
       did: "Rebuilt the data path in Go and added LTTB downsampling, so the browser gets thousands of points, not millions."
       why: "LTTB keeps the peaks and dips that matter on a production line. Averaging would hide them."
       result: "Under ten seconds, about 30 times faster."
+  - id: "modbus-connector"
+    month: "2025-11"
+    text: "Built a reusable Python Modbus connector for collecting data from different industrial IoT devices."
+    tags: ["Python","Modbus"]
+  - id: "redis-caching"
+    month: "2026-06"
+    text: "Implemented Redis caching and Redis Streams for an event-driven telemetry data pipeline."
+    tags: ["Redis"]
+  - id: "react-native-telemetry-app"
+    month: "2026-08"
+    text: "Built a pre-release React Native consumer app for device telemetry over WiFi, Bluetooth and MQTT, and wrote the Arduino IDE firmware connector that links the IoT devices to it."
+    tags: ["React Native","Arduino","MQTT"]
   - id: "modbus-mqtt-gateway"
     month: "2025-08"
     text: "Built the Modbus-to-MQTT gateway and a Redis Streams pipeline that keeps every reading through network drops."

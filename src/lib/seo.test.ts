@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalUrl, pageSeo, personJsonLd } from './seo';
+import { canonicalUrl, pageSeo, personJsonLd, storyJsonLd, websiteJsonLd } from './seo';
 
 describe('pageSeo', () => {
   it('titles the home page and the story page', () => {
-    expect(pageSeo('home').title).toBe('Eguin Jonathan — Backend Engineer');
-    expect(pageSeo('story').title).toBe('Story — Eguin Jonathan');
+    expect(pageSeo('home').title).toBe('Eguin Jonathan — Software Engineer (Backend & Full-Stack)');
+    expect(pageSeo('story').title).toBe('My Story — Eguin Jonathan, Software Engineer');
+  });
+  it('keeps descriptions under the ~160 character snippet limit', () => {
+    expect(pageSeo('home').description.length).toBeLessThanOrEqual(160);
+    expect(pageSeo('story').description.length).toBeLessThanOrEqual(160);
   });
   it('gives every page a description and an image path', () => {
     expect(pageSeo('home').description.length).toBeGreaterThan(40);
@@ -30,7 +34,7 @@ describe('personJsonLd', () => {
     expect(ld['@context']).toBe('https://schema.org');
     expect(ld['@type']).toBe('Person');
     expect(ld.name).toBe('Eguin Jonathan');
-    expect(ld.jobTitle).toBe('Backend Engineer');
+    expect(ld.jobTitle).toBe('Software Engineer');
     expect(ld.url).toBe('https://eguinjonathan.com/');
     expect(ld.sameAs).toEqual([
       'https://github.com/Jonathan0823',
@@ -40,5 +44,24 @@ describe('personJsonLd', () => {
   });
   it('builds knowsAbout from the skills without duplicates', () => {
     expect(ld.knowsAbout).toEqual(['Go', 'Python', 'React']);
+  });
+});
+
+describe('storyJsonLd', () => {
+  it('describes the story page as a profile page about the person', () => {
+    const ld = storyJsonLd('https://eguinjonathan.com', '/story/');
+    expect(ld['@type']).toBe('ProfilePage');
+    expect(ld.url).toBe('https://eguinjonathan.com/story/');
+    expect(ld.mainEntity['@type']).toBe('Person');
+    expect(ld.mainEntity.name).toBe('Eguin Jonathan');
+  });
+});
+
+describe('websiteJsonLd', () => {
+  it('names the site after the person at the root URL', () => {
+    const ld = websiteJsonLd('https://eguinjonathan.com');
+    expect(ld['@type']).toBe('WebSite');
+    expect(ld.name).toBe('Eguin Jonathan');
+    expect(ld.url).toBe('https://eguinjonathan.com/');
   });
 });

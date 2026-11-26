@@ -2,8 +2,8 @@ import type { APIRoute, GetStaticPaths } from 'astro';
 import { renderOgImage } from '../../lib/og';
 
 const IMAGES = {
-  home: { headline: 'Eguin Jonathan', sub: 'Backend engineer · Go, Python, TypeScript · IoT and data pipelines' },
-  story: { headline: 'How I got here', sub: 'Eguin Jonathan · from informatics student to backend engineer' },
+  home: { headline: 'Eguin Jonathan', sub: 'Software engineer · Go, Python, TypeScript · IoT and data pipelines' },
+  story: { headline: 'How I got here', sub: 'Eguin Jonathan · from informatics student to software engineer' },
 } as const;
 
 export const getStaticPaths: GetStaticPaths = () => Object.keys(IMAGES).map((page) => ({ params: { page } }));
