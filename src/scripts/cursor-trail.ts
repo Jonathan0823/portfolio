@@ -300,7 +300,6 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
       guideFresh = false;
       const cos = Math.cos(guideAngle),
         sin = Math.sin(guideAngle);
-      // the shape tweens: blend the blob's and the arrow's signed distances, so the outline flows from one to the other
       const mix = guideProgress * guideProgress * (3 - 2 * guideProgress);
       const bob = ((Math.sin(clock * 0.7) + 1) / 2) * 1.5 * mix;
       const round = blobGeometry(radius, stretch);
@@ -309,6 +308,10 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
       const fracX = (cursorX - offsetX) / cell - cursorCellX,
         fracY = (cursorY - offsetY) / cell - cursorCellY;
       const reach = Math.ceil(Math.max(9, round.longRadius + round.shift + 2));
+      const span = reach * 2 + 1;
+      // the shape tweens: blend the blob's and the arrow's signed distances, so the outline flows from one to the other.
+      // Measured for every cell first, so the draw can tell which rim cells have body beside them
+      const distances = new Float32Array(span * span);
       for (let y = -reach; y <= reach; y++) {
         for (let x = -reach; x <= reach; x++) {
           const du = x + 0.5 - fracX,
@@ -319,8 +322,25 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
           const u = du * cos + dv * sin - bob,
             v = -du * sin + dv * cos;
           // the arrow is grown by one cell so its rim sits outside its thin shaft
-          const distance = blobDistance + (arrowDistance(u, v) - 1 - blobDistance) * mix;
+          distances[(y + reach) * span + x + reach] = blobDistance + (arrowDistance(u, v) - 1 - blobDistance) * mix;
+        }
+      }
+      const covered = (x: number, y: number) =>
+        Math.abs(x) <= reach && Math.abs(y) <= reach && distances[(y + reach) * span + x + reach] <= 0 ? 1 : 0;
+      for (let y = -reach; y <= reach; y++) {
+        for (let x = -reach; x <= reach; x++) {
+          const distance = distances[(y + reach) * span + x + reach];
           if (distance > 0) continue;
+          // turned diagonally, a thin edge can leave a rim cell with no body beside it; drop those specks (arrow only)
+          if (
+            mix > 0 &&
+            distance > -RIM &&
+            covered(x - 1, y) + covered(x + 1, y) + covered(x, y - 1) + covered(x, y + 1) < 2
+          )
+            continue;
+          const du = x + 0.5 - fracX,
+            dv = y + 0.5 - fracY;
+          const u = du * cos + dv * sin - bob;
           const heat = (blobValue(du, dv, facing, round) ?? 0) * (1 - mix) + arrowHeat(u) * mix;
           const value = distance > -RIM ? 0 : heat;
           const level = levelForValue(value, hash(x, y, flickerTime) * 0.6 - 0.3);
