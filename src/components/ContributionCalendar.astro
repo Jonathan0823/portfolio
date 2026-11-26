@@ -1,5 +1,7 @@
 ---
 import { HEAT_PALETTE } from '@/lib/palette';
+import { GITHUB_LOGIN, GITHUB_URL } from '@/lib/profile';
+import { CAL } from '@/scripts/ripple';
 import {
   calendarLabel,
   cellPosition,
@@ -13,8 +15,8 @@ interface Props {
   calendar: GithubStats['calendar'];
 }
 const { calendar } = Astro.props;
+const { cell, gutter, top: labelH } = CAL;
 const cols = calendar.weeks.length;
-const cell = 12;
 const EMPTY = '#F1F1F1';
 const thresholds = levelThresholds(calendar.weeks.flatMap((w) => w.days.map((d) => d.count)));
 const cells = calendar.weeks.flatMap((w, i) =>
@@ -22,184 +24,268 @@ const cells = calendar.weeks.flatMap((w, i) =>
     const { col, row } = cellPosition(d.date, i);
     const level = relativeLevel(d.count, thresholds);
     return {
-      x: col * cell + 1,
-      y: row * cell + 1,
+      x: gutter + col * cell + 1,
+      y: labelH + row * cell + 1,
       col,
       row,
       level,
+      count: d.count,
+      date: d.date,
       fill: level < 0 ? EMPTY : HEAT_PALETTE[level],
       tip: dayTooltip(d.date, d.count),
     };
   }),
 );
+let lastMonth = -1;
+const months = calendar.weeks.flatMap((w, i) => {
+  const m = new Date(w.days[0].date + 'T00:00:00Z').getUTCMonth();
+  if (m === lastMonth) return [];
+  lastMonth = m;
+  return i > cols - 3
+    ? []
+    : [{ col: i, label: new Date(Date.UTC(2000, m, 1)).toLocaleString('en-GB', { month: 'short', timeZone: 'UTC' }) }];
+});
+const dayLabels = [
+  { row: 1, label: 'Mon' },
+  { row: 3, label: 'Wed' },
+  { row: 5, label: 'Fri' },
+];
 ---
 
-<figure class="relative" data-calendar data-cursor="cross">
-  <svg
-    role="img"
-    aria-label={calendarLabel(calendar.total)}
-    viewBox={`0 0 ${cols * cell} ${7 * cell}`}
-    class="block h-auto w-full overflow-visible"
-  >
-    {cells.map((c) => (
-      <rect
-        x={c.x}
-        y={c.y}
-        width={cell - 2}
-        height={cell - 2}
-        fill={c.fill}
-        data-tip={c.tip}
-        data-col={c.col}
-        data-row={c.row}
-        data-level={c.level}
-      />
-    ))}
-  </svg>
+<figure class="relative" data-calendar data-cursor="cross" data-cursor-quiet>
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+    <div class="flex items-center gap-4 md:gap-5">
+      <svg viewBox="0 0 16 16" aria-hidden="true" class="size-9 shrink-0 md:size-14">
+        <path
+          fill="currentColor"
+          d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+        ></path>
+      </svg>
+      <div class="flex flex-col gap-1.5">
+        <p data-count-up class="text-4xl leading-none font-semibold tracking-[-0.05em] tabular-nums md:text-[56px]">
+          {calendar.total.toLocaleString('en-US')}
+        </p>
+        <p class="text-base text-muted-strong">contributions on GitHub in the last 12 months</p>
+      </div>
+    </div>
+    <a
+      href={GITHUB_URL}
+      target="_blank"
+      rel="noopener"
+      class="text-base underline underline-offset-4 hover:text-muted-strong"
+    >
+      @{GITHUB_LOGIN} on GitHub ↗
+    </a>
+  </div>
+
+  <div class="overflow-x-auto pb-1">
+    <svg
+      data-graph
+      role="img"
+      aria-label={calendarLabel(calendar.total)}
+      viewBox={'0 0 ' + (gutter + cols * cell) + ' ' + (labelH + 7 * cell)}
+      class="block h-auto w-full min-w-[640px] touch-pan-y overflow-visible select-none"
+    >
+      {months.map((m) => (
+        <text x={gutter + m.col * cell} y={9} font-size="9" class="fill-muted font-mono">
+          {m.label}
+        </text>
+      ))}
+      {dayLabels.map((d) => (
+        <text x={0} y={labelH + d.row * cell + 9} font-size="9" class="fill-muted font-mono">
+          {d.label}
+        </text>
+      ))}
+      {cells.map((c) => (
+        <rect
+          x={c.x}
+          y={c.y}
+          width={cell - 2}
+          height={cell - 2}
+          fill={c.fill}
+          data-tip={c.tip}
+          data-col={c.col}
+          data-row={c.row}
+          data-level={c.level}
+          data-count={c.count}
+          data-date={c.date}
+        />
+      ))}
+    </svg>
+  </div>
   <div
     data-calendar-tip
-    class="pointer-events-none absolute top-0 left-0 rounded-lg bg-ink px-3 py-2 font-mono text-xs whitespace-nowrap text-white opacity-0 transition-opacity duration-150"
+    class="pointer-events-none absolute top-0 left-0 z-10 rounded-lg bg-ink px-3 py-2 font-mono text-xs whitespace-nowrap text-white opacity-0 transition-opacity duration-150"
     aria-hidden="true"
   ></div>
-  <figcaption
-    class="mt-3 flex items-center justify-end gap-0 font-mono text-[13px] leading-relaxed text-muted"
-    data-legend
-  >
-    <span class="mr-1">Less</span>
-    {HEAT_PALETTE.map((color, level) => (
-      <button
-        type="button"
-        data-legend-level={level}
-        aria-pressed="false"
-        aria-label={`Show only level ${level + 1} of 6`}
-        class="group grid size-6 cursor-pointer place-items-center"
-      >
-        <span
-          class="size-3.5 group-aria-pressed:outline-2 group-aria-pressed:outline-offset-1 group-aria-pressed:outline-ink"
-          style={`background:${color}`}
-        ></span>
-      </button>
-    ))}
-    <span class="ml-1">More</span>
+
+  <figcaption class="mt-3 flex flex-wrap items-center justify-between gap-3 font-mono text-[13px] leading-relaxed text-muted">
+    <span>Click anywhere on it. It ripples when you arrive and leave, too.</span>
+    <span class="flex items-center">
+      <span class="mr-1">Less</span>
+      {HEAT_PALETTE.map((color) => (
+        <span class="mx-0.5 size-3.5" style={'background:' + color}></span>
+      ))}
+      <span class="ml-1">More</span>
+    </span>
   </figcaption>
 </figure>
 
 <style>
-  [data-calendar] rect {
+  [data-calendar] rect[data-col] {
     transform-box: fill-box;
     transform-origin: center;
-    transition:
-      transform 160ms cubic-bezier(0.2, 0.7, 0.2, 1),
-      opacity 300ms,
-      fill 600ms;
-  }
-  [data-calendar] rect.is-hot {
-    transition:
-      transform 160ms cubic-bezier(0.2, 0.7, 0.2, 1),
-      opacity 300ms,
-      fill 0ms;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    [data-calendar] rect {
-      transition: none;
-    }
   }
 </style>
 
 <script>
   import { HEAT_PALETTE } from '@/lib/palette';
-  import { canRunTrail, prefersReducedMotion } from '@/scripts/motion';
+  import { prefersReducedMotion } from '@/scripts/motion';
+  import { gridCell, gridPoint, lift, liveWaves, spotlight, waveStrength, WAVES, type Wave } from '@/scripts/ripple';
 
-  const LENS = 3;
-  const COOL_MS = 900;
+  // The graph only ripples at moments that mean something (arriving, leaving, a click, and once as it scrolls into view);
+  // moving across it just shows the tooltip.
+  const EDGE_COOLDOWN_MS = 900;
+  // while the mouse is over the graph the cells away from it dim, so the cursor stays readable against the heat colours
+  const SPOT_FADE_MS = 150;
 
   for (const fig of document.querySelectorAll<HTMLElement>('[data-calendar]')) {
+    const svg = fig.querySelector<SVGSVGElement>('svg[data-graph]');
     const tip = fig.querySelector<HTMLElement>('[data-calendar-tip]');
-    const svg = fig.querySelector('svg');
-    if (!tip || !svg) continue;
-    const rects = [...svg.querySelectorAll<SVGRectElement>('rect')];
-    const grid = new Map(rects.map((r) => [`${r.dataset.col},${r.dataset.row}`, r]));
-    const baseFill = new Map(rects.map((r) => [r, r.getAttribute('fill')!]));
-    const columns = Math.max(...rects.map((r) => Number(r.dataset.col))) + 1;
-    const lens = canRunTrail();
-    let lifted: SVGRectElement[] = [];
-    const cooling = new Map<SVGRectElement, number>();
+    if (!svg || !tip) continue;
+    const cells = [...svg.querySelectorAll<SVGRectElement>('rect[data-col]')].map((el) => ({
+      el,
+      col: Number(el.dataset.col),
+      row: Number(el.dataset.row),
+      level: Number(el.dataset.level),
+      fill: el.getAttribute('fill')!,
+    }));
+    const columns = Math.max(...cells.map((c) => c.col)) + 1;
+    const reduced = prefersReducedMotion();
+    let waves: Wave[] = [];
+    let raf = 0;
+    const spot = { col: 0, row: 0, amount: 0, target: 0, last: 0 };
+    // cells near the cursor rise: they are redrawn on a layer above the grid so a raised cell overlaps its neighbours, not the reverse
+    const layer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    layer.style.pointerEvents = 'none';
+    svg.appendChild(layer);
+    const raised = new Map<SVGRectElement, SVGRectElement>();
 
-    if (!prefersReducedMotion() && 'IntersectionObserver' in window) {
-      rects.forEach((r) => (r.style.opacity = '0'));
+    const frame = (now: number) => {
+      const step = reduced ? 1 : Math.min(1, (now - (spot.last || now)) / SPOT_FADE_MS);
+      spot.last = now;
+      spot.amount += Math.max(-step, Math.min(step, spot.target - spot.amount));
+      for (const c of cells) {
+        const w = waveStrength(waves, c.col, c.row, now);
+        // a wave lights the cell back up through the dim
+        const dim =
+          spot.amount > 0 ? spotlight(Math.hypot(c.col + 0.5 - spot.col, c.row + 0.5 - spot.row), spot.amount) : 1;
+        const opacity = Math.max(dim, w);
+        const rise =
+          spot.amount > 0 ? lift(Math.hypot(c.col + 0.5 - spot.col, c.row + 0.5 - spot.row), spot.amount) : 0;
+        const level = c.level < 0 ? (w > 0.35 ? 1 : -1) : Math.min(5, c.level + Math.round(w * 3));
+        const fill = level < 0 ? c.fill : HEAT_PALETTE[level];
+        const scale = 1 + 0.8 * w + 0.5 * rise;
+        let clone = raised.get(c.el);
+        if (rise > 0.02) {
+          if (!clone) {
+            clone = c.el.cloneNode() as SVGRectElement;
+            clone.removeAttribute('data-tip');
+            layer.appendChild(clone);
+            raised.set(c.el, clone);
+          }
+          c.el.style.opacity = '0';
+          clone.style.opacity = '1';
+          clone.setAttribute('fill', fill);
+          clone.style.transform = `translateY(${-2.5 * rise}px) scale(${scale})`;
+          clone.style.filter = `drop-shadow(0 ${3 * rise}px ${1.5 * rise}px rgba(17,17,17,0.45))`;
+          continue;
+        }
+        if (clone) {
+          clone.remove();
+          raised.delete(c.el);
+        }
+        c.el.style.opacity = opacity < 1 ? String(opacity) : '';
+        c.el.style.transform = w > 0.03 ? `scale(${scale})` : '';
+        c.el.setAttribute('fill', fill);
+      }
+      waves = liveWaves(waves, now);
+      raf = waves.length || spot.amount !== spot.target ? requestAnimationFrame(frame) : 0;
+      if (!raf) spot.last = 0;
+    };
+    const ripple = (col: number, row: number, kind: keyof typeof WAVES) => {
+      if (reduced) return;
+      waves.push({ col, row, at: performance.now(), ...WAVES[kind] });
+      raf ||= requestAnimationFrame(frame);
+    };
+    /** the grid cell under the pointer, even when it is over a gap between cells */
+    const under = (e: PointerEvent) => {
+      const box = svg.getBoundingClientRect(),
+        vb = svg.viewBox.baseVal;
+      return gridCell(
+        ((e.clientX - box.left) / box.width) * vb.width,
+        ((e.clientY - box.top) / box.height) * vb.height,
+        columns,
+      );
+    };
+
+    let quietUntil = 0;
+    const edge = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse' || performance.now() < quietUntil) return;
+      quietUntil = performance.now() + EDGE_COOLDOWN_MS;
+      const { col, row } = under(e);
+      ripple(col, row, 'edge');
+    };
+    const move = (e: PointerEvent) => {
+      if (e.pointerType === 'mouse') {
+        const box = svg.getBoundingClientRect(),
+          vb = svg.viewBox.baseVal;
+        const p = gridPoint(
+          ((e.clientX - box.left) / box.width) * vb.width,
+          ((e.clientY - box.top) / box.height) * vb.height,
+        );
+        spot.col = p.col;
+        spot.row = p.row;
+        spot.target = 1;
+        raf ||= requestAnimationFrame(frame);
+      }
+      const text = (e.target as Element).getAttribute?.('data-tip');
+      const box = fig.getBoundingClientRect();
+      if (!text) {
+        tip.style.opacity = '0';
+        return;
+      }
+      tip.textContent = text;
+      tip.style.transform = `translate(${Math.max(0, Math.min(e.clientX - box.left + 12, box.width - 260))}px,${e.clientY - box.top - 48}px)`;
+      tip.style.opacity = '1';
+    };
+    const click = (e: PointerEvent) => {
+      const { col, row } = under(e);
+      ripple(col, row, 'click');
+    };
+    svg.addEventListener('pointerenter', edge);
+    svg.addEventListener('pointerleave', edge);
+    svg.addEventListener('pointerleave', () => {
+      tip.style.opacity = '0';
+      spot.target = 0;
+      raf ||= requestAnimationFrame(frame);
+    });
+    svg.addEventListener('pointermove', move);
+    svg.addEventListener('pointerdown', click);
+
+    if ('IntersectionObserver' in window) {
       const io = new IntersectionObserver(
         (entries) => {
           if (!entries.some((e) => e.isIntersecting)) return;
           io.disconnect();
-          rects.forEach((r, i) => setTimeout(() => (r.style.opacity = ''), (i / rects.length) * 1100));
+          ripple(0, 3, 'sweep');
         },
-        { threshold: 0.4 },
+        { threshold: 0.6 },
       );
       io.observe(svg);
     }
-
-    const heatUp = (rect: SVGRectElement) => {
-      const level = Number(rect.dataset.level);
-      rect.classList.add('is-hot');
-      rect.setAttribute('fill', HEAT_PALETTE[Math.min(5, Math.max(1, level + 2))]);
-      clearTimeout(cooling.get(rect));
-      cooling.set(
-        rect,
-        window.setTimeout(() => {
-          rect.classList.remove('is-hot');
-          rect.setAttribute('fill', baseFill.get(rect)!);
-        }, COOL_MS),
-      );
-    };
-
-    const onMove = (e: PointerEvent) => {
-      const text = (e.target as Element).getAttribute?.('data-tip');
-      const box = fig.getBoundingClientRect();
-      if (text) {
-        const x = Math.min(e.clientX - box.left + 12, box.width - 260);
-        tip.textContent = text;
-        tip.style.transform = `translate(${Math.max(0, x)}px, ${e.clientY - box.top - 52}px)`;
-        tip.style.opacity = '1';
-      } else tip.style.opacity = '0';
-      if (!lens) return;
-      const svgBox = svg.getBoundingClientRect();
-      const size = svgBox.width / columns;
-      const px = (e.clientX - svgBox.left) / size,
-        py = (e.clientY - svgBox.top) / size;
-      lifted.forEach((r) => (r.style.transform = ''));
-      lifted = [];
-      for (let c = Math.floor(px - LENS); c <= px + LENS; c++) {
-        for (let r = Math.floor(py - LENS); r <= py + LENS; r++) {
-          const rect = grid.get(`${c},${r}`);
-          if (!rect) continue;
-          const d = Math.hypot(c + 0.5 - px, r + 0.5 - py) / LENS;
-          if (d >= 1) continue;
-          rect.style.transform = `translateY(${-2.5 * (1 - d)}px) scale(${1 + 0.35 * (1 - d)})`;
-          lifted.push(rect);
-          if (d < 0.3) heatUp(rect);
-        }
-      }
-    };
-    fig.addEventListener('pointermove', onMove);
-    fig.addEventListener('pointerleave', () => {
-      tip.style.opacity = '0';
-      lifted.forEach((r) => (r.style.transform = ''));
-      lifted = [];
-    });
-
-    const buttons = [...fig.querySelectorAll<HTMLButtonElement>('[data-legend-level]')];
-    let pinned: number | null = null;
-    const filter = (level: number | null) => {
-      rects.forEach((r) => (r.style.opacity = level === null || Number(r.dataset.level) === level ? '' : '0.12'));
-    };
-    buttons.forEach((b) => {
-      const level = Number(b.dataset.legendLevel);
-      b.addEventListener('pointerenter', () => filter(level));
-      b.addEventListener('pointerleave', () => filter(pinned));
-      b.addEventListener('click', () => {
-        pinned = pinned === level ? null : level;
-        buttons.forEach((x) => x.setAttribute('aria-pressed', String(Number(x.dataset.legendLevel) === pinned)));
-        filter(pinned);
-      });
-    });
+    // on a narrow screen the graph scrolls sideways: start at the most recent weeks
+    const scroller = svg.parentElement!;
+    scroller.scrollLeft = scroller.scrollWidth;
   }
 </script>

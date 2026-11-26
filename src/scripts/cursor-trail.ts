@@ -133,6 +133,8 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     targetRadius = REST_RADIUS;
   let raf = 0,
     pointerInside = false;
+  // [data-cursor-quiet] regions leave no wake: it would show through their gaps as stray pixels
+  let quiet = false;
   let heroContact = 0;
   let smoothDx = 0,
     smoothDy = 0,
@@ -367,7 +369,8 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
       for (const c of cellsOf(shape!)) {
         if (!morphShows(c.dx, c.dy, shapeProgress, true)) continue;
         const level = levelForValue(1 - c.distance * 0.55, hash(c.dx, c.dy, flickerTime) * 2 - 1);
-        blobCtx.fillStyle = HEAT_PALETTE[level];
+        // over a [data-cursor-quiet] region the heat colours would vanish into its own, so the shape is ink there
+        blobCtx.fillStyle = quiet ? '#111111' : HEAT_PALETTE[level];
         fillCell(cursorCellX + c.dx, cursorCellY + c.dy, originX, originY, offsetX, offsetY, blobCtx);
         if (overTextValue > 0.02) {
           mono.ctx.fillStyle = UNDER_PALETTE[level];
@@ -464,7 +467,7 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
     }
     heroContact = insideHero ? 1 : heroContact * decayFactor(0.95, scale);
     const wake = !magnet;
-    if (pointerInside && !insideHero && (heroContact > 0.05 || wake) && speed > 1.2) {
+    if (pointerInside && !insideHero && !quiet && (heroContact > 0.05 || wake) && speed > 1.2) {
       // just out of a field the wake carries the field's heat; elsewhere it is cool
       const mono = overTextValue > 0.5;
       const amount = Math.max(heroContact, wake ? WAKE_HEAT : 0) * Math.min(1, 0.3 + speed / 16),
@@ -544,6 +547,8 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
   const evaluate = (target: Element | null) => {
     const onMagnet = !!target?.closest('[data-cursor-magnet]');
     overText = !onMagnet && !!target && pointOverText(pointerClientX, pointerClientY, target);
+    quiet = !!target?.closest('[data-cursor-quiet]');
+    if (quiet) trail.clear();
     const named = target?.closest<HTMLElement>('[data-cursor]')?.dataset.cursor;
     shapeTarget = isShapeName(named) ? named : null;
     const link = shapeTarget ? null : (target?.closest('a,button,summary') ?? null);
