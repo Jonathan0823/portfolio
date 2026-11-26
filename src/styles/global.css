@@ -46,6 +46,22 @@
 .sq {
   transition: background-color 0.4s;
 }
+
+/* the guide cursor's target: accent colour and a pixel underline drawn in steps */
+a[data-glyph-for] {
+  padding-bottom: 3px;
+  background: linear-gradient(var(--color-accent), var(--color-accent)) left bottom / 0 2px no-repeat;
+  transition: color 0.2s;
+}
+a[data-glyph-for].cursor-guided {
+  color: var(--color-accent);
+  animation: guide-underline 0.45s steps(6) forwards;
+}
+@keyframes guide-underline {
+  to {
+    background-size: 100% 2px;
+  }
+}
 .sq.sq-hidden {
   background-color: var(--color-line);
 }

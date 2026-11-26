@@ -10,6 +10,7 @@ import { mountHeroField, type HeroField } from './hero-field';
 import { mountCursorTrail } from './cursor-trail';
 import { mountGlyphSpill } from './glyph-spill';
 import { FIELD_BLEED, fieldShape } from './field-edges';
+import { mountHeroHint } from './hero-hint';
 
 const SEEDS: Record<string, number> = { hero: 1.3, strip: 4.7, foot: 8.1 };
 const hosts = [...document.querySelectorAll<HTMLElement>('[data-pixel-field]')];
@@ -46,6 +47,7 @@ if (typeof window.matchMedia === 'function') {
     }
   };
   whenIdle(sync);
+  whenIdle(mountHeroHint);
   for (const q of [REDUCE_QUERY, FINE_POINTER_QUERY]) window.matchMedia(q).addEventListener('change', sync);
   watchPixelRatio(() => fields.forEach((f) => f.resize()));
 }

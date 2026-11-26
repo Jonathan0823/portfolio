@@ -43,6 +43,28 @@ const nearestMagnet = (x: number, y: number) => {
 };
 const UNDER_PALETTE = ['#f3f3f3', '#efefef', '#ebebeb', '#e6e6e6', '#e1e1e1', '#dcdcdc'];
 
+/** class on the guide's target while the arrow is showing; styled in global.css */
+export const GUIDE_TARGET_CLASS = 'cursor-guided';
+let guideTarget: Element | null = null;
+let guideWake: (() => void) | null = null;
+/** point the cursor at an element as a pixel arrow; null turns it back into the blob */
+export function setCursorGuide(el: Element | null): void {
+  guideTarget = el;
+  guideWake?.();
+}
+/** arrow in cell space pointing along +u, as a signed distance (negative inside): a head from u=1..5.5 and a shaft from u=-5..1 */
+function arrowDistance(u: number, v: number): number {
+  const qx = Math.abs(u + 2) - 3,
+    qy = Math.abs(v) - 0.75;
+  const shaft = Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0);
+  const head = Math.max(1 - u, (Math.abs(v) - (5.5 - u) * 0.8) / Math.hypot(1, 0.8));
+  return Math.min(shaft, head);
+}
+/** the arrow's heat: hot in the head, cooling toward the tail, like the blob's core-to-rim gradient */
+const arrowHeat = (u: number) => 0.4 + 0.6 * Math.max(0, Math.min(1, (u + 4) / 7));
+/** both shapes draw their outermost cell-wide band as the dark rim */
+const RIM = 0.9;
+
 interface TrailCell {
   cellX: number;
   cellY: number;
@@ -132,6 +154,10 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
   let shapeTarget: ShapeName | null = null,
     shape: ShapeName | null = null,
     shapeProgress = 0;
+  let guideProgress = 0,
+    guideAngle = 0,
+    guideFresh = true;
+  let highlighted: Element | null = null;
 
   const fillCell = (
     cellX: number,
@@ -261,6 +287,60 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
           fillCell(cell, row, originX, originY, offsetX, offsetY, blobCtx);
       }
     }
+    // the guide morphs: the blob shrinks into the arrow while the arrow grows out from the centre
+    guideProgress +=
+      ((guideTarget && pointerInside && !magnet && !insideHero ? 1 : 0) - guideProgress) * easeFactor(0.08, scale);
+    if (guideProgress < 0.01 && !guideTarget) guideProgress = 0;
+    if (guideProgress > 0.01 && guideTarget?.isConnected) {
+      const r = guideTarget.getBoundingClientRect();
+      const goal =
+        Math.round(Math.atan2(r.top + r.height / 2 - cursorY, r.left + r.width / 2 - cursorX) / TURN_STEP) * TURN_STEP;
+      // the arrow turns smoothly toward its target instead of snapping
+      guideAngle = guideFresh ? goal : guideAngle + shortestTurn(guideAngle, goal) * easeFactor(0.15, scale);
+      guideFresh = false;
+      const cos = Math.cos(guideAngle),
+        sin = Math.sin(guideAngle);
+      // the shape tweens: blend the blob's and the arrow's signed distances, so the outline flows from one to the other
+      const mix = guideProgress * guideProgress * (3 - 2 * guideProgress);
+      const bob = ((Math.sin(clock * 0.7) + 1) / 2) * 1.5 * mix;
+      const round = blobGeometry(radius, stretch);
+      const fcos = Math.cos(facing),
+        fsin = Math.sin(facing);
+      const fracX = (cursorX - offsetX) / cell - cursorCellX,
+        fracY = (cursorY - offsetY) / cell - cursorCellY;
+      const reach = Math.ceil(Math.max(9, round.longRadius + round.shift + 2));
+      for (let y = -reach; y <= reach; y++) {
+        for (let x = -reach; x <= reach; x++) {
+          const du = x + 0.5 - fracX,
+            dv = y + 0.5 - fracY;
+          const along = du * fcos + dv * fsin,
+            across = -du * fsin + dv * fcos;
+          const blobDistance = (Math.hypot(along / round.longRadius, across / round.shortRadius) - 1) * radius;
+          const u = du * cos + dv * sin - bob,
+            v = -du * sin + dv * cos;
+          // the arrow is grown by one cell so its rim sits outside its thin shaft
+          const distance = blobDistance + (arrowDistance(u, v) - 1 - blobDistance) * mix;
+          if (distance > 0) continue;
+          const heat = (blobValue(du, dv, facing, round) ?? 0) * (1 - mix) + arrowHeat(u) * mix;
+          const value = distance > -RIM ? 0 : heat;
+          const level = levelForValue(value, hash(x, y, flickerTime) * 0.6 - 0.3);
+          blobCtx.fillStyle = mono.ctx.fillStyle = HEAT_PALETTE[level];
+          fillCell(cursorCellX + x, cursorCellY + y, originX, originY, offsetX, offsetY, blobCtx);
+          // over text the arrow keeps its colours but sits behind the words
+          if (overTextValue > 0.02)
+            fillCell(cursorCellX + x, cursorCellY + y, originX, originY, offsetX, offsetY, mono.ctx);
+        }
+      }
+    } else guideFresh = true;
+    // the target link lights up only while the arrow is actually showing, so it clears inside the field too
+    const lit = guideProgress > 0.5 ? guideTarget : null;
+    if (lit !== highlighted) {
+      highlighted?.classList.remove(GUIDE_TARGET_CLASS);
+      lit?.classList.add(GUIDE_TARGET_CLASS);
+      highlighted = lit;
+    }
+    const guiding = guideProgress > 0.01;
+    // the arrow only replaces the drawn blob; the field heat and the wake run as always
     const blobAlpha = linkProgress < 0.5 ? 1 - linkProgress / 0.5 : 0;
     const morphing = !!shape && shapeProgress > 0.02;
     if (morphing && !insideHero) {
@@ -275,7 +355,7 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
         }
       }
     }
-    if (blobAlpha > 0.05 && !insideHero && ring.mix <= 0.99 && !(morphing && shapeProgress > 0.98)) {
+    if (!guiding && blobAlpha > 0.05 && !insideHero && ring.mix <= 0.99 && !(morphing && shapeProgress > 0.98)) {
       const shaped = blobGeometry(radius * Math.max(0.3, blobAlpha), morphing ? 0 : stretch);
       const reach = Math.ceil(shaped.longRadius + shaped.shift) + 1;
       for (let cellY = cursorCellY - reach; cellY <= cursorCellY + reach; cellY++) {
@@ -413,13 +493,16 @@ export function mountCursorTrail(fields: HeroField[]): () => void {
       ring.active ||
       Math.abs((pointerInside ? 1 : 0) - visible) > 0.01 ||
       shapeTarget !== shape ||
-      (!!shape && shapeProgress < 0.98);
+      (!!shape && shapeProgress < 0.98) ||
+      !!guideTarget ||
+      guideProgress > 0.02;
     if (busy) raf = requestAnimationFrame(frame);
   };
 
   const wake = () => {
     if (!raf && !document.hidden) raf = requestAnimationFrame(frame);
   };
+  guideWake = wake;
   const pointOverText = (x: number, y: number, target: Element | null): boolean => {
     const doc = document as Document & {
       caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node } | null;
