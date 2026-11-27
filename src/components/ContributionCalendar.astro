@@ -84,10 +84,11 @@ const dayLabels = [
       <svg
         data-graph
         data-cursor-own-click
-        role="img"
+        role="group"
+        tabindex="0"
         aria-label={calendarLabel(calendar.total)}
         viewBox={'0 0 ' + (gutter + cols * cell) + ' ' + (labelH + 7 * cell)}
-        class="block h-auto w-full overflow-visible select-none"
+        class="block h-auto w-full overflow-visible select-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
       >
         {months.map((m) => (
           <text x={gutter + m.col * cell} y={9} font-size="9" class="fill-muted font-mono">
@@ -206,6 +207,8 @@ const dayLabels = [
     let touched = false;
     let start: { x: number; y: number } | null = null;
     let moved = false;
+    // the pointer that began the current touch gesture; other fingers are ignored until it ends
+    let pid = -1;
     const fine = matchMedia(FINE_POINTER_QUERY);
     const idle = () => (fine.matches ? 'Hover a day' : 'Tap a day, then drag it to scrub');
     const readout = fig.querySelector<HTMLElement>('[data-readout]')!;
@@ -335,7 +338,8 @@ const dayLabels = [
     };
     const move = (e: PointerEvent) => {
       if (e.pointerType !== 'mouse') {
-        if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) >= TAP_SLOP) moved = true;
+        if (start && e.pointerId === pid && Math.hypot(e.clientX - start.x, e.clientY - start.y) >= TAP_SLOP)
+          moved = true;
         return;
       }
       const box = svg.getBoundingClientRect(),
@@ -377,16 +381,46 @@ const dayLabels = [
       // a touch only selects when it lifts without having moved; a drag is the browser scrolling the graph
       if (!e.isPrimary) return;
       touched = true;
+      pid = e.pointerId;
       start = { x: e.clientX, y: e.clientY };
       moved = false;
     });
     svg.addEventListener('pointerup', (e) => {
-      if (e.pointerType === 'mouse' || !start) return;
+      if (e.pointerType === 'mouse' || !start || e.pointerId !== pid) return;
       const tap = !moved;
       start = null;
+      pid = -1;
       if (tap) choose(e, true);
     });
-    svg.addEventListener('pointercancel', () => (start = null));
+    svg.addEventListener('pointercancel', (e) => {
+      if (e.pointerId !== pid) return;
+      start = null;
+      pid = -1;
+    });
+
+    // keyboard: the graph is one tab stop; arrows move a day or a week, Home/End jump to the first/last day
+    svg.addEventListener('keydown', (e) => {
+      const dx = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      const dy = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+      const edgeKey = e.key === 'Home' || e.key === 'End';
+      if (!dx && !dy && !edgeKey) return;
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      e.preventDefault();
+      const current = chosen;
+      const next = edgeKey
+        ? cells[e.key === 'Home' ? 0 : cells.length - 1]
+        : !current
+          ? cells[cells.length - 1]
+          : (byPosition.get(current.col + dx + ',' + (current.row + dy)) ?? current);
+      touched = false;
+      chosen = next;
+      show();
+      ripple(next.col, next.row, 'click');
+      const box = scroller.getBoundingClientRect();
+      const r = next.el.getBoundingClientRect();
+      if (r.left < box.left) scroller.scrollLeft += r.left - box.left;
+      else if (r.right > box.right) scroller.scrollLeft += r.right - box.right;
+    });
 
     // scrubbing: press the chosen day and drag; the day under the finger follows, and the graph scrolls when the finger nears its edge
     let scrubbing = false;
@@ -411,12 +445,13 @@ const dayLabels = [
     grab.addEventListener('pointerdown', (e) => {
       if (!e.isPrimary) return;
       grab.setPointerCapture(e.pointerId);
+      pid = e.pointerId;
       start = { x: e.clientX, y: e.clientY };
       moved = false;
       finger = { x: e.clientX, y: e.clientY };
     });
     grab.addEventListener('pointermove', (e) => {
-      if (!start) return;
+      if (!start || e.pointerId !== pid) return;
       finger = { x: e.clientX, y: e.clientY };
       if (!moved && Math.hypot(e.clientX - start.x, e.clientY - start.y) < TAP_SLOP) return;
       moved = true;
@@ -426,14 +461,23 @@ const dayLabels = [
       }
     });
     grab.addEventListener('pointerup', (e) => {
+      if (e.pointerId !== pid) return;
       const tap = !moved;
       start = null;
+      pid = -1;
+      // commit the release point before endScrub cancels the pending follow frame
+      if (!tap) {
+        chosen = cellAt(e) ?? chosen;
+        show();
+      }
       endScrub();
       // a tap on the target lands on whichever day is under the finger, since it covers its neighbours too
       if (tap) choose(e, true);
     });
-    grab.addEventListener('pointercancel', () => {
+    grab.addEventListener('pointercancel', (e) => {
+      if (e.pointerId !== pid) return;
       start = null;
+      pid = -1;
       endScrub();
     });
     // iOS Safari can still start a scroll from a target that says touch-action: none
