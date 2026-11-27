@@ -30,11 +30,7 @@ const projects = await Promise.all(
   </a>
   {projects.map(({ p, links, year, description, sections }) => (
     <article id={projectAnchor(p.id)} data-project={p.id} class="border-t border-ink py-6 md:py-7">
-      <div
-        data-cursor="eye"
-        data-summary
-        class="md:grid md:grid-cols-12 md:items-baseline md:gap-x-6 focus-visible:outline-2 outline-offset-4 focus-visible:outline-ink"
-      >
+      <div data-cursor="eye" data-summary class="md:grid md:grid-cols-12 md:items-baseline md:gap-x-6">
         <div class="flex items-baseline justify-between md:col-span-3 md:block">
           <h3 class="text-[28px] leading-[1.1] font-semibold tracking-[-0.03em] md:text-[32px]">{p.data.name}</h3>
           <p class="font-mono text-[13px] leading-relaxed text-muted md:hidden">{year}</p>
@@ -152,29 +148,30 @@ const projects = await Promise.all(
       [project.querySelector<HTMLElement>('[data-assemble]')!],
       project.querySelector<HTMLCanvasElement>('[data-assemble-px]')!,
     );
-    // set from script so without JS the summary is not a fake button and the details stay visible
-    summary.setAttribute('role', 'button');
-    summary.tabIndex = 0;
-    summary.setAttribute('aria-controls', detail.id);
+    // the project name becomes a real toggle button (set from script, so without JS the details just stay visible);
+    // a click anywhere else on the summary toggles too, except on its links or while text is being selected
+    const heading = summary.querySelector('h3')!;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = heading.textContent;
+    button.className =
+      'cursor-[inherit] text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink';
+    button.setAttribute('aria-controls', detail.id);
+    heading.replaceChildren(button);
     const set = (open: boolean) => {
       detail.toggleAttribute('data-collapsed', !open);
       detail.toggleAttribute('inert', !open);
-      summary.setAttribute('aria-expanded', String(open));
+      button.setAttribute('aria-expanded', String(open));
     };
     set(false);
     const toggle = () => {
-      const open = summary.getAttribute('aria-expanded') !== 'true';
+      const open = button.getAttribute('aria-expanded') !== 'true';
       set(open);
       assembler.reset();
       if (open && !prefersReducedMotion()) assembler.show(0, 'left', 700, assembler.reset);
     };
     summary.addEventListener('click', (e) => {
-      if ((e.target as Element).closest('a,button') || getSelection()?.toString()) return;
-      toggle();
-    });
-    summary.addEventListener('keydown', (e) => {
-      if (e.target !== summary || (e.key !== 'Enter' && e.key !== ' ')) return;
-      e.preventDefault();
+      if ((e.target as Element).closest('a') || getSelection()?.toString()) return;
       toggle();
     });
   });
