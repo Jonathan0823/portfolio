@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { bandFraction, burstCell, insetClip, pointerFraction, revealFraction, sweepSchedule } from './skill-colour';
+import {
+  bandFraction,
+  isWaiting,
+  burstCell,
+  insetClip,
+  pointerFraction,
+  revealFraction,
+  sweepSchedule,
+} from './skill-colour';
 
 describe('revealFraction', () => {
   it('is full at the centre and gone at the radius', () => {
@@ -88,5 +96,12 @@ describe('burstCell', () => {
     expect(burstCell(3, 12, 2)).toEqual(burstCell(3, 12, 2));
     const spots = new Set(Array.from({ length: 12 }, (_, i) => JSON.stringify(burstCell(i, 12, 2))));
     expect(spots.size).toBeGreaterThan(8);
+  });
+});
+
+describe('isWaiting', () => {
+  it('holds back tiles in a row that has not played its entrance', () => {
+    expect(isWaiting({ closest: (s) => (s === '.skill-wait' ? {} : null) })).toBe(true);
+    expect(isWaiting({ closest: () => null })).toBe(false);
   });
 });
