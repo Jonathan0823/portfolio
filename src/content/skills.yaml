@@ -38,7 +38,7 @@
     - { name: PostgreSQL, icon: postgresql }
     - { name: Redis, icon: redis }
     - { name: MySQL, icon: mysql }
-    - { name: SQL Server, mono: SQL }
+    - { name: SQL Server, art: sqlserver }
     - { name: MongoDB, icon: mongodb }
 - group: DevOps & tools
   items:
