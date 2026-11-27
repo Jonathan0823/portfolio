@@ -107,7 +107,7 @@ export function mountMagnetRing(): MagnetRing {
           const value = ringValue(ring, x + 0.5 - ring.x, y + 0.5 - ring.y, pulse);
           if (value === null) continue;
           ctx.fillStyle = HEAT_PALETTE[levelForValue(value, hash(x >> 1, y >> 1, flicker) * 2 - 1)];
-          ctx.fillRect(x * sub - originX * cell + 0.5, y * sub - originY * cell + 0.5, sub - 0.5, sub - 0.5);
+          ctx.fillRect(x * sub - originX * cell, y * sub - originY * cell, sub, sub);
         }
       }
       ctx.globalAlpha = 1;

@@ -262,7 +262,7 @@ function createBursts() {
       b.ctx.fillStyle = HEAT_PALETTE[5 - step];
       for (let i = 0; i < BURST_COUNT; i++) {
         const { dx, dy } = burstCell(i, BURST_COUNT, step);
-        b.ctx.fillRect(b.x + dx * BURST_CELL, b.y + dy * BURST_CELL, BURST_CELL - 1, BURST_CELL - 1);
+        b.ctx.fillRect(b.x + dx * BURST_CELL, b.y + dy * BURST_CELL, BURST_CELL, BURST_CELL);
       }
     }
     if (bursts.size) frame = requestAnimationFrame(draw);

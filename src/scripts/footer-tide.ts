@@ -10,8 +10,6 @@ import { onWordmarkView, wordmarkInView, wordmarkRevealWait } from './footer-wor
 /** read by the footer field's shape each step: extra rows over its horizon per column, plus the overlays */
 export const tideSwell = {
   rows: new Float32Array(0),
-  /** crest heat per column, drawn just under the surface; rewritten every frame so it never lingers */
-  crest: new Float32Array(0),
   /** the logo's heat per cell, drawn only where the water has uncovered it; rewritten every frame */
   stamp: new Float32Array(0),
   /** the highest row the raised water may reach, however far the calm skyline has wandered up by then */
@@ -22,8 +20,6 @@ export const FOOT_BLEED = 320;
 /** ms for a full rise / a full drain; a partial move takes its share. The rise eases out, the drain eases in and out */
 const RISE_MS = 340;
 const EBB_MS = 720;
-/** the crest's glow fades over this long once the water stops rising */
-const CREST_FADE_MS = 220;
 /** rows of water over the top of the logo at full height, and cells of margin either side of it */
 const OVER_TOP = 4;
 const SIDE_MARGIN = 3;
@@ -35,7 +31,6 @@ const CHOP_ROOM = 2;
 const LOGO_COOL = 0.46;
 const LOGO_HOT = 0.92;
 const COOL_MS = 280;
-const CREST_HEAT = 0.85;
 /** how long the pointer may be between buttons before it counts as leaving them */
 const LEAVE_GRACE_MS = 160;
 /** rows the wave's top keeps clear below the closing headline */
@@ -97,8 +92,7 @@ export function mountFooterTide(foot: HeroField): () => void {
   // the current move: level eases from `from` to `goal` over `duration`, starting at `start`
   let from = 0,
     start = 0,
-    duration = 0,
-    crestAt = -Infinity; // last time the water was rising
+    duration = 0;
   /** shownAt: when the drain finished uncovering it; it stays hot until then, then cools */
   let logo: (Placed & { shownAt: number }) | null = null;
   /** the logo the next submersion leaves behind; null means "leave nothing" */
@@ -171,7 +165,6 @@ export function mountFooterTide(foot: HeroField): () => void {
     const cells = field.columns * field.rows;
     if (tideSwell.rows.length !== field.columns) {
       tideSwell.rows = new Float32Array(field.columns);
-      tideSwell.crest = new Float32Array(field.columns);
     }
     if (tideSwell.stamp.length !== cells) tideSwell.stamp = new Float32Array(cells);
 
@@ -179,7 +172,6 @@ export function mountFooterTide(foot: HeroField): () => void {
     const t = duration ? Math.min(1, Math.max(0, (now - start) / duration)) : 1;
     const rising = goal > from;
     level = from + (goal - from) * (rising ? easeOut(t) : easeInOut(t));
-    if (t < 1 && rising) crestAt = now;
     if (t >= 1) duration = 0;
     if (swapPending && level >= goal && goal === 1) {
       // fully under: swap the logo out of sight, then drain
@@ -195,8 +187,6 @@ export function mountFooterTide(foot: HeroField): () => void {
     const right = Math.max(...extent.map((s) => s.right)) + SIDE_MARGIN;
     const crestTop = Math.min(Math.max(...extent.map((s) => s.top)) + overTop + dome, ceiling() - chopRoom);
     const shoulder = (right - left) * 0.35;
-    // the crest glows while the water rises and fades shortly after; it is never written into the field's heat
-    const glow = CREST_HEAT * Math.max(0, 1 - (now - crestAt) / CREST_FADE_MS);
     // when the logo stands lower than the field's highest skyline (a short window), the calm field dips under it so
     // the whole logo shows instead of half of it sinking into the field. Faded out as the water rises over it
     const dip = logo ? Math.min(0, logo.bottom - 2 - (field.horizonRow + field.hostRows * 0.22)) : 0;
@@ -210,7 +200,6 @@ export function mountFooterTide(foot: HeroField): () => void {
       const wave = Math.max(0, ((surface - field.horizonRow) * falloff + chop) * level);
       const beside = logo ? (x < logo.left - 1 ? logo.left - 1 - x : x > logo.right + 1 ? x - logo.right - 1 : 0) : 0;
       tideSwell.rows[x] = wave + dip * Math.exp(-((beside / dipShoulder) ** 2)) * (1 - level);
-      tideSwell.crest[x] = level > 0.05 && falloff > 0.2 ? glow * falloff : 0;
     }
 
     tideSwell.cap = ceiling();
@@ -230,9 +219,8 @@ export function mountFooterTide(foot: HeroField): () => void {
     foot.markDirty();
     const settled = level === 0 && goal === 0 && !duration;
     const cooling = !!logo && now - logo.shownAt < COOL_MS;
-    if (!settled || cooling || glow > 0) raf = requestAnimationFrame(frame);
     // at rest the rows hold only the dip under the logo (the wave is at level 0), so they stay as they are
-    else tideSwell.crest.fill(0);
+    if (!settled || cooling) raf = requestAnimationFrame(frame);
   };
   const run = () => {
     if (!raf) raf = requestAnimationFrame(frame);
@@ -297,7 +285,6 @@ export function mountFooterTide(foot: HeroField): () => void {
     buttons.forEach((b) => b.classList.remove(TIDE_SHOWN_CLASS));
     if (host) host.style.marginTop = '';
     tideSwell.rows.fill(0);
-    tideSwell.crest.fill(0);
     tideSwell.stamp.fill(0);
     tideSwell.cap = 0;
     foot.markDirty();

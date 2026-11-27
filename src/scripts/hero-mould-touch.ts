@@ -129,10 +129,9 @@ export function mountHeroMouldTouch(hero: HeroField, due: Promise<void>, life: P
     const width = section.clientWidth;
     const left = width - 2 * GUTTER_PX - shape.width * cell,
       top = Math.round((inSection(links[1]).top + inSection(links[links.length - 1]).bottom - shape.height * cell) / 2);
-    const inset = cell > 3 ? 0.5 : 0.25;
     const paint = ([c, r]: Cell, color: string) => {
       ctx.fillStyle = color;
-      ctx.fillRect(left + c * cell + inset, top + r * cell + inset, cell - inset * 2, cell - inset * 2);
+      ctx.fillRect(left + c * cell, top + r * cell, cell, cell);
     };
     const square = ({ x, y, level, size }: Dot) => {
       ctx.fillStyle = HEAT_PALETTE[level];

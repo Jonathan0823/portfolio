@@ -72,33 +72,46 @@ describe('stepField', () => {
     const full = createField(1440, 336),
       half = createField(1440, 336);
     stepField(full, 0, 1.3);
-    stepField(half, 0, 1.3, 1, 0.94, { coverage: 0.5 });
+    stepField(half, 0, 1.3, 0.94, { coverage: 0.5 });
     expect(Math.max(...half.lowestRow)).toBeLessThan(Math.max(...full.lowestRow));
     expect(lit(half, 0, half.rows)).toBeLessThan(lit(full, 0, full.rows));
   });
 
-  it('dithers the rows next to row 0 with fadeEdge', () => {
-    const plain = createField(1440, 336),
-      faded = createField(1440, 336);
-    stepField(plain, 0, 1.3);
-    stepField(faded, 0, 1.3, 1, 0.94, { fadeEdge: 0.35 });
-    expect(lit(faded, 0, 4)).toBeLessThan(lit(plain, 0, 4) * 0.5);
-    expect(lit(faded, 20, 23)).toBe(lit(plain, 20, 23));
+  it('layers the body from indigo at row 0 to yellow at the surface, without holes', () => {
+    const f = createField(1440, 336);
+    stepField(f, 0, 1.3);
+    for (let x = 0; x < f.columns; x++) {
+      const low = f.lowestRow[x];
+      for (let y = 0; y <= low; y++) expect(f.bucket[y * f.columns + x]).toBeGreaterThanOrEqual(1);
+      expect(f.bucket[x]).toBe(1);
+      expect(f.bucket[low * f.columns + x]).toBe(5);
+    }
   });
 
-  it('makes the horizon wander per column with skyline', () => {
+  it('softens the surface and the faded rows next to row 0', () => {
     const f = createField(1440, 336);
-    stepField(f, 0, 1.3, 1, 0.94, { skyline: 0.22, coverage: 1 });
-    const flat = createField(1440, 336);
-    stepField(flat, 0, 1.3);
-    const spread = (r: Int16Array) => Math.max(...r) - Math.min(...Array.from(r).filter((v) => v >= 0));
-    expect(spread(f.lowestRow)).toBeGreaterThan(spread(flat.lowestRow));
+    stepField(f, 0, 1.3, 0.94, { fadeRows: 2.5 });
+    const x = 40;
+    expect(f.alpha[f.lowestRow[x] * f.columns + x]).toBeLessThan(1);
+    expect(f.alpha[x]).toBeLessThan(1);
+    expect(f.alpha[10 * f.columns + x]).toBe(1);
   });
 
   it('never lights bleed rows on its own', () => {
     const f = createField(1440, 336, 200);
-    stepField(f, 0, 1.3, 1, 0.94, { skyline: 0.22 });
+    stepField(f, 0, 1.3);
     expect(lit(f, f.hostRows + 4, f.rows)).toBe(0);
+  });
+
+  it('keeps pointer heat warm as it cools, fading it out past the body', () => {
+    const f = createField(1440, 336, 200);
+    const i = (f.hostRows + 2) * f.columns + 10;
+    for (const heat of [1, 0.6, 0.35]) {
+      f.heat[i] = heat;
+      stepField(f, 0, 1.3, 1);
+      expect(f.bucket[i]).toBeGreaterThanOrEqual(3);
+    }
+    expect(f.alpha[i]).toBeLessThan(1);
   });
 
   it('decays heat by 0.94 per step and paints hot cells in the top bucket', () => {
@@ -115,7 +128,7 @@ describe('stepField', () => {
 describe('stepField mold', () => {
   const at = (f: ReturnType<typeof createField>, x: number, y: number) => f.bucket[y * f.columns + x];
 
-  it('forces letter cells present, one step hotter, and carves cells out', () => {
+  it('forces letter cells present in the dark colour, and carves cells out', () => {
     const plain = createField(1440, 336),
       moulded = createField(1440, 336);
     // far under the horizon the field is empty by itself
@@ -128,8 +141,8 @@ describe('stepField mold', () => {
     mold[deep * moulded.columns + x] = 1;
     mold[(deep - 1) * moulded.columns + x] = 12;
     mold[carved * moulded.columns + x] = -1;
-    stepField(moulded, 0, 1.3, 1, 0.94, { mold });
-    expect(at(moulded, x, deep)).toBeGreaterThanOrEqual(0);
+    stepField(moulded, 0, 1.3, 0.94, { mold });
+    expect(at(moulded, x, deep)).toBe(0);
     expect(at(moulded, x, deep - 1)).toBe(2);
     expect(at(moulded, x, carved)).toBe(-1);
   });
@@ -138,7 +151,7 @@ describe('stepField mold', () => {
     const a = createField(1440, 336),
       b = createField(1440, 336);
     stepField(a, 0, 1.3);
-    stepField(b, 0, 1.3, 1, 0.94, { mold: new Int8Array(3) });
+    stepField(b, 0, 1.3, 0.94, { mold: new Int8Array(3) });
     expect(Array.from(b.bucket)).toEqual(Array.from(a.bucket));
   });
 });

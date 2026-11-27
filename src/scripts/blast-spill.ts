@@ -1,7 +1,9 @@
 // The part of a click's field blast that reaches past the field's canvas, which would otherwise be sliced flat there.
 // A short-lived layer behind the content carries on the same cells. It covers only what is on screen and in reach,
 // draws only cells the field cannot, and is gone once they have cooled; a blast that stays inside creates nothing.
-import { HEAT_PALETTE, cellLevel, fbm, hash, ridgeAt } from './pixel-math';
+import { HEAT_PALETTE, heatFade, heatTone } from './pixel-math';
+import { paintCell } from './field-paint';
+import { gridLayer } from './grid-layer';
 import { decayFactor } from './timing';
 import type { HeroField } from './hero-field';
 
@@ -60,9 +62,6 @@ function createStrip(hero: HeroField, box: SpillBox): (column: number, row: numb
   const width = c1 - c0,
     height = r1 - r0;
   const heat = new Float32Array(width * height);
-  // each cell's own terrain, worked out once when it first lights: noise per frame is wasted over so short a life
-  const value = new Float32Array(width * height);
-  const grain = new Float32Array(width * height);
   const level = new Int8Array(width * height);
 
   // one canvas pixel per CSS pixel: flat squares need no retina sharpness
@@ -78,8 +77,9 @@ function createStrip(hero: HeroField, box: SpillBox): (column: number, row: numb
   canvas.style.cssText = `position:absolute;left:${rect.left + window.scrollX + c0 * cell}px;top:${pageTop}px;width:${width * cell}px;height:${tall}px;pointer-events:none;image-rendering:pixelated;z-index:-1`;
   document.body.appendChild(canvas);
   const ctx = canvas.getContext('2d')!;
+  const grid = gridLayer(canvas);
+  grid.fit(cell);
 
-  const time = hero.time();
   const born = performance.now();
   let last = born,
     stamped = false;
@@ -91,7 +91,7 @@ function createStrip(hero: HeroField, box: SpillBox): (column: number, row: numb
       let hottest = 0;
       for (let i = 0; i < heat.length; i++) {
         const h = (heat[i] *= decay);
-        level[i] = h < 0.3 ? -1 : cellLevel(value[i], h, grain[i]);
+        level[i] = h < 0.3 ? -1 : heatTone(h);
         // cells under 0.3 are no longer drawn, so only warmer ones keep the strip alive
         if (h >= 0.3) hottest = h;
       }
@@ -102,11 +102,14 @@ function createStrip(hero: HeroField, box: SpillBox): (column: number, row: numb
           if (level[i] !== k) continue;
           const column = i % width,
             row = Math.floor(i / width);
-          const y = (hero.flipped ? height - 1 - row : row) * cell + (hero.flipped ? 0 : 1);
-          ctx.fillRect(column * cell + 1, y, cell - 1, cell - 1);
+          const y = (hero.flipped ? height - 1 - row : row) * cell;
+          paintCell(ctx, column * cell, y, cell, heatFade(heat[i]));
         }
       }
-      if (!hottest && (stamped || now - born > UNLIT_MS)) return canvas.remove();
+      if (!hottest && (stamped || now - born > UNLIT_MS)) {
+        grid.remove();
+        return canvas.remove();
+      }
     }
     requestAnimationFrame(paint);
   };
@@ -115,15 +118,6 @@ function createStrip(hero: HeroField, box: SpillBox): (column: number, row: numb
   return (column, row, held) => {
     if (column < c0 || column >= c1 || row < r0 || row >= r1) return;
     const i = (row - r0) * width + (column - c0);
-    if (!heat[i]) {
-      const noise = hash(column, row) - 0.5;
-      grain[i] = noise;
-      value[i] =
-        0.28 +
-        0.5 * fbm(column * 0.07 - time * 0.9 + hero.seed, row * 0.11 + column * 0.03) +
-        0.42 * ridgeAt(column / field.columns, row / field.horizonRow, time, hero.seed) +
-        noise * 0.2;
-    }
     heat[i] = Math.max(heat[i], held);
     stamped = true;
   };

@@ -1,5 +1,5 @@
 // Footer wordmark: EGUIN rises out of the footer field's skyline as part of the field itself. The letters are field
-// cells one step hotter than their surroundings, merged with the body, left-aligned to the page gutter. They appear in
+// cells in one flat dark colour, merged with the body, left-aligned to the page gutter. They appear in
 // an ordered reveal (letter by letter, left to right, each cell popping in hot yellow and cooling to its resting colour) each
 // time 30% of the footer field is scrolled into view, sink back into the field (right to left, top cells first) when it scrolls out, and dissolve out and back in around a closing button's logo (hover on a fine pointer, the cycle
 // on touch). Reduced motion shows the word static. Driven from the field's shape callback every paint, through the
@@ -269,7 +269,7 @@ export function footWordmarkShape(foot: HeroField | undefined, motion: boolean, 
     if (y < 0) continue;
     const at = cellThreshold(delay, k, lay.height, sink);
     if (x >= columns || y >= rows || at > clock) continue;
-    // popping in: white-hot yellow, then one step down at a time, then the resting (one step hotter) colour
+    // popping in: white-hot yellow, then one step down at a time, then the resting dark colour
     const hot = popLevel(clock - at, want);
     mold[y * columns + x] = hot ? 10 + hot : 1;
   }
