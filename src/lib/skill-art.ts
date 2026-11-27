@@ -36,6 +36,28 @@ export const PIXEL_ART = {
     ],
     palette: { D: '#1a69d4', L: '#3aa6ee', P: '#a9c9fd' },
   },
+  // WebSocket knot, without the outer ring, which leaves too few pixels for it
+  websocket: {
+    rows: [
+      'GGGGGGGGG...........',
+      '.GGGGGGGGG..........',
+      '..GGGGGGGGG.........',
+      '........GGGG..G.....',
+      '..GGG....GGG.GGG....',
+      '..GGG....GGG..GGG...',
+      '...GGG..GGGGG..GGG..',
+      '....GGGGGG.GGG.GGG..',
+      '.....GGGG...GG.GGG..',
+      '......GG.GG..G.GGG..',
+      '.......G..GG...GGG..',
+      '......GG...GG.......',
+      '.....GGG............',
+      '.....GGGGGGGGGGGGG..',
+      '......GGGGGGGGGGGGG.',
+      '.......GGGGGGGGGGGGG',
+    ],
+    palette: { G: '#3d780a' },
+  },
 } as const satisfies Record<string, PixelArt>;
 
 export type PixelArtName = keyof typeof PIXEL_ART;

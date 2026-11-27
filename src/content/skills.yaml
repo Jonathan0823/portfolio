@@ -11,7 +11,7 @@
   items:
     - { name: NestJS, icon: nestjs }
     - { name: Express, icon: express }
-    - { name: WebSocket, mono: WS }
+    - { name: WebSocket, art: websocket }
 - group: Frontend & mobile
   items:
     - { name: Next.js, icon: nextdotjs }
