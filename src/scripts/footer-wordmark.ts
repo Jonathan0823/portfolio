@@ -1,5 +1,5 @@
 // Footer wordmark: EGUIN rises out of the footer field's skyline as part of the field itself. The letters are field
-// cells in one flat dark colour, merged with the body, left-aligned to the page gutter. They appear in
+// cells in one flat dark colour standing behind the lava, which laps over their feet, left-aligned to the page gutter. They appear in
 // an ordered reveal (letter by letter, left to right, each cell popping in hot yellow and cooling to its resting colour) each
 // time 30% of the footer field is scrolled into view, sink back into the field (right to left, top cells first) when it scrolls out, and dissolve out and back in around a closing button's logo (hover on a fine pointer, the cycle
 // on touch). Reduced motion shows the word static. Driven from the field's shape callback every paint, through the
@@ -26,10 +26,14 @@ const SMALL_LETTERS: Record<string, string[]> = {
   N: ['#....#', '##...#', '#.#..#', '#..#.#', '#...##', '#....#', '#....#'],
 };
 const WORD = [...'EGUIN'];
+/** `wade` is where the lava stands against the letters' feet, in rows: half the large stroke, and just under the small
+ * one, whose single row would otherwise vanish and turn the E into an F */
 const SIZES = {
-  large: { letters: LETTERS, scale: 2, rows: 10, gap: 2, clearFrom: 3 },
-  small: { letters: SMALL_LETTERS, scale: 1, rows: 7, gap: 1, clearFrom: 2 },
+  large: { letters: LETTERS, scale: 2, rows: 10, gap: 2, wade: 0.5 },
+  small: { letters: SMALL_LETTERS, scale: 1, rows: 7, gap: 1, wade: -0.5 },
 };
+/** rows the letters' heads may rise past the footer's top before they would reach the buttons above */
+const HEADROOM = 2;
 /** the footer must show this share of itself (capped to what fits the screen) before the word is revealed */
 const SEEN_SHARE = 0.3;
 /** cells pop in column by column over under this long, then each cools over COOL_MS */
@@ -47,8 +51,6 @@ const OUT_RATE = 1.7;
 const RETURN_MS = 200;
 /** a frame longer than this (a background tab) counts as this long */
 const MAX_DT_MS = 100;
-/** terrain above this many cells over the word's base, inside its span, is cleared so the upper letters stand free */
-const CLEAR_MARGIN = 4;
 const NARROW_QUERY = '(min-width: 768px)';
 
 export type Ink = Array<[column: number, height: number, delay: number]>;
@@ -58,14 +60,12 @@ export interface Wordmark {
   ink: Ink;
   /** the letter cells as column * 1000 + height, to tell them from terrain */
   inkSet: Set<number>;
-  /** each word column's earliest cell delay */
-  colDelay: Map<number, number>;
   /** first and last column of the word */
   x0: number;
   x1: number;
-  /** rows the word stands tall, and the lowest row cleared of terrain above its base */
+  /** rows the word stands tall, and where the lava stands against its lowest */
   height: number;
-  clearFrom: number;
+  wade: number;
 }
 
 /** reveal delay (ms) of a cell at `col` glyph columns from the word's first column (fractional inside a scaled stroke) */
@@ -75,7 +75,7 @@ export function revealDelay(col: number, small: boolean): number {
 
 /** the word in field cells, its first column at `left` */
 export function layoutWordmark(left: number, small: boolean): Wordmark {
-  const { letters, scale, rows, gap, clearFrom } = SIZES[small ? 'small' : 'large'];
+  const { letters, scale, rows, gap, wade } = SIZES[small ? 'small' : 'large'];
   const ink: Ink = [];
   let x = left;
   let cols = 0;
@@ -95,16 +95,13 @@ export function layoutWordmark(left: number, small: boolean): Wordmark {
     x += glyph[0].length * scale + gap;
     cols += glyph[0].length + gap / scale;
   }
-  const colDelay = new Map<number, number>();
-  for (const [cx, , delay] of ink) colDelay.set(cx, Math.min(colDelay.get(cx) ?? Infinity, delay));
   return {
     ink,
     inkSet: new Set(ink.map(([cx, k]) => cx * 1000 + k)),
-    colDelay,
     x0: left,
     x1: x - gap - 1,
     height: rows,
-    clearFrom,
+    wade,
   };
 }
 
@@ -154,8 +151,6 @@ export function onWordmarkView(cb: (inView: boolean) => void): () => void {
 interface Layout extends Wordmark {
   key: string;
   base: number;
-  /** field rows where the body is certain to be present under the word */
-  found: number;
 }
 
 let inView = false;
@@ -196,9 +191,8 @@ function place(foot: HeroField, small: boolean): Layout {
   layout = {
     ...word,
     key,
-    // standing a little under the field's usual surface, but never so high that the letters leave the footer's height
-    base: Math.max(0, Math.min(f.horizonRow + 1, hostRows - word.height)),
-    found: Math.max(0, Math.floor(hostRows * 0.46) - 1),
+    // standing on the field's usual surface; a short footer stands it lower, and the shore dips with it
+    base: Math.max(0, Math.min(f.horizonRow, hostRows - word.height + HEADROOM)),
   };
   return layout;
 }
@@ -251,19 +245,8 @@ export function footWordmarkShape(foot: HeroField | undefined, motion: boolean, 
   // the whole word rides the field's surface down as the footer scrolls out; cells below the bottom are not drawn
   const drop = coverageDrop(field.horizonRow, coverage);
   const base = lay.base - drop;
-  const found = Math.max(0, lay.found - drop);
   if (mold.length !== columns * rows) mold = new Int8Array(columns * rows);
   mold.fill(0);
-  // the body is certain to reach the ground under the word, so letters never hover over a dip in the terrain
-  for (let x = lay.x0; x <= Math.min(columns - 1, lay.x1); x++)
-    for (let y = found; y < base; y++) mold[y * columns + x] = 2;
-  // a light clearing: terrain standing above the word's lowest rows, inside the word's own span only, dissolves with it
-  for (let x = Math.max(0, lay.x0 - 1); x <= Math.min(columns - 1, lay.x1 + 1); x++)
-    for (let k = lay.clearFrom; k < lay.height + CLEAR_MARGIN; k++) {
-      const y = base + k;
-      const cd = lay.colDelay.get(Math.min(lay.x1, Math.max(lay.x0, x))) ?? 0;
-      if (y >= 0 && y < rows && !lay.inkSet.has(x * 1000 + k) && cd <= clock) mold[y * columns + x] = -1;
-    }
   for (const [x, k, delay] of lay.ink) {
     const y = base + k;
     if (y < 0) continue;
@@ -273,5 +256,6 @@ export function footWordmarkShape(foot: HeroField | undefined, motion: boolean, 
     const hot = popLevel(clock - at, want);
     mold[y * columns + x] = hot ? 10 + hot : 1;
   }
-  return { mold };
+  const shore = { from: lay.x0, to: lay.x1, row: base + lay.wade, strength: clock / FULL_MS };
+  return { mold, shore };
 }

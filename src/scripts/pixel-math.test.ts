@@ -128,23 +128,32 @@ describe('stepField', () => {
 describe('stepField mold', () => {
   const at = (f: ReturnType<typeof createField>, x: number, y: number) => f.bucket[y * f.columns + x];
 
-  it('forces letter cells present in the dark colour, and carves cells out', () => {
+  it('shows letter cells in the dark colour above the body, and hides them behind it', () => {
     const plain = createField(1440, 336),
       moulded = createField(1440, 336);
     // far under the horizon the field is empty by itself
     const x = 40,
-      deep = plain.hostRows - 1;
-    const carved = 10;
+      deep = plain.hostRows - 1,
+      behind = 5;
     stepField(plain, 0, 1.3);
     expect(at(plain, x, deep)).toBe(-1);
     const mold = new Int8Array(moulded.columns * moulded.rows);
     mold[deep * moulded.columns + x] = 1;
     mold[(deep - 1) * moulded.columns + x] = 12;
-    mold[carved * moulded.columns + x] = -1;
+    mold[behind * moulded.columns + x] = 1;
     stepField(moulded, 0, 1.3, 0.94, { mold });
     expect(at(moulded, x, deep)).toBe(0);
     expect(at(moulded, x, deep - 1)).toBe(2);
-    expect(at(moulded, x, carved)).toBe(-1);
+    expect(at(moulded, x, behind)).toBe(at(plain, x, behind));
+  });
+
+  it('runs the surface nearly level along a shore, and leaves it alone far from it', () => {
+    const plain = createField(1440, 336),
+      shored = createField(1440, 336);
+    stepField(plain, 0, 1.3);
+    stepField(shored, 0, 1.3, 0.94, { shore: { from: 10, to: 60, row: 12, strength: 1 } });
+    for (let x = 10; x <= 60; x++) expect(Math.abs(shored.surface[x] - 12)).toBeLessThan(2);
+    expect(shored.surface[100]).toBe(plain.surface[100]);
   });
 
   it('ignores a mould of the wrong size', () => {
