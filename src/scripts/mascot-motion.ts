@@ -128,7 +128,7 @@ export function steer(
     if (p.phase === 'emerging' || p.phase === 'up') return p;
     const fresh = !current || current.F <= sunk + 1;
     const from = fresh ? { P: home.P + sprite.gait.kick * KICK_DISTANCE, F: sunk } : { P: current.P, F: current.F };
-    return { phase: 'emerging', t: -delay, from };
+    return { phase: 'emerging', t: fresh ? -delay : 0, from };
   }
   if (p.phase === 'under' || p.phase === 'sinking') return p;
   if (!current) return UNDER;

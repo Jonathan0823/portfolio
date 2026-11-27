@@ -122,6 +122,7 @@ export function mountFooterMascots(foot: HeroField, reduced: boolean): () => voi
   let sparkDue = 0;
   let lookDue = 0;
   let drawn = '';
+  let drawnParticles = false;
   let last = 0;
   let raf = 0;
   let inViewport = false;
@@ -302,7 +303,9 @@ export function mountFooterMascots(foot: HeroField, reduced: boolean): () => voi
       now < clawd.blinkUntil,
     ].join('|');
     particles = particles.filter(({ p, born }) => now - born < p.ms);
-    if (key === drawn && !particles.length) return;
+    const hadParticles = drawnParticles;
+    drawnParticles = particles.length > 0;
+    if (key === drawn && !drawnParticles && !hadParticles) return;
     drawn = key;
     if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
       canvas.width = Math.round(w * dpr);

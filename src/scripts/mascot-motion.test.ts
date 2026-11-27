@@ -102,6 +102,15 @@ describe('reversal', () => {
     expect(presencePose(PI, back, home, sunk)).toMatchObject({ P: drawn.P, F: drawn.F });
   });
 
+  it('does not hide a visible mascot behind the stagger delay when it reverses', () => {
+    const current = { ...home, sx: 1, sy: 1, tilt: 0, leg: 0 as const };
+    let p = steer(PI, UP, false, current, home, sunk);
+    p = advancePresence(PI, p, sinkMs() * 0.6);
+    const back = steer(PI, p, true, presencePose(PI, p, home, sunk), home, sunk, 250);
+    expect(back.t).toBe(0);
+    expect(presencePose(PI, back, home, sunk)).not.toBeNull();
+  });
+
   it('turns a rise into a sink from where it is drawn', () => {
     let p = advancePresence(PI, rise(), emergeMs(PI) * 0.5);
     const drawn = presencePose(PI, p, home, sunk)!;
