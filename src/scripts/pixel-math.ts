@@ -126,8 +126,10 @@ export function stepField(
   for (let x = 0; x < columns; x++) {
     const across = x / columns;
     const sky = shape.skyline ? (noise(x * 0.06, seed * 3 + time * 0.08) - 0.5) * hostRows * shape.skyline * 2 : 0;
-    const surface = (field.horizonRow + sky) * coverage;
     const swell = shape.swell?.[x] ?? 0;
+    // a raised wave takes its own shape: the skyline's wander settles out of it, so it doesn't push the crest past the cap
+    const settled = shape.cap ? Math.max(0, Math.min(1, swell / 8)) : 0;
+    const surface = (field.horizonRow + sky * (1 - settled)) * coverage;
     // a swell lifts the wandering skyline, which could carry it above where the tide is meant to stop
     const horizonRow =
       swell > 0 && shape.cap

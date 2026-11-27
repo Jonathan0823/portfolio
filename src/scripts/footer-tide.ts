@@ -2,7 +2,7 @@
 // that button's pixel logo standing where the wave reached. Switching buttons submerges the old logo
 // completely before the new one is uncovered; leaving washes the logo back down. Mirrors the hero's lava
 // spill (which pours down from above) by rising from below.
-import { BITMAPS, SMALL_BITMAPS, type GlyphName } from './glyph-model';
+import { FOOTER_BITMAPS, SMALL_BITMAPS, type GlyphName } from './glyph-model';
 import { FINE_POINTER_QUERY, prefersReducedMotion } from './motion';
 import type { HeroField } from './hero-field';
 import { onWordmarkView, wordmarkInView, wordmarkRevealWait } from './footer-wordmark';
@@ -27,6 +27,10 @@ const CREST_FADE_MS = 220;
 /** rows of water over the top of the logo at full height, and cells of margin either side of it */
 const OVER_TOP = 4;
 const SIDE_MARGIN = 3;
+/** rows the crest of the water curves down from its middle to the sides of the widest logo (fine pointer) */
+const DOME = 3;
+/** rows kept free under the ceiling for the chop, so the crest is never sliced flat (fine pointer) */
+const CHOP_ROOM = 2;
 /** heat the logo is held at once it has cooled (a calm field colour), and when first left behind (hot) */
 const LOGO_COOL = 0.46;
 const LOGO_HOT = 0.92;
@@ -66,6 +70,15 @@ export function inCycle(name: GlyphName): boolean {
   return name !== 'resume';
 }
 
+/**
+ * The water's surface row at column x: `crest` in the middle between `left` and `right`, curving down by `dome` rows
+ * to those sides and staying at that height past them (the shoulders fade it out from there)
+ */
+export function crestRow(x: number, left: number, right: number, crest: number, dome: number): number {
+  const u = Math.min(1, Math.abs(x - (left + right) / 2) / ((right - left) / 2));
+  return crest - dome * u * u;
+}
+
 /** mounts the tide for the current pointer type; the returned function removes it again */
 export function mountFooterTide(foot: HeroField): () => void {
   const buttons = [...document.querySelectorAll<HTMLAnchorElement>('#contact a[data-pixel-btn]')];
@@ -97,8 +110,10 @@ export function mountFooterTide(foot: HeroField): () => void {
   const stacked = !window.matchMedia(FINE_POINTER_QUERY).matches;
   const overTop = stacked ? 2 : OVER_TOP;
   const skyGap = stacked ? 1 : 4;
+  const dome = stacked ? 0 : DOME;
+  const chopRoom = stacked ? 0 : CHOP_ROOM;
   // half-size logos on touch, so the closing screen still fits a phone
-  const rowsOf = (name: GlyphName) => (stacked ? SMALL_BITMAPS[name] : BITMAPS[name].rows);
+  const rowsOf = (name: GlyphName) => (stacked ? SMALL_BITMAPS : FOOTER_BITMAPS)[name];
 
   const head = (to: number, now: number) => {
     if (to === goal && duration) return;
@@ -136,8 +151,11 @@ export function mountFooterTide(foot: HeroField): () => void {
       : Math.min(rect.width - 96 - (w * field.cellSize) / 2, Math.max(buttonsRight + 200, rect.width * 0.8));
     const left = Math.round(centerPx / field.cellSize - w / 2);
     // a few rows clear of the field's highest skyline, so the logo stands apart instead of merging into it
-    // lowered when needed so the wave that covers it (overTop rows above) still stays under the headline
-    const bottom = Math.max(0, Math.min(field.rows - h - overTop - 1, skyline(), ceiling() - overTop - h + 1));
+    // lowered when needed so the wave that covers it (overTop rows above, plus the chop) still stays under the headline
+    const bottom = Math.max(
+      0,
+      Math.min(field.rows - h - overTop - 1, skyline(), ceiling() - overTop - chopRoom - h + 1),
+    );
     const cells: Array<[number, number]> = [];
     bitmap.forEach((row, i) =>
       [...row].forEach((c, j) => {
@@ -175,7 +193,7 @@ export function mountFooterTide(foot: HeroField): () => void {
     const extent = LOGOS.map(place);
     const left = Math.min(...extent.map((s) => s.left)) - SIDE_MARGIN;
     const right = Math.max(...extent.map((s) => s.right)) + SIDE_MARGIN;
-    const top = Math.min(Math.max(...extent.map((s) => s.top)) + overTop, ceiling());
+    const crestTop = Math.min(Math.max(...extent.map((s) => s.top)) + overTop + dome, ceiling() - chopRoom);
     const shoulder = (right - left) * 0.35;
     // the crest glows while the water rises and fades shortly after; it is never written into the field's heat
     const glow = CREST_HEAT * Math.max(0, 1 - (now - crestAt) / CREST_FADE_MS);
@@ -188,7 +206,8 @@ export function mountFooterTide(foot: HeroField): () => void {
       const falloff = out ? Math.exp(-((out / shoulder) ** 2)) : 1;
       // a little chop along the crest so it reads as water, not a bump
       const chop = Math.sin(x * 0.7 + now * 0.012) * 1.2 * level;
-      const wave = Math.max(0, ((top - field.horizonRow) * falloff + chop) * level);
+      const surface = crestRow(x, left, right, crestTop, dome);
+      const wave = Math.max(0, ((surface - field.horizonRow) * falloff + chop) * level);
       const beside = logo ? (x < logo.left - 1 ? logo.left - 1 - x : x > logo.right + 1 ? x - logo.right - 1 : 0) : 0;
       tideSwell.rows[x] = wave + dip * Math.exp(-((beside / dipShoulder) ** 2)) * (1 - level);
       tideSwell.crest[x] = level > 0.05 && falloff > 0.2 ? glow * falloff : 0;
