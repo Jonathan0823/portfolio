@@ -1,5 +1,6 @@
 export { HEAT_PALETTE } from '@/lib/palette';
 import { drawRunoff, drips, sag } from './field-runoff';
+import { bubbles, dome, drawBoil } from './field-boil';
 
 export function hash(a: number, b: number, c = 0): number {
   const h = Math.sin(a * 127.1 + b * 311.7 + c * 74.7) * 43758.5453;
@@ -99,6 +100,8 @@ export interface FieldShape {
   runoff?: boolean;
   /** a low rolling surface instead of the broad waves */
   low?: boolean;
+  /** bubbles swell on the surface and pop, and hot spots rise through the body */
+  boil?: boolean;
   /** rows next to row 0 that fade out into paper */
   fadeRows?: number;
   /** footer tide: extra rows per column added on top of the horizon */
@@ -144,6 +147,7 @@ export function stepField(field: Field, time: number, seed: number, decay = 0.94
   lowestBucket.fill(0);
   alpha.fill(1);
   const runoff = shape.runoff ? drips(columns, time, seed) : null;
+  const boil = shape.boil && time > 0 ? bubbles(columns, time, seed) : null;
 
   for (let x = 0; x < columns; x++) {
     const swell = shape.swell?.[x] ?? 0;
@@ -151,7 +155,7 @@ export function stepField(field: Field, time: number, seed: number, decay = 0.94
     const settled = shape.cap ? Math.max(0, Math.min(1, swell / 8)) : 0;
     const waves = wander(x, time, seed, hostRows, !!shape.low);
     // a dripping surface sits a little higher, leaving the drops room to fall
-    const outline = runoff ? waves * 0.8 - horizonRow * 0.12 + sag(runoff, x) : waves;
+    const outline = runoff ? waves * 0.8 - horizonRow * 0.12 + sag(runoff, x) : waves + (boil ? dome(boil, x) : 0);
     const top = (horizonRow + outline * (1 - settled)) * coverage + swell;
     surface[x] = swell > 0 && shape.cap ? Math.min(top, shape.cap) : top;
   }
@@ -201,5 +205,6 @@ export function stepField(field: Field, time: number, seed: number, decay = 0.94
   }
   // reduced motion holds time at 0, where a drop would hang frozen in mid-air
   if (runoff && time > 0) drawRunoff(field, runoff, coverage);
+  if (boil) drawBoil(field, boil, time, shape);
   field.hottest = hottest;
 }

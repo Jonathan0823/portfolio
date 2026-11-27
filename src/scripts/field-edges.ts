@@ -6,7 +6,7 @@ const clamp = (v: number) => Math.max(0, Math.min(1, v));
 const ease = (t: number) => t * t * (3 - 2 * t);
 
 /**
- * The outline of a field. The footer's surface rolls low and its anchored edge fades
+ * The outline of a field. The footer's surface rolls low and boils, its anchored edge fades
  * into the page; the other fields drip. With motion, top fields drain as you scroll away and the footer rises into view.
  */
 export function fieldShape(
@@ -19,6 +19,7 @@ export function fieldShape(
   if (kind === 'foot')
     return {
       low: true,
+      boil: true,
       fadeRows: 2.5,
       coverage: motion ? ease(clamp((viewportHeight - box.top) / box.height)) : 1,
     };

@@ -38,6 +38,10 @@ _Avoid_: Typing effect, cursor animation
 The hero field's own drops, which swell, fall and shrink away above the headline. Not the Drip, which happens once and builds the period.
 _Avoid_: Drips, rain
 
+**Boil**:
+The footer field's own motion: bubbles swell on its surface and pop, and hot spots rise through it.
+_Avoid_: Bubbles effect, footer embers
+
 **Wordmark**:
 The word EGUIN standing in the footer field's skyline, made of field cells; it dissolves out around a closing button's logo and back in. On touch it is one step of the footer cycle.
 _Avoid_: Footer logo, footer title

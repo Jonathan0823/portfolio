@@ -13,6 +13,7 @@ describe('fieldShape', () => {
 
   it('raises the footer as it comes into view, and fades its page edge', () => {
     expect(fieldShape('foot', box, 0, 800, true).low).toBe(true);
+    expect(fieldShape('foot', box, 0, 800, true).boil).toBe(true);
     expect(fieldShape('foot', { top: 900, height: 300 }, 0, 800, true).coverage).toBe(0);
     expect(fieldShape('foot', { top: 650, height: 300 }, 0, 800, true).coverage).toBeCloseTo(0.5);
     expect(fieldShape('foot', { top: 400, height: 300 }, 0, 800, true).coverage).toBe(1);
