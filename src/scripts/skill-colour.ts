@@ -82,6 +82,11 @@ export function burstCell(i: number, count: number, step: number): { dx: number;
   return { dx: Math.round(Math.cos(angle) * radius), dy: Math.round(Math.sin(angle) * radius) };
 }
 
+/** A tile whose row has not played its entrance yet stays ink: colour only wipes in once the icons have landed. */
+export function isWaiting(tile: { closest(selector: string): unknown }): boolean {
+  return tile.closest('.skill-wait') !== null;
+}
+
 export interface SkillColour {
   /** colour a row's tiles once, as its entrance ends; only on a fine pointer */
   sweep(row: HTMLElement): void;
@@ -117,7 +122,7 @@ export function mountSkillColour(section: HTMLElement): SkillColour {
 
   const paint = (fractionOf: (tile: HTMLElement, box: DOMRect) => number) => {
     for (const tile of tiles) {
-      if (sweeping.has(tile)) continue;
+      if (sweeping.has(tile) || isWaiting(tile)) continue;
       // a lit tile is held by the stylesheet
       const fraction = tile.hasAttribute('data-lit') ? 0 : fractionOf(tile, tile.getBoundingClientRect());
       hotOf(tile).style.clipPath = insetClip(fraction);
@@ -192,7 +197,31 @@ export function mountSkillColour(section: HTMLElement): SkillColour {
 
   return {
     sweep(row) {
-      if (!fine || reduced || swept.has(row)) return;
+      if (reduced) return;
+      if (!fine) {
+        // touch: the row has just landed. Wipe each tile in, staggered, up to what the band wants now, then hand over
+        const rowTiles = [...row.querySelectorAll<HTMLElement>('.skill-tile')];
+        const plan = sweepSchedule(rowTiles.length);
+        rowTiles.forEach((tile, i) => {
+          const target = tile.hasAttribute('data-lit')
+            ? 0
+            : bandFraction(tile.getBoundingClientRect().top + tile.offsetHeight / 2, window.innerHeight);
+          if (target <= 0) return;
+          sweeping.add(tile);
+          const hot = hotOf(tile);
+          hot.style.transitionDelay = plan.fill[i] + 'ms';
+          hot.style.clipPath = insetClip(target);
+        });
+        later(() => {
+          for (const tile of rowTiles) {
+            hotOf(tile).style.transitionDelay = '';
+            sweeping.delete(tile);
+          }
+          queue();
+        }, plan.drainAt - SWEEP_HOLD_MS);
+        return;
+      }
+      if (swept.has(row)) return;
       swept.add(row);
       const rowTiles = [...row.querySelectorAll<HTMLElement>('.skill-tile')];
       const plan = sweepSchedule(rowTiles.length);
