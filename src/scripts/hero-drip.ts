@@ -1,6 +1,6 @@
 // Hero drip: after the ignite, lava gathers in a hot spot under the hero field, drops break off it, fall (stepped,
 // cell-sized) onto the headline and BUILD its red period: each landing fills one band of a pixel square, bottom up.
-// When it is full the period is shown as a slow blinking pixel caret. Drawn on its own overlay canvas; the hot spot
+// When it is full and cooled the real period takes over. Drawn on its own overlay canvas; the hot spot
 // itself is heat held in the real field. Skipped entirely under prefers-reduced-motion, which keeps the plain period.
 import { HEAT_PALETTE } from './pixel-math';
 import type { HeroField } from './hero-field';
@@ -8,8 +8,6 @@ import { holdHeat } from './heat-hold';
 
 /** html class that hides the period (layout space kept) until the drip has built it; see Hero.astro */
 export const DRIP_PENDING_CLASS = 'drip-pending';
-/** class on the period once the caret has taken over; styled in global.css */
-const CARET_CLASS = 'drip-caret';
 const PERIOD_SELECTOR = 'h1 [data-drip-period]';
 
 const DROP_GAP_MS = 170;
@@ -24,8 +22,7 @@ const BEAD_S = 0.07;
 const SPLASH_MS = 260;
 const SQUASH_MS = 140;
 const COOL_MS = 280;
-const BLINK_MS = 500;
-const CARET_DELAY_MS = 200;
+const SETTLE_BEAT_MS = 200;
 const MIN_BANDS = 2;
 const MAX_BANDS = 4;
 
@@ -65,9 +62,9 @@ export function settleLevel(k: number): number {
   return 5 - Math.floor(Math.min(1, Math.max(0, k)) * 2.99);
 }
 
-/** ms from `now` until the caret may start, once the last drop landed at `lastLanded` */
-export function caretDelay(now: number, lastLanded: number): number {
-  return Math.max(0, COOL_MS + CARET_DELAY_MS - (now - lastLanded));
+/** ms from `now` until the real period may take over, once the last drop landed at `lastLanded` */
+export function settleDelay(now: number, lastLanded: number): number {
+  return Math.max(0, COOL_MS + SETTLE_BEAT_MS - (now - lastLanded));
 }
 
 interface Drop extends DropPlan {
@@ -94,17 +91,17 @@ interface Ink {
 }
 
 /**
- * Plays the drip; `onCaret` fires when the caret starts blinking. Returns a function that stops it and restores
+ * Plays the drip; `onBuilt` fires when the real period takes over. Returns a function that stops it and restores
  * the plain period. Without a period to build (or a measurable one) it only clears the pending class.
  */
-export function mountHeroDrip(hero: HeroField, onCaret: () => void): () => void {
+export function mountHeroDrip(hero: HeroField, onBuilt: () => void): () => void {
   const root = document.documentElement;
   const section = document.getElementById('top');
   const h1 = section?.querySelector<HTMLElement>('h1');
   const period = h1?.querySelector<HTMLElement>(PERIOD_SELECTOR);
   if (!section || !h1 || !period) {
     root.classList.remove(DRIP_PENDING_CLASS);
-    onCaret();
+    onBuilt();
     return () => {};
   }
 
@@ -117,10 +114,7 @@ export function mountHeroDrip(hero: HeroField, onCaret: () => void): () => void 
   // not the period's own colour: it is transparent while the drip is pending
   const accent = getComputedStyle(root).getPropertyValue('--color-accent').trim() || HEAT_PALETTE[3];
   let raf = 0,
-    blink = 0,
-    caretTimer = 0,
-    caret = false,
-    caretLit = true,
+    settleTimer = 0,
     width = 0,
     height = 0,
     dpr = 1,
@@ -225,8 +219,6 @@ export function mountHeroDrip(hero: HeroField, onCaret: () => void): () => void 
       const x = ink.left + d.column * cw;
       const bandTop = ink.bottom - (d.band + 1) * bh; // top of the band this drop fills
       if (d.landedAt) {
-        // the caret has taken over the square: a band painted under it would keep it lit through the off phase
-        if (caret) continue;
         // the settled band: white-hot, cooling to the accent; the neighbouring columns fill in with it
         const k = Math.min(1, (now - d.landedAt) / COOL_MS);
         if (k < 1) busy = true;
@@ -306,19 +298,9 @@ export function mountHeroDrip(hero: HeroField, onCaret: () => void): () => void 
       );
     }
 
-    if (drops.length && !caret && !caretTimer && drops.every((d) => d.landedAt)) {
+    if (drops.length && !settleTimer && drops.every((d) => d.landedAt)) {
       const last = Math.max(...drops.map((d) => d.landedAt));
-      caretTimer = window.setTimeout(startCaret, caretDelay(now, last));
-    }
-    if (caret && caretLit) {
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = accent;
-      ctx.fillRect(
-        Math.round(ink.left),
-        Math.round(ink.top),
-        Math.round(ink.right - ink.left),
-        Math.round(ink.bottom - ink.top),
-      );
+      settleTimer = window.setTimeout(finish, settleDelay(now, last));
     }
     ctx.globalAlpha = 1;
     return busy;
@@ -332,33 +314,23 @@ export function mountHeroDrip(hero: HeroField, onCaret: () => void): () => void 
     if (!raf) raf = requestAnimationFrame(frame);
   };
 
-  // the finished square hands over to the blinking caret; the real period stays hidden behind it
-  const startCaret = () => {
-    caret = true;
-    caretLit = true;
-    period.classList.add(CARET_CLASS);
-    root.classList.remove(DRIP_PENDING_CLASS);
-    blink = window.setInterval(() => {
-      caretLit = !caretLit;
-      if (!raf) render(performance.now());
-    }, BLINK_MS);
-    kick();
-    onCaret();
-  };
-
   const ro = 'ResizeObserver' in window ? new ResizeObserver(() => kick()) : null;
   ro?.observe(section);
   ro?.observe(h1);
   startDrops();
   kick();
 
-  return () => {
+  const stop = () => {
     cancelAnimationFrame(raf);
-    clearInterval(blink);
-    clearTimeout(caretTimer);
+    clearTimeout(settleTimer);
     ro?.disconnect();
-    period.classList.remove(CARET_CLASS);
     root.classList.remove(DRIP_PENDING_CLASS);
     canvas.remove();
   };
+  /** the built square hands over to the real period */
+  const finish = () => {
+    stop();
+    onBuilt();
+  };
+  return stop;
 }

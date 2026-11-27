@@ -1,5 +1,5 @@
-// Hero life after the intro cover lifts: the ignite boot, then the drip that builds the headline's period, then the
-// blinking caret. Everything is skipped under prefers-reduced-motion, which keeps today's static hero.
+// Hero life after the intro cover lifts: the ignite boot, then the drip that builds the headline's period.
+// Everything is skipped under prefers-reduced-motion, which keeps today's static hero.
 import type { FieldShape } from './pixel-math';
 import type { HeroField } from './hero-field';
 import { REDUCE_QUERY, prefersReducedMotion } from './motion';
@@ -59,7 +59,7 @@ export function heroLifeShape(hero: HeroField | undefined, motion: boolean, base
 }
 
 /**
- * Once the ignite is over, plays the drip when the hero is in view. Resolves once the caret has started blinking
+ * Once the ignite is over, plays the drip when the hero is in view. Resolves once the period is built
  * (at once without motion, or when there is nothing to build): the mould's drops wait on it. Reduced motion switched on
  * at any point stops all of it for good, leaving the plain period.
  */

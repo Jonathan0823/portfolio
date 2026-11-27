@@ -31,7 +31,7 @@ The hero field's boot once the intro cover has fully dissolved: a cold, dim fiel
 _Avoid_: Intro, loading animation, boot
 
 **Drip**:
-After the Ignite, lava gathers above the hero headline's red period and drops fall from it to build the period, which then blinks as a pixel caret.
+After the Ignite, lava gathers above the hero headline's red period and drops fall from it to build the period.
 _Avoid_: Typing effect, cursor animation
 
 **Wordmark**:

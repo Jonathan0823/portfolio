@@ -75,9 +75,8 @@ html.has-pixel-pointer :is(input, textarea, select, [contenteditable]) {
 [data-pixel-btn]:is(:hover, :focus-visible, .tide-shown) .btn-icon {
   color: var(--heat);
 }
-/* the hero drip builds the headline's period: absent until built, then drawn as a blinking caret on a canvas */
-html.drip-pending [data-drip-period],
-[data-drip-period].drip-caret {
+/* the hero drip builds the headline's period: absent until built */
+html.drip-pending [data-drip-period] {
   color: transparent;
 }
 /* the closing button whose logo the footer tide is showing (touch) */

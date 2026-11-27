@@ -9,7 +9,7 @@ import { mountHeroMould } from './hero-mould';
 import { mountHeroMouldTouch } from './hero-mould-touch';
 import { APPEAR_AFTER_MS } from './pour-mould';
 
-/** `spill` is read late (it mounts on idle and remounts with the pointer type); `life` resolves as the caret blinks */
+/** `spill` is read late (it mounts on idle and remounts with the pointer type); `life` resolves once the period is built */
 export function mountHeroInvite(hero: HeroField | null, spill: () => GlyphSpill | null, life: Promise<void>): void {
   if (!hero || prefersReducedMotion()) return;
   const fine = window.matchMedia(FINE_POINTER_QUERY);

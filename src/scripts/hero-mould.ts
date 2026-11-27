@@ -1,5 +1,5 @@
 // The Mould on a fine pointer: the ghost of the GitHub logo where the contact links spill, with a "?" and a caption.
-// Once the headline's caret blinks, a few drops gather under the lava and fill it part of the way; there it stays,
+// Once the headline's period is built, a few drops gather under the lava and fill it part of the way; there it stays,
 // unfinished. The first hover or focus of a contact link pours the real logo, and the mould leaves for good.
 import { BITMAPS, isCompactHero, type GlyphName } from './glyph-model';
 import { HEAT_PALETTE, hash } from './pixel-math';
@@ -57,7 +57,7 @@ export function cellExitStart([c, r]: Cell, height: number, poured: boolean): nu
 export interface MouldOptions {
   /** resolves when the mould is due to appear */
   due: Promise<void>;
-  /** resolves once the headline's caret blinks: the drops wait for it */
+  /** resolves once the headline's period is built: the drops wait for it */
   life: Promise<void>;
   /** a contact link was hovered or focused: the visitor needs no more inviting */
   onFound(): void;
