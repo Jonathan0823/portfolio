@@ -27,7 +27,7 @@ _Avoid_: Event, timeline item, story entry
 ## Page effects
 
 **Ignite**:
-The hero field's boot once the intro cover has fully dissolved: a cold, dim field, a spark, then heat flooding outward until the real field takes over.
+The hero field's boot once the intro cover has fully dissolved: the whole field pours down from the top, hot edge first, until the real field takes over.
 _Avoid_: Intro, loading animation, boot
 
 **Drip**:
