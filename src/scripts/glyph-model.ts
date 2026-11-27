@@ -3,6 +3,9 @@ export interface Bitmap {
   rows: string[];
 }
 
+/** the width of the hero's glyph grid, in cells */
+export const GLYPH_COLUMNS = 28;
+
 export const BITMAPS = {
   mail: {
     scale: 1,

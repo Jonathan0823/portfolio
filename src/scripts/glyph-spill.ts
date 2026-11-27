@@ -1,6 +1,7 @@
 import { HEAT_PALETTE, fbm, hash } from './pixel-math';
 import {
   BITMAPS,
+  GLYPH_COLUMNS,
   assignPixels,
   fittingCell,
   glyphCanvasLayout,
@@ -13,7 +14,6 @@ import {
 import { FINE_POINTER_QUERY } from './motion';
 import type { HeroField } from './hero-field';
 
-const GLYPH_COLUMNS = 28;
 const GLYPH_ROWS = 28;
 const SHIMMER_INTERVAL_MS = 50;
 const CYCLE_MS = 3500;
