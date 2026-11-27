@@ -81,7 +81,7 @@ const dayLabels = [
   <div class="overflow-x-auto pb-1">
     <svg
       data-graph
-      data-cursor-hide
+      data-cursor-own-click
       role="img"
       aria-label={calendarLabel(calendar.total)}
       viewBox={'0 0 ' + (gutter + cols * cell) + ' ' + (labelH + 7 * cell)}
@@ -160,7 +160,7 @@ const dayLabels = [
   const EDGE_COOLDOWN_MS = 900;
   // while the mouse is over the graph the cells away from it dim, so the cursor stays readable against the heat colours
   const SPOT_FADE_MS = 150;
-  // the day under the pointer is the pointer: it grows, rises and gets an outline, easing in and out per cell
+  // the day under the pointer is marked: it grows, rises and gets an outline, easing in and out per cell
   const PICK_FADE_MS = 120;
   const PICK_SCALE = 1.6;
 
@@ -211,7 +211,7 @@ const dayLabels = [
         const level = c.level < 0 ? (w > 0.35 ? 1 : -1) : Math.min(5, c.level + Math.round(w * 3));
         const fill = level < 0 ? c.fill : HEAT_PALETTE[level];
         const pick = c.pick;
-        const base = 1 + 0.8 * w + 0.5 * rise;
+        const base = 1 + 0.8 * w + 0.15 * rise;
         const scale = base + (PICK_SCALE - base) * pick;
         let clone = raised.get(c.el);
         if (rise > 0.02 || pick > 0.01) {
@@ -222,8 +222,9 @@ const dayLabels = [
             raised.set(c.el, (clone = body));
           }
           const body = clone;
-          const raise = Math.max(rise, pick);
-          const lifted = 2.5 * rise + 1.5 * pick;
+          // the neighbours only swell a little, so the selected day stands clear of them
+          const raise = Math.max(0.3 * rise, pick);
+          const lifted = 0.8 * rise + 3.2 * pick;
           const shadow = 0.45 + 0.2 * pick;
           c.el.style.opacity = '0';
           body.style.opacity = '1';

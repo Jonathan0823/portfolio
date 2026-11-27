@@ -14,8 +14,8 @@ const DRAWN_CLASS = 'has-pixel-pointer';
 const CLICKABLE = 'a,button,summary,[data-cursor]';
 /** things that get the full-strength shockwave; a click on empty page gets ~60% */
 const STRONG = 'a,button,summary,[data-cursor],[data-cursor-magnet],[data-pixel-btn]';
-/** clicks here are not ours: the graph marks its own pointer, and text fields need their caret and selection */
-const OWN_POINTER = '[data-cursor-hide],input,textarea,select,[contenteditable]';
+/** clicks here are not ours: the graph ripples on its own, and text fields need their caret and selection */
+const OWN_CLICK = '[data-cursor-own-click],input,textarea,select,[contenteditable]';
 const TEXT_FIELD = 'input,textarea,select,[contenteditable]';
 
 /**
@@ -31,18 +31,16 @@ export function mountCursor(fields: HeroField[]): () => void {
   let inside = false,
     x = 0,
     y = 0;
-  let overOwnPointer = false,
-    overTextField = false,
+  let overTextField = false,
     overShape = false;
   let charger: Charger | null = null,
     chargeStrong = false;
   let scrollRaf = 0;
 
-  const syncVisible = () => pointer.setVisible(inside && !overOwnPointer && !overTextField);
+  const syncVisible = () => pointer.setVisible(inside && !overTextField);
   const syncMagnets = () => magnets.update(x, y, inside && !overShape);
 
   const evaluate = (target: Element | null) => {
-    overOwnPointer = !!target?.closest('[data-cursor-hide]');
     overTextField = !!target?.closest(TEXT_FIELD);
     const named = target?.closest<HTMLElement>('[data-cursor]')?.dataset.cursor;
     overShape = isShapeName(named);
@@ -96,7 +94,7 @@ export function mountCursor(fields: HeroField[]): () => void {
     charger?.dispose();
     charger = null;
     const target = e.target instanceof Element ? e.target : null;
-    if (target?.closest(OWN_POINTER)) return;
+    if (target?.closest(OWN_CLICK)) return;
     pointer.press(true);
     chargeStrong = !!target?.closest(STRONG);
     // the charge reads the live pointer each frame, so moving while holding drags it along
