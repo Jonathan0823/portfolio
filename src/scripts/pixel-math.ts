@@ -106,6 +106,16 @@ export interface FieldShape {
   mold?: Int8Array;
 }
 
+/** the warm band that wanders through a field's body, 0..1, at `depth` (rows over the horizon row) and `across` 0..1 */
+export function ridgeAt(across: number, depth: number, time: number, seed: number): number {
+  const line = 0.42 + 0.2 * Math.sin(across * 6.2 + time * 0.6 + seed) + 0.08 * Math.sin(across * 17 - time);
+  return Math.exp(-Math.pow(depth - line, 2) / 0.018);
+}
+
+/** a cell's palette level: its own terrain value, lifted to its held heat once that is hot enough to show */
+export const cellLevel = (value: number, heat: number, grain: number): number =>
+  bucketFor(heat >= 0.3 ? Math.max(value, 0.1 + heat + grain * 0.1) : value);
+
 export function stepField(
   field: Field,
   time: number,
@@ -170,13 +180,12 @@ export function stepField(
       }
       const depth = y / field.horizonRow;
       const base = fbm(x * 0.07 - time * 0.9 + seed, y * 0.11 + x * 0.03);
-      const ridgeLine = 0.42 + 0.2 * Math.sin(across * 6.2 + time * 0.6 + seed) + 0.08 * Math.sin(across * 17 - time);
-      const ridge = Math.exp(-Math.pow(depth - ridgeLine, 2) / 0.018);
+      const ridge = ridgeAt(across, depth, time, seed);
       const grain = hash(x, y) - 0.5;
       const value = 0.1 + 0.5 * base + 0.42 * ridge * density + 0.18 * density + (h < 0.3 ? h : 0) + grain * 0.2;
       if (base + grain * 0.25 < 0.36 + (1 - density) * 0.38 && ridge * density < 0.35 && h < 0.25 && !water && !forced)
         continue;
-      const level = bucketFor(h >= 0.3 ? Math.max(value, 0.1 + h + grain * 0.1) : value);
+      const level = cellLevel(value, h, grain);
       const lifted = m === 1 ? Math.min(4, level + 1) : m >= 10 ? m - 10 : level;
       bucket[i] = lifted;
       if (y > lowestRow[x]) {
