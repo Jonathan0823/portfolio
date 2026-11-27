@@ -1,5 +1,6 @@
 import { HEAT_PALETTE, createField, stepField, type Field, type FieldShape } from './pixel-math';
 import { decayFactor } from './timing';
+import { paintCell } from './field-paint';
 
 export interface HeroField {
   canvas: HTMLCanvasElement;
@@ -66,13 +67,7 @@ export function mountHeroField(
     for (let k = 0; k < HEAT_PALETTE.length; k++) {
       ctx.fillStyle = HEAT_PALETTE[k];
       for (let i = 0; i < columns * rows; i++) {
-        if (bucket[i] === k)
-          ctx.fillRect(
-            (i % columns) * cellSize + 1,
-            Math.floor(i / columns) * cellSize + 1,
-            cellSize - 1,
-            cellSize - 1,
-          );
+        if (bucket[i] === k) paintCell(ctx, (i % columns) * cellSize, Math.floor(i / columns) * cellSize, cellSize);
       }
     }
   };

@@ -81,7 +81,7 @@ function flush(ctx: CanvasRenderingContext2D, f: Field) {
         const x = list[i],
           y = list[i + 1];
         if (x < 0 || y < 0 || x >= columns || y >= rows) continue;
-        ctx.fillRect(x * cellSize + 1, y * cellSize + 1, cellSize - 1, cellSize - 1);
+        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
       }
       list.length = 0;
     }

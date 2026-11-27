@@ -169,7 +169,7 @@ export function mountHeroMould(hero: HeroField, spill: () => GlyphSpill | null, 
     // the mould's top-left cell, in section px: centred in the spill's grid, standing on its bottom edge
     const left = slot.left + Math.floor((slot.columns - shape.width) / 2) * cell,
       top = slot.top + (slot.rows - shape.height) * cell;
-    const square = (x: number, y: number, color: string, inset = 1) => {
+    const square = (x: number, y: number, color: string, inset = 0) => {
       ctx.fillStyle = color;
       ctx.fillRect(x + inset, y + inset, cell - inset * 2, cell - inset * 2);
     };
@@ -245,8 +245,8 @@ export function mountHeroMould(hero: HeroField, spill: () => GlyphSpill | null, 
       const x = fromX + (toX - fromX) * k * k,
         y = fromY + fell;
       square(x, y, HEAT_PALETTE[4]);
-      if (fell > cell) square(x, y - cell, HEAT_PALETTE[3], 2);
-      if (fell > cell * 2) square(x, y - cell * 2, HEAT_PALETTE[2], 3);
+      if (fell > cell) square(x, y - cell, HEAT_PALETTE[3], 1);
+      if (fell > cell * 2) square(x, y - cell * 2, HEAT_PALETTE[2], 2);
       ctx.globalAlpha = 1;
       return 0;
     }

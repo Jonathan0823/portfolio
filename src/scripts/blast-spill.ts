@@ -102,8 +102,8 @@ function createStrip(hero: HeroField, box: SpillBox): (column: number, row: numb
           if (level[i] !== k) continue;
           const column = i % width,
             row = Math.floor(i / width);
-          const y = (hero.flipped ? height - 1 - row : row) * cell + (hero.flipped ? 0 : 1);
-          ctx.fillRect(column * cell + 1, y, cell - 1, cell - 1);
+          const y = (hero.flipped ? height - 1 - row : row) * cell;
+          ctx.fillRect(column * cell, y, cell, cell);
         }
       }
       if (!hottest && (stamped || now - born > UNLIT_MS)) return canvas.remove();

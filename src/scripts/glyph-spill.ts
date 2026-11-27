@@ -83,7 +83,6 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
   let layout: GlyphCanvasLayout;
   let cell = 10,
     fieldCell = 10;
-  let overField = false;
 
   const canRun = () => onScreen && !document.hidden;
   const isCompact = () => isCompactHero(hero.field().cellSize);
@@ -127,7 +126,6 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
       textBottom: text.bottom,
       limitBottom: Math.min(heroRect.height, window.innerHeight) - 2 * fieldCell,
     });
-    overField = layout.height - GLYPH_ROWS * cell < field.height;
     canvas.style.left = layout.left + 'px';
     canvas.style.top = layout.top + 'px';
     canvas.style.width = layout.width + 'px';
@@ -330,24 +328,16 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
       });
       return true;
     });
-    if (overField) {
-      ctx.fillStyle = '#ffffff';
-      for (const d of draws) {
-        if (d.falling) continue;
-        ctx.globalAlpha = d.alpha;
-        ctx.fillRect((d.column - 1) * cell, (d.row - 1) * cell, cell * 3, cell * 3);
-      }
-    }
     for (const d of draws) {
       // a molten streak trails behind a falling drop, cooling toward its tail
       for (let k = 1; k <= d.streak; k++) {
         ctx.globalAlpha = d.alpha * (1 - k / (d.streak + 1));
         ctx.fillStyle = HEAT_PALETTE[Math.max(0, Math.min(5, d.level - k))];
-        ctx.fillRect(d.column * cell + 1, (d.row - k) * cell + 1, cell - 1, cell - 1);
+        ctx.fillRect(d.column * cell, (d.row - k) * cell, cell, cell);
       }
       ctx.fillStyle = HEAT_PALETTE[d.level];
       ctx.globalAlpha = d.alpha;
-      ctx.fillRect(d.column * cell + 1, d.row * cell + 1, cell - 1, cell - 1);
+      ctx.fillRect(d.column * cell, d.row * cell, cell, cell);
     }
     ctx.globalAlpha = 1;
     if (moving) raf = requestAnimationFrame(loop);

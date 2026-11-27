@@ -60,7 +60,7 @@ const { links, brandHref = '#top' } = Astro.props;
     <div
       data-progress
       aria-hidden="true"
-      class="pointer-events-none absolute top-full right-0 left-0 flex gap-px overflow-hidden opacity-0 transition-opacity duration-200 motion-reduce:transition-none"
+      class="pointer-events-none absolute top-full right-0 left-0 flex overflow-hidden opacity-0 transition-opacity duration-200 motion-reduce:transition-none"
     ></div>
   </div>
 </nav>
@@ -97,7 +97,7 @@ const { links, brandHref = '#top' } = Astro.props;
       cells = [];
       for (let i = 0; i < count; i++) {
         const cell = document.createElement('span');
-        cell.style.cssText = `width:9px;height:4px;flex:none;background:${heat[Math.floor(i / 3 + hash(i, 7) * 2) % 5]}`;
+        cell.style.cssText = `width:10px;height:4px;flex:none;background:${heat[Math.floor(i / 3 + hash(i, 7) * 2) % 5]}`;
         cell.className = 'opacity-0 transition-opacity duration-200 motion-reduce:transition-none';
         bar.appendChild(cell);
         cells.push(cell);
