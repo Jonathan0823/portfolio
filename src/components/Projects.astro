@@ -30,7 +30,7 @@ const projects = await Promise.all(
   </a>
   {projects.map(({ p, links, year, description, sections }) => (
     <article id={projectAnchor(p.id)} data-project={p.id} class="border-t border-ink py-6 md:py-7">
-      <div data-cursor="eye" class="md:grid md:grid-cols-12 md:items-baseline md:gap-x-6">
+      <div data-cursor="eye" data-summary class="cursor-pointer md:grid md:grid-cols-12 md:items-baseline md:gap-x-6">
         <div class="flex items-baseline justify-between md:col-span-3 md:block">
           <h3 class="text-[28px] leading-[1.1] font-semibold tracking-[-0.03em] md:text-[32px]">{p.data.name}</h3>
           <p class="font-mono text-[13px] leading-relaxed text-muted md:hidden">{year}</p>
@@ -68,7 +68,7 @@ const projects = await Promise.all(
               {links.map((l, i) => (
                 <>
                   {i > 0 && ' · '}
-                  <a href={l.href} class="text-ink">
+                  <a href={l.href} class="text-ink max-md:inline-flex max-md:min-h-11 max-md:items-center">
                     {l.text} ↗
                   </a>
                 </>
@@ -81,7 +81,7 @@ const projects = await Promise.all(
               data-cursor="minus"
               aria-expanded="true"
               aria-controls={`${projectAnchor(p.id)}-detail`}
-              class="shrink-0 cursor-pointer font-mono text-[13px] leading-relaxed whitespace-nowrap text-ink"
+              class="shrink-0 cursor-pointer font-mono text-[13px] leading-relaxed whitespace-nowrap text-ink max-md:inline-flex max-md:min-h-11 max-md:items-center"
             >
               Close −
             </button>
@@ -167,11 +167,20 @@ const projects = await Promise.all(
     };
     button.hidden = false;
     set(false);
-    button.addEventListener('click', () => {
+    const toggle = () => {
       const open = button.getAttribute('aria-expanded') !== 'true';
       set(open);
       assembler.reset();
       if (open && !prefersReducedMotion()) assembler.show(0, 'left', 700, assembler.reset);
+    };
+    button.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggle();
+    });
+    // the whole summary is the tap target, not just the small button; links and selecting text keep working
+    project.querySelector<HTMLElement>('[data-summary]')!.addEventListener('click', (e) => {
+      if ((e.target as Element).closest('a,button') || getSelection()?.toString()) return;
+      toggle();
     });
   });
 </script>
