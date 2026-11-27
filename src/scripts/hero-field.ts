@@ -6,6 +6,8 @@ export interface HeroField {
   canvas: HTMLCanvasElement;
   field(): Field;
   time(): number;
+  /** the field's noise seed, for anything that has to match its colours */
+  seed: number;
   rect(): DOMRect;
   flipped: boolean;
   markDirty(): void;
@@ -199,6 +201,7 @@ export function mountHeroField(
     canvas,
     field: () => field,
     time: () => t,
+    seed,
     // the host box, not the canvas: the bleed is not part of the field the cursor enters
     rect: () => host.getBoundingClientRect(),
     flipped,
