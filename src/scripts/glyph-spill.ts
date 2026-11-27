@@ -3,6 +3,7 @@ import {
   BITMAPS,
   GLYPH_COLUMNS,
   assignPixels,
+  besideLinksLayout,
   fittingCell,
   glyphCanvasLayout,
   isCompactHero,
@@ -25,6 +26,9 @@ const DESKTOP = { rightMargin: 96, minTop: 64, gap: 40 };
 const COMPACT = { rightMargin: 20, minTop: 60, gap: 16 };
 /** how far the desktop logos shrink to stay beside the text, as a share of the field's cell */
 const MIN_CELL_SHARE = 0.6;
+/** the glyph beside the stacked links; at `hiddenWidth` and under it is not shown */
+const BESIDE = { minCell: 3, gap: 12, hiddenWidth: 340 };
+const CLOCK_ROWS = clockBitmap(new Date(0)).rows.length;
 
 interface Particle {
   targetColumn: number;
@@ -116,11 +120,28 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     return { right, top: Number.isFinite(top) ? top : 0, bottom };
   };
 
-  const layoutCanvas = (): GlyphCanvasLayout => {
-    const field = hero.field();
-    fieldCell = field.cellSize;
+  /** wherever the links are stacked, right of the pills under the email button */
+  const layoutBesideLinks = (heroRect: DOMRect): GlyphCanvasLayout | null => {
+    const pills = [...section.querySelectorAll<HTMLElement>('[data-hero-links] a[data-glyph-for]')]
+      .slice(1)
+      .map((link) => link.getBoundingClientRect());
+    if (!pills.length) return null;
+    return besideLinksLayout({
+      ...BESIDE,
+      heroWidth: heroRect.width,
+      linksRight: Math.max(...pills.map((box) => box.right)) - heroRect.left,
+      linksTop: pills[0].top - heroRect.top,
+      linksBottom: pills[pills.length - 1].bottom - heroRect.top,
+      columns: GLYPH_COLUMNS,
+      bitmapRows: current && current !== 'clock' ? BITMAPS[current].rows.length : CLOCK_ROWS,
+      rightMargin: COMPACT.rightMargin,
+      maxCell: Math.floor(fieldCell / 2),
+    });
+  };
+
+  /** beside the text, or above the headline where there is no room for that */
+  const layoutByText = (heroRect: DOMRect): GlyphCanvasLayout => {
     const compact = isCompact();
-    const heroRect = section.getBoundingClientRect();
     const text = measureText(heroRect, compact ? textBlocks.slice(0, 1) : textBlocks);
     cell = compact
       ? fieldCell / 2
@@ -132,7 +153,7 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
           textRight: text.right,
           ...DESKTOP,
         });
-    layout = glyphCanvasLayout({
+    return glyphCanvasLayout({
       heroWidth: heroRect.width,
       cell,
       columns: GLYPH_COLUMNS,
@@ -143,11 +164,32 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
       textBottom: text.bottom,
       limitBottom: Math.min(heroRect.height, window.innerHeight) - 2 * fieldCell,
     });
+  };
+
+  const layoutCanvas = (): GlyphCanvasLayout => {
+    const field = hero.field();
+    fieldCell = field.cellSize;
+    const heroRect = section.getBoundingClientRect();
+    const beside = isCompact() || !fineQuery.matches;
+    const slot = beside ? layoutBesideLinks(heroRect) : null;
+    const previous = layout;
+    if (slot) cell = slot.width / GLYPH_COLUMNS;
+    layout = slot ?? layoutByText(heroRect);
+    // the bitmap's height moves the grid beside the links: pixels on their way out stay where they are on screen
+    if (previous && (previous.left !== layout.left || previous.width !== layout.width)) particles = [];
+    else if (previous && previous.top !== layout.top) {
+      const shift = (previous.top - layout.top) / cell;
+      for (const particle of particles) {
+        particle.row += shift;
+        if (particle.fadeFromRow !== undefined) particle.fadeFromRow += shift;
+      }
+    }
     canvas.style.left = layout.left + 'px';
     canvas.style.top = layout.top + 'px';
     canvas.style.width = layout.width + 'px';
     canvas.style.height = layout.height + 'px';
-    canvas.classList.remove('hidden');
+    // no room beside the links: nothing shows, rather than a glyph over the text
+    canvas.classList.toggle('hidden', beside && !slot);
     const ratio = Math.min(2, window.devicePixelRatio || 1);
     const key = [layout.width, layout.height, ratio].join('x');
     if (key !== sizeKey) {

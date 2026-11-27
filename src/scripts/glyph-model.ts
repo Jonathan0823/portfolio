@@ -367,3 +367,44 @@ export function glyphCanvasLayout(o: LayoutInput): GlyphCanvasLayout {
   const rows = Math.max(o.glyphRows, Math.floor(bottom / o.cell));
   return { originColumn, left: originColumn * o.cell, top: 0, width, height: rows * o.cell, rows, rising: false };
 }
+
+export interface BesideLinksInput {
+  heroWidth: number;
+  /** the stacked pill buttons' box, in section px */
+  linksRight: number;
+  linksTop: number;
+  linksBottom: number;
+  columns: number;
+  /** how many rows the bitmap on show has */
+  bitmapRows: number;
+  rightMargin: number;
+  gap: number;
+  minCell: number;
+  maxCell: number;
+  /** the section width at and under which nothing is shown */
+  hiddenWidth: number;
+}
+
+/**
+ * The grid right of the stacked links, flush with the right margin, the bitmap centred on them; null where it has no
+ * room
+ */
+export function besideLinksLayout(o: BesideLinksInput): GlyphCanvasLayout | null {
+  const edge = o.heroWidth - o.rightMargin;
+  const cell = Math.min(o.maxCell, Math.floor((edge - o.linksRight - o.gap) / o.columns));
+  if (o.heroWidth <= o.hiddenWidth || cell < o.minCell) return null;
+  const width = o.columns * cell;
+  const left = edge - width;
+  const bottom = Math.round((o.linksTop + o.linksBottom + o.bitmapRows * cell) / 2);
+  // whole rows, ending at the bitmap's bottom edge
+  const rows = Math.floor(bottom / cell);
+  return {
+    originColumn: Math.floor(left / cell),
+    left,
+    top: bottom - rows * cell,
+    width,
+    height: rows * cell,
+    rows,
+    rising: false,
+  };
+}

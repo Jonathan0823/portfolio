@@ -3,6 +3,7 @@ import {
   BITMAPS,
   SMALL_BITMAPS,
   assignPixels,
+  besideLinksLayout,
   fittingCell,
   glyphCanvasLayout,
   pickSourceColumns,
@@ -186,5 +187,46 @@ describe('sourceBucket', () => {
     expect(sourceBucket(-1, 0)).toBe(WARM_BUCKET);
     expect(sourceBucket(undefined, 0)).toBe(WARM_BUCKET);
     expect(WARM_BUCKET).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('besideLinksLayout', () => {
+  const base = {
+    heroWidth: 390,
+    linksRight: 135,
+    linksTop: 600,
+    linksBottom: 694,
+    columns: 28,
+    bitmapRows: 10,
+    rightMargin: 20,
+    gap: 12,
+    minCell: 3,
+    maxCell: 4,
+    hiddenWidth: 340,
+  };
+
+  it.each([360, 390])('stands right of the links, inside the margin, at %i px', (heroWidth) => {
+    const l = besideLinksLayout({ ...base, heroWidth })!;
+    expect(l.left).toBeGreaterThanOrEqual(base.linksRight + base.gap);
+    expect(l.left + l.width).toBe(heroWidth - base.rightMargin);
+    expect(l.width).toBe(112);
+  });
+
+  it('centres the bitmap on the links, on whole rows', () => {
+    for (const bitmapRows of [10, 20, 25]) {
+      const l = besideLinksLayout({ ...base, bitmapRows })!;
+      expect(l.top + l.height - (bitmapRows * 4) / 2).toBe(647);
+      expect(l.height).toBe(l.rows * 4);
+      expect(l.top).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('shrinks its cells to fit', () => {
+    expect(besideLinksLayout({ ...base, linksRight: 250 })!.width).toBe(84);
+  });
+
+  it('is hidden on the narrowest phones, and where even the smallest cells do not fit', () => {
+    expect(besideLinksLayout({ ...base, heroWidth: 340 })).toBeNull();
+    expect(besideLinksLayout({ ...base, linksRight: 280 })).toBeNull();
   });
 });
