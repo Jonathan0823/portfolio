@@ -43,8 +43,12 @@ The footer field's own motion: bubbles swell on its surface and pop, and hot spo
 _Avoid_: Bubbles effect, footer embers
 
 **Wordmark**:
-The word EGUIN standing in the footer field's skyline, made of field cells; it dissolves out around a closing button's logo and back in. On touch it is one step of the footer cycle.
+The word EGUIN standing in the footer field's skyline, made of field cells; it dissolves out around a closing button's logo and back in.
 _Avoid_: Footer logo, footer title
+
+**Mascots**:
+Clawd and Pi, two pixel characters standing on the Wordmark's letter tops. They burst out of the lava when the Wordmark rises and sink with it when it goes.
+_Avoid_: Cameo, sprites, pets
 
 **Mould**:
 The ghost outline of a contact link's logo in the hero that drops of lava fill, inviting visitors to the links. On a fine pointer it stays part-filled until a link is hovered or focused; on touch a small one fills and cycles by itself.

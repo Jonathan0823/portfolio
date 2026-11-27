@@ -14,6 +14,7 @@ import { mountHeroInvite } from './hero-invite';
 import { FOOT_BLEED, mountFooterTide, tideSwell } from './footer-tide';
 import { heroLifeShape, mountHeroLife } from './hero-life';
 import { footWordmarkShape } from './footer-wordmark';
+import { mountFooterMascots } from './footer-mascots';
 
 const SEEDS: Record<string, number> = { hero: 1.3, strip: 4.7, foot: 8.1 };
 const hosts = [...document.querySelectorAll<HTMLElement>('[data-pixel-field]')];
@@ -75,17 +76,25 @@ if (typeof window.matchMedia === 'function') {
   // the mould's drops wait for the hero's life to settle (its period is built), so it mounts with the life that gates it
   whenIdle(() => mountHeroInvite(hero, () => glyph, mountHeroLife(hero)));
   const foot = fields[hosts.findIndex((h) => h.dataset.pixelField === 'foot')];
-  // hover drives the tide on a fine pointer and a timer on touch, so switching pointer (or motion) remounts it
+  // hover drives the tide, so it exists on a fine pointer only and switching pointer remounts it
   let stopTide: (() => void) | null = null;
   const mountTide = () => {
     stopTide?.();
-    stopTide = foot ? mountFooterTide(foot) : null;
+    stopTide = foot && window.matchMedia(FINE_POINTER_QUERY).matches ? mountFooterTide(foot) : null;
   };
   whenIdle(mountTide);
+  // Clawd and Pi stand on the wordmark; reduced motion keeps them still, so a change of it remounts them
+  let stopMascots: (() => void) | null = null;
+  const mountMascots = () => {
+    stopMascots?.();
+    stopMascots = foot ? mountFooterMascots(foot, prefersReducedMotion()) : null;
+  };
+  whenIdle(mountMascots);
   for (const q of [REDUCE_QUERY, FINE_POINTER_QUERY])
     window.matchMedia(q).addEventListener('change', () => {
       sync();
       mountTide();
+      mountMascots();
     });
   watchPixelRatio(() => fields.forEach((f) => f.resize()));
 }

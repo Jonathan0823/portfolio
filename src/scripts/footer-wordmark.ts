@@ -1,8 +1,8 @@
 // Footer wordmark: EGUIN rises out of the footer field's skyline as part of the field itself. The letters are field
 // cells in one flat dark colour standing behind the lava, which laps over their feet, left-aligned to the page gutter. They appear in
 // an ordered reveal (letter by letter, left to right, each cell popping in hot yellow and cooling to its resting colour) each
-// time 30% of the footer field is scrolled into view, sink back into the field (right to left, top cells first) when it scrolls out, and dissolve out and back in around a closing button's logo (hover on a fine pointer, the cycle
-// on touch). Reduced motion shows the word static. Driven from the field's shape callback every paint, through the
+// time 30% of the footer field is scrolled into view, sink back into the field (right to left, top cells first) when it scrolls out, and dissolve out and back in around a closing button's logo (hover on a fine pointer; touch has no
+// logos, the word just stands). Reduced motion shows the word static. Driven from the field's shape callback every paint, through the
 // `mold` of the shape.
 import type { FieldShape } from './pixel-math';
 import type { HeroField } from './hero-field';
@@ -133,36 +133,15 @@ export function popLevel(age: number, dissolvingIn: boolean): number {
   return age < COOL_MS * 0.4 ? 5 : age < COOL_MS * 0.75 ? 4 : 0;
 }
 
-/** ms until the entrance reveal has finished (Infinity while the footer has not been scrolled to); 0 without motion */
-export function wordmarkRevealWait(): number {
-  if (!inView || !revealAt) return Infinity;
-  return Math.max(0, revealAt + FULL_MS - performance.now());
-}
-
-/** whether the footer is currently scrolled far enough into view for the word to stand */
-export const wordmarkInView = () => inView;
-
-/** called whenever the word is wanted up (true) or down (false); returns an unsubscribe */
-export function onWordmarkView(cb: (inView: boolean) => void): () => void {
-  listeners.add(cb);
-  return () => listeners.delete(cb);
-}
-
 interface Layout extends Wordmark {
   key: string;
   base: number;
 }
 
 let inView = false;
-let revealAt = 0;
 let watching = false;
-const listeners = new Set<(inView: boolean) => void>();
-const setInView = (next: boolean) => {
-  if (next === inView) return;
-  inView = next;
-  if (next) revealAt = performance.now();
-  listeners.forEach((cb) => cb(next));
-};
+let wanted = false;
+let drop = 0;
 let clock = 0;
 let sink = 0;
 let lastNow = 0;
@@ -197,6 +176,25 @@ function place(foot: HeroField, small: boolean): Layout {
   return layout;
 }
 
+/** whether the word is up, or on its way up: false while it sinks out of view or dissolves around a closing button's logo */
+export const wordmarkWanted = () => wanted;
+
+/** how fully the word has formed, 0 (gone) .. 1 (every cell in) */
+export const wordmarkRise = () => clock / FULL_MS;
+
+export interface Stance extends Wordmark {
+  /** changes whenever the word is laid out differently (a resize, another size of word) */
+  key: string;
+  /** the row the word stands on, riding the field's surface down as the footer scrolls out of view */
+  base: number;
+}
+
+/** where the word stands in the footer field right now, for whatever stands on it */
+export function wordmarkStance(foot: HeroField): Stance {
+  const lay = place(foot, isSmall());
+  return { ...lay, base: lay.base - drop };
+}
+
 /** called from the footer field's shape callback every paint */
 export function footWordmarkShape(foot: HeroField | undefined, motion: boolean, coverage = 1): FieldShape {
   if (!foot) return {};
@@ -204,10 +202,7 @@ export function footWordmarkShape(foot: HeroField | undefined, motion: boolean, 
   const field = foot.field();
   const now = performance.now();
 
-  if (!motion && !inView) {
-    setInView(true);
-    revealAt = -FULL_MS;
-  }
+  if (!motion) inView = true;
   if (motion && !watching) {
     const host = foot.canvas.parentElement;
     if (host && 'IntersectionObserver' in window) {
@@ -218,14 +213,14 @@ export function footWordmarkShape(foot: HeroField | undefined, motion: boolean, 
       const io = new IntersectionObserver(
         ([entry]) => {
           const ratio = entry.isIntersecting ? entry.intersectionRatio : 0;
-          if (ratio >= need - 0.02) setInView(true);
-          else if (ratio < need - 0.005) setInView(false);
+          if (ratio >= need - 0.02) inView = true;
+          else if (ratio < need - 0.005) inView = false;
           foot.markDirty();
         },
         { threshold: [0, need * 0.8, need, 1] },
       );
       io.observe(host);
-    } else setInView(true);
+    } else inView = true;
   }
 
   // while a closing button's logo is on show (or being washed in or out) the word dissolves out
@@ -233,17 +228,18 @@ export function footWordmarkShape(foot: HeroField | undefined, motion: boolean, 
   const busy = tideBusy();
   if (busy) busyUntil = now + RETURN_MS;
   const want = inView && (motion ? now >= busyUntil : !busy);
+  wanted = want;
   const dt = lastNow ? Math.min(MAX_DT_MS, now - lastNow) : 16;
   lastNow = now;
   clock = advanceClock(clock, dt, want, motion);
   sink = motion ? advanceSink(sink, dt, want) : 0;
+  drop = coverageDrop(field.horizonRow, coverage);
   if (clock <= 0) return {};
   if (motion && (!want || clock < FULL_MS)) foot.markDirty();
 
   const { columns, rows } = field;
   const lay = place(foot, small);
   // the whole word rides the field's surface down as the footer scrolls out; cells below the bottom are not drawn
-  const drop = coverageDrop(field.horizonRow, coverage);
   const base = lay.base - drop;
   if (mold.length !== columns * rows) mold = new Int8Array(columns * rows);
   mold.fill(0);

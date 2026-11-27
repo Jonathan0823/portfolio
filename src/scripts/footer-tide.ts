@@ -1,11 +1,10 @@
 // Footer tide: hovering a closing button raises the footer field as a solid wave; as it drains it leaves
 // that button's pixel logo standing where the wave reached. Switching buttons submerges the old logo
 // completely before the new one is uncovered; leaving washes the logo back down. Mirrors the hero's lava
-// spill (which pours down from above) by rising from below.
-import { FOOTER_BITMAPS, SMALL_BITMAPS, type GlyphName } from './glyph-model';
-import { FINE_POINTER_QUERY, prefersReducedMotion } from './motion';
+// spill (which pours down from above) by rising from below. Fine pointers only: touch has no hover to answer.
+import { FOOTER_BITMAPS, type GlyphName } from './glyph-model';
+import { prefersReducedMotion } from './motion';
 import type { HeroField } from './hero-field';
-import { onWordmarkView, wordmarkInView, wordmarkRevealWait } from './footer-wordmark';
 
 /** read by the footer field's shape each step: extra rows over its horizon per column, plus the overlays */
 export const tideSwell = {
@@ -23,9 +22,9 @@ const EBB_MS = 720;
 /** rows of water over the top of the logo at full height, and cells of margin either side of it */
 const OVER_TOP = 4;
 const SIDE_MARGIN = 3;
-/** rows the crest of the water curves down from its middle to the sides of the widest logo (fine pointer) */
+/** rows the crest of the water curves down from its middle to the sides of the widest logo */
 const DOME = 3;
-/** rows kept free under the ceiling for the chop, so the crest is never sliced flat (fine pointer) */
+/** rows kept free under the ceiling for the chop, so the crest is never sliced flat */
 const CHOP_ROOM = 2;
 /** heat the logo is held at once it has cooled (a calm field colour), and when first left behind (hot) */
 const LOGO_COOL = 0.46;
@@ -35,11 +34,10 @@ const COOL_MS = 280;
 const LEAVE_GRACE_MS = 160;
 /** rows the wave's top keeps clear below the closing headline */
 const HEAD_CLEAR = 3;
+/** rows a logo stands above the field's highest skyline */
+const SKY_GAP = 4;
 const LOGOS: GlyphName[] = ['mail', 'git', 'linkedin', 'resume'];
-/** touch: how long each logo stands before the next tide, and how long the EGUIN wordmark rests between them */
-const CYCLE_MS = 4000;
-const WORD_REST_MS = 3000;
-/** class on the closing button whose logo is on show while cycling; styled in global.css */
+/** class on the closing button whose logo is on show without hover (the hero's touch mould); styled in global.css */
 export const TIDE_SHOWN_CLASS = 'tide-shown';
 
 interface Placed {
@@ -48,21 +46,6 @@ interface Placed {
   right: number;
   top: number;
   bottom: number;
-}
-
-/** touch cycle: EGUIN (-1), then each logo in turn, then EGUIN again; `count` is the number of logos */
-export function nextCycleIndex(index: number, count: number): number {
-  return ((index + 2) % (count + 1)) - 1;
-}
-
-/** how long the cycle stands on step `index` before moving on: the wordmark rests a little shorter than a logo */
-export function cycleDelay(index: number): number {
-  return index < 0 ? WORD_REST_MS : CYCLE_MS;
-}
-
-/** touch: the cycle shows the contact links only; the résumé button is optional, so it is left out */
-export function inCycle(name: GlyphName): boolean {
-  return name !== 'resume';
 }
 
 /**
@@ -99,15 +82,7 @@ export function mountFooterTide(foot: HeroField): () => void {
   let wanted: GlyphName | null = null;
   let swapPending = false;
 
-  // touch: the buttons stack across the full width, so the logo stands centred above the field, in a stage made
-  // for it under the buttons. The wave stops just under the buttons instead of under the headline
-  const stacked = !window.matchMedia(FINE_POINTER_QUERY).matches;
-  const overTop = stacked ? 2 : OVER_TOP;
-  const skyGap = stacked ? 1 : 4;
-  const dome = stacked ? 0 : DOME;
-  const chopRoom = stacked ? 0 : CHOP_ROOM;
-  // half-size logos on touch, so the closing screen still fits a phone
-  const rowsOf = (name: GlyphName) => (stacked ? SMALL_BITMAPS : FOOTER_BITMAPS)[name];
+  const rowsOf = (name: GlyphName) => FOOTER_BITMAPS[name];
 
   const head = (to: number, now: number) => {
     if (to === goal && duration) return;
@@ -119,20 +94,18 @@ export function mountFooterTide(foot: HeroField): () => void {
   const easeOut = (t: number) => 1 - (1 - t) ** 3;
   const easeInOut = (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
 
-  /** highest row the wave may reach: a few rows under the closing headline's bottom edge (touch: the buttons') */
+  /** highest row the wave may reach: a few rows under the closing headline's bottom edge */
   const ceiling = (): number => {
     const field = foot.field();
-    const above = stacked
-      ? Math.max(...buttons.map((b) => b.getBoundingClientRect().bottom))
-      : document.querySelector('#contact h2')?.getBoundingClientRect().bottom;
+    const above = document.querySelector('#contact h2')?.getBoundingClientRect().bottom;
     if (above === undefined || !Number.isFinite(above)) return field.rows - 1;
     const gap = foot.rect().bottom - above;
-    return Math.max(0, Math.min(field.rows - 1, Math.floor(gap / field.cellSize) - (stacked ? 1 : HEAD_CLEAR)));
+    return Math.max(0, Math.min(field.rows - 1, Math.floor(gap / field.cellSize) - HEAD_CLEAR));
   };
   /** the lowest row a logo may stand on: a little clear of the field's highest skyline */
-  const skyline = () => Math.round(foot.field().hostRows * 0.92) + skyGap;
+  const skyline = () => Math.round(foot.field().hostRows * 0.92) + SKY_GAP;
 
-  // place a logo right of the buttons (touch: centred), standing just above the field's skyline
+  // place a logo right of the buttons, standing just above the field's skyline
   const place = (name: GlyphName): Placed => {
     const field = foot.field();
     const rect = foot.rect();
@@ -140,15 +113,16 @@ export function mountFooterTide(foot: HeroField): () => void {
     const h = bitmap.length,
       w = bitmap[0].length;
     const buttonsRight = Math.max(...buttons.map((b) => b.getBoundingClientRect().right)) - rect.left;
-    const centerPx = stacked
-      ? rect.width / 2
-      : Math.min(rect.width - 96 - (w * field.cellSize) / 2, Math.max(buttonsRight + 200, rect.width * 0.8));
+    const centerPx = Math.min(
+      rect.width - 96 - (w * field.cellSize) / 2,
+      Math.max(buttonsRight + 200, rect.width * 0.8),
+    );
     const left = Math.round(centerPx / field.cellSize - w / 2);
     // a few rows clear of the field's highest skyline, so the logo stands apart instead of merging into it
-    // lowered when needed so the wave that covers it (overTop rows above, plus the chop) still stays under the headline
+    // lowered when needed so the wave that covers it (OVER_TOP rows above, plus the chop) still stays under the headline
     const bottom = Math.max(
       0,
-      Math.min(field.rows - h - overTop - 1, skyline(), ceiling() - overTop - chopRoom - h + 1),
+      Math.min(field.rows - h - OVER_TOP - 1, skyline(), ceiling() - OVER_TOP - CHOP_ROOM - h + 1),
     );
     const cells: Array<[number, number]> = [];
     bitmap.forEach((row, i) =>
@@ -185,7 +159,7 @@ export function mountFooterTide(foot: HeroField): () => void {
     const extent = LOGOS.map(place);
     const left = Math.min(...extent.map((s) => s.left)) - SIDE_MARGIN;
     const right = Math.max(...extent.map((s) => s.right)) + SIDE_MARGIN;
-    const crestTop = Math.min(Math.max(...extent.map((s) => s.top)) + overTop + dome, ceiling() - chopRoom);
+    const crestTop = Math.min(Math.max(...extent.map((s) => s.top)) + OVER_TOP + DOME, ceiling() - CHOP_ROOM);
     const shoulder = (right - left) * 0.35;
     // when the logo stands lower than the field's highest skyline (a short window), the calm field dips under it so
     // the whole logo shows instead of half of it sinking into the field. Faded out as the water rises over it
@@ -196,7 +170,7 @@ export function mountFooterTide(foot: HeroField): () => void {
       const falloff = out ? Math.exp(-((out / shoulder) ** 2)) : 1;
       // a little chop along the crest so it reads as water, not a bump
       const chop = Math.sin(x * 0.7 + now * 0.012) * 1.2 * level;
-      const surface = crestRow(x, left, right, crestTop, dome);
+      const surface = crestRow(x, left, right, crestTop, DOME);
       const wave = Math.max(0, ((surface - field.horizonRow) * falloff + chop) * level);
       const beside = logo ? (x < logo.left - 1 ? logo.left - 1 - x : x > logo.right + 1 ? x - logo.right - 1 : 0) : 0;
       tideSwell.rows[x] = wave + dip * Math.exp(-((beside / dipShoulder) ** 2)) * (1 - level);
@@ -245,108 +219,26 @@ export function mountFooterTide(foot: HeroField): () => void {
   // everything this mount adds to the page, so it can be undone when the pointer type changes
   const events = new AbortController();
   const { signal } = events;
-  const host = document.querySelector<HTMLElement>('[data-pixel-field="foot"]');
-  let stopCycle = () => {};
-  if (stacked && host) {
-    // grow the gap between the buttons and the field until the tallest logo and its wave fit under the buttons
-    const tallest = Math.max(...LOGOS.map((n) => rowsOf(n).length));
-    const stage = () => {
-      const short = skyline() + tallest - 1 + overTop - ceiling();
-      const margin = parseFloat(host.style.marginTop) || 0;
-      host.style.marginTop = `${Math.max(0, margin + short * foot.field().cellSize)}px`;
+  for (const button of buttons) {
+    const name = nameFor(button);
+    button.addEventListener('mouseenter', () => submerge(name), { signal });
+    button.addEventListener('focus', () => submerge(name), { signal });
+    // crossing the gap between two buttons shouldn't count as leaving: wait a beat before washing away
+    const leave = () => {
+      clearTimeout(leaveTimer);
+      leaveTimer = window.setTimeout(() => submerge(null), LEAVE_GRACE_MS);
     };
-    stage();
-    addEventListener('resize', stage, { signal });
-    stopCycle = cycle(
-      buttons.filter((b) => inCycle(nameFor(b))),
-      nameFor,
-      submerge,
-      signal,
-    );
-  } else if (!stacked) {
-    for (const button of buttons) {
-      const name = nameFor(button);
-      button.addEventListener('mouseenter', () => submerge(name), { signal });
-      button.addEventListener('focus', () => submerge(name), { signal });
-      // crossing the gap between two buttons shouldn't count as leaving: wait a beat before washing away
-      const leave = () => {
-        clearTimeout(leaveTimer);
-        leaveTimer = window.setTimeout(() => submerge(null), LEAVE_GRACE_MS);
-      };
-      button.addEventListener('mouseleave', leave, { signal });
-      button.addEventListener('blur', leave, { signal });
-    }
+    button.addEventListener('mouseleave', leave, { signal });
+    button.addEventListener('blur', leave, { signal });
   }
   return () => {
     events.abort();
-    stopCycle();
     clearTimeout(leaveTimer);
     cancelAnimationFrame(raf);
     buttons.forEach((b) => b.classList.remove(TIDE_SHOWN_CLASS));
-    if (host) host.style.marginTop = '';
     tideSwell.rows.fill(0);
     tideSwell.stamp.fill(0);
     tideSwell.cap = 0;
     foot.markDirty();
-  };
-}
-
-/** touch has no hover, and a tap opens the link: cycle the wordmark and the logos on a timer while the footer shows */
-function cycle(
-  buttons: HTMLAnchorElement[],
-  nameFor: (a: HTMLAnchorElement) => GlyphName,
-  submerge: (next: GlyphName | null) => void,
-  signal: AbortSignal,
-): () => void {
-  if (!buttons.length) return () => {};
-  // step -1 is the resting wordmark, steps 0.. the buttons' logos
-  let index = -1,
-    timer = 0,
-    visible = wordmarkInView(),
-    shownOnce = false;
-  const show = () => {
-    shownOnce = true;
-    index = nextCycleIndex(index, buttons.length);
-    buttons.forEach((b, i) => b.classList.toggle(TIDE_SHOWN_CLASS, i === index));
-    submerge(index < 0 ? null : nameFor(buttons[index]));
-  };
-  // no cycling: the wordmark just stands there
-  if (prefersReducedMotion()) return () => {};
-  const arm = () => {
-    clearTimeout(timer);
-    timer = 0;
-    if (!visible || document.hidden) return;
-    // the first EGUIN hold counts from the end of the wordmark's entrance reveal
-    const wait = wordmarkRevealWait();
-    if (!Number.isFinite(wait)) {
-      timer = window.setTimeout(arm, 250);
-      return;
-    }
-    timer = window.setTimeout(
-      () => {
-        show();
-        arm();
-      },
-      cycleDelay(index) + (index < 0 && !shownOnce ? wait : 0),
-    );
-  };
-  // the cycle follows the wordmark: when it goes down the logos wash away and the cycle pauses, and it restarts
-  // from EGUIN once the next reveal has finished
-  const stopView = onWordmarkView((inView) => {
-    visible = inView;
-    if (!inView) {
-      const showing = index >= 0;
-      index = -1;
-      shownOnce = false;
-      buttons.forEach((b) => b.classList.remove(TIDE_SHOWN_CLASS));
-      if (showing) submerge(null);
-    }
-    arm();
-  });
-  document.addEventListener('visibilitychange', arm, { signal });
-  arm();
-  return () => {
-    stopView();
-    clearTimeout(timer);
   };
 }
