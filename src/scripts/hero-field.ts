@@ -1,6 +1,7 @@
 import { HEAT_PALETTE, createField, stepField, type Field, type FieldShape } from './pixel-math';
 import { decayFactor } from './timing';
 import { paintCell } from './field-paint';
+import { gridLayer } from './grid-layer';
 
 export interface HeroField {
   canvas: HTMLCanvasElement;
@@ -45,6 +46,7 @@ export function mountHeroField(
     canvas.style.cssText += `;position:absolute;left:0;${flipped ? 'bottom' : 'top'}:0;height:calc(100% + ${bleed}px);z-index:-1`;
   }
   host.appendChild(canvas);
+  const grid = gridLayer(canvas);
 
   const ctx = canvas.getContext('2d')!;
   let field = createField(1, 1);
@@ -95,6 +97,7 @@ export function mountHeroField(
     canvas.height = Math.max(1, Math.round((h + bleed) * dpr));
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     field = createField(w, h, bleed);
+    grid.fit(field.cellSize);
     dirty = true;
     schedule();
   };
@@ -138,6 +141,7 @@ export function mountHeroField(
       ro?.disconnect();
       document.removeEventListener('visibilitychange', onVisibility);
       canvas.remove();
+      grid.remove();
     },
   };
 }

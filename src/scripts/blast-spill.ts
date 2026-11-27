@@ -3,6 +3,7 @@
 // draws only cells the field cannot, and is gone once they have cooled; a blast that stays inside creates nothing.
 import { HEAT_PALETTE, heatFade, heatTone } from './pixel-math';
 import { paintCell } from './field-paint';
+import { gridLayer } from './grid-layer';
 import { decayFactor } from './timing';
 import type { HeroField } from './hero-field';
 
@@ -76,6 +77,8 @@ function createStrip(hero: HeroField, box: SpillBox): (column: number, row: numb
   canvas.style.cssText = `position:absolute;left:${rect.left + window.scrollX + c0 * cell}px;top:${pageTop}px;width:${width * cell}px;height:${tall}px;pointer-events:none;image-rendering:pixelated;z-index:-1`;
   document.body.appendChild(canvas);
   const ctx = canvas.getContext('2d')!;
+  const grid = gridLayer(canvas);
+  grid.fit(cell);
 
   const born = performance.now();
   let last = born,
@@ -103,7 +106,10 @@ function createStrip(hero: HeroField, box: SpillBox): (column: number, row: numb
           paintCell(ctx, column * cell, y, cell, heatFade(heat[i]));
         }
       }
-      if (!hottest && (stamped || now - born > UNLIT_MS)) return canvas.remove();
+      if (!hottest && (stamped || now - born > UNLIT_MS)) {
+        grid.remove();
+        return canvas.remove();
+      }
     }
     requestAnimationFrame(paint);
   };
