@@ -47,7 +47,8 @@ describe('personJsonLd', () => {
     expect(ld.homeLocation.address.addressCountry).toBe('ID');
     expect(ld.alumniOf.name).toBe('Universitas Singaperbangsa Karawang');
     expect(ld.knowsLanguage).toEqual(['id', 'en', 'ja']);
-    expect(ld.image).toBe('https://eguinjonathan.com/og/home.png');
+    expect(ld).not.toHaveProperty('image');
+    expect(ld['@id']).toBe('https://eguinjonathan.com/#person');
   });
   it('builds knowsAbout from the skills without duplicates', () => {
     expect(ld.knowsAbout).toEqual(['Go', 'Python', 'React']);
@@ -61,6 +62,7 @@ describe('storyJsonLd', () => {
     expect(ld.url).toBe('https://eguinjonathan.com/story/');
     expect(ld.mainEntity['@type']).toBe('Person');
     expect(ld.mainEntity.name).toBe('Eguin Jonathan');
+    expect(ld.mainEntity['@id']).toBe('https://eguinjonathan.com/#person');
   });
 });
 
@@ -70,5 +72,7 @@ describe('websiteJsonLd', () => {
     expect(ld['@type']).toBe('WebSite');
     expect(ld.name).toBe('Eguin Jonathan');
     expect(ld.url).toBe('https://eguinjonathan.com/');
+    expect(ld.publisher).toEqual({ '@id': 'https://eguinjonathan.com/#person' });
+    expect(ld.author).toEqual({ '@id': 'https://eguinjonathan.com/#person' });
   });
 });
