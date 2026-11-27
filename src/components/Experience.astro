@@ -99,7 +99,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
               class="border-t border-line-soft py-3.5 md:-mx-3 md:px-3"
             >
               <div class="md:grid md:grid-cols-[1fr_240px] md:items-baseline md:gap-6">
-                <p class="text-[17px] leading-[1.55] text-body text-pretty md:text-lg md:leading-relaxed">
+                <p class="max-w-[68ch] text-[17px] leading-[1.55] text-body text-pretty md:text-lg md:leading-relaxed">
                   {a.text}
                   {(() => {
                     const published = projectForAchievement(projects, a.id);
@@ -146,7 +146,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
                         .map(([k, v]) => (
                           <div class="grid grid-cols-[96px_1fr] gap-3 border-t border-line-soft py-2.5">
                             <dt class="text-sm leading-relaxed text-muted">{k}</dt>
-                            <dd class="text-base leading-[1.55] text-body">{v}</dd>
+                            <dd class="max-w-[68ch] text-base leading-[1.55] text-body">{v}</dd>
                           </div>
                         ))}
                     </dl>

@@ -37,12 +37,14 @@ const projects = await Promise.all(
         </div>
         <div class="mt-2.5 flex flex-col gap-2 md:col-span-6 md:mt-0 md:gap-2.5">
           {p.data.hook && (
-            <p class="text-[22px] leading-[1.25] font-medium tracking-[-0.02em] text-balance md:text-2xl">
+            <p class="max-w-[68ch] text-[22px] leading-[1.25] font-medium tracking-[-0.02em] text-balance md:text-2xl">
               {p.data.hook}
             </p>
           )}
-          <p class="text-[17px] leading-[1.55] text-body text-pretty md:text-lg md:leading-relaxed">{description}</p>
-          <p class="text-[15px] leading-normal text-ink md:text-base">
+          <p class="max-w-[68ch] text-[17px] leading-[1.55] text-body text-pretty md:text-lg md:leading-relaxed">
+            {description}
+          </p>
+          <p class="max-w-[68ch] text-[15px] leading-normal text-ink md:text-base">
             <span class="text-sm leading-relaxed text-muted">Result&nbsp;&nbsp;</span>
             {p.data.result}
           </p>
@@ -98,7 +100,7 @@ const projects = await Promise.all(
               {sections.map((s) => (
                 <div class="grid grid-cols-[96px_1fr] gap-3 border-t border-line-soft py-2.5">
                   <dt class="text-sm leading-relaxed text-muted">{s.label}</dt>
-                  <dd class="text-base leading-[1.55] text-body">{s.text}</dd>
+                  <dd class="max-w-[68ch] text-base leading-[1.55] text-body">{s.text}</dd>
                 </div>
               ))}
             </dl>
