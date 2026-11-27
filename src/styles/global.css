@@ -177,7 +177,7 @@ html.drip-pending [data-drip-period] {
   top: calc(100% + 10px);
   left: 0;
   color: var(--color-accent);
-  font: 600 13px/1.2 var(--font-mono);
+  font: 600 13px/1.2 var(--font-sans);
   white-space: nowrap;
   opacity: 0;
 }

@@ -43,7 +43,7 @@ const projects = await Promise.all(
           )}
           <p class="text-[17px] leading-[1.55] text-body text-pretty md:text-lg md:leading-relaxed">{description}</p>
           <p class="text-[15px] leading-normal text-ink md:text-base">
-            <span class="font-mono text-[13px] leading-relaxed text-muted">Result&nbsp;&nbsp;</span>
+            <span class="text-sm leading-relaxed text-muted">Result&nbsp;&nbsp;</span>
             {p.data.result}
           </p>
         </div>
@@ -58,7 +58,7 @@ const projects = await Promise.all(
               {p.data.status}
             </p>
           )}
-          {p.data.role && <p class="font-mono text-[13px] leading-relaxed text-muted">{p.data.role}</p>}
+          {p.data.role && <p class="text-[15px] leading-relaxed text-muted">{p.data.role}</p>}
           <p class="font-mono text-[13px] leading-relaxed text-muted">
             {p.data.tags.join(' · ')}
             <span class="hidden md:inline"> · {year}</span>
@@ -97,7 +97,7 @@ const projects = await Promise.all(
             <dl>
               {sections.map((s) => (
                 <div class="grid grid-cols-[96px_1fr] gap-3 border-t border-line-soft py-2.5">
-                  <dt class="font-mono text-[13px] leading-relaxed text-muted">{s.label}</dt>
+                  <dt class="text-sm leading-relaxed text-muted">{s.label}</dt>
                   <dd class="text-base leading-[1.55] text-body">{s.text}</dd>
                 </div>
               ))}

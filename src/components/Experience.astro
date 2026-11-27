@@ -68,7 +68,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
         <p class="mt-2.5 text-[26px] leading-[1.15] font-semibold tracking-[-0.02em] md:mt-0 md:text-[32px] md:leading-[1.1] md:tracking-[-0.03em]">
           {role.data.title}
         </p>
-        <p class="mt-1 font-mono text-[13px] leading-relaxed text-muted md:pb-3">{place(role.data)}</p>
+        <p class="mt-1 text-[15px] leading-relaxed text-muted md:pb-3">{place(role.data)}</p>
         <div class="my-4 flex max-w-[156px] flex-wrap gap-[3px] md:hidden" role="img" aria-label={summary(squares)}>
           {squares.map((q) => (
             <span
@@ -145,7 +145,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
                         .filter(([, v]) => v)
                         .map(([k, v]) => (
                           <div class="grid grid-cols-[96px_1fr] gap-3 border-t border-line-soft py-2.5">
-                            <dt class="font-mono text-[13px] leading-relaxed text-muted">{k}</dt>
+                            <dt class="text-sm leading-relaxed text-muted">{k}</dt>
                             <dd class="text-base leading-[1.55] text-body">{v}</dd>
                           </div>
                         ))}
@@ -159,7 +159,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
           <button
             type="button"
             data-showall
-            class="role-showall cursor-pointer border-t border-line-soft py-3 text-left font-mono text-[13px] text-ink"
+            class="role-showall cursor-pointer border-t border-line-soft py-3 text-left text-[15px] text-ink"
           >
             Show all ({role.data.achievements.length}) +
           </button>
@@ -186,7 +186,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
     </div>
   ))}
 
-  <div class="flex flex-col gap-3 border-t border-ink pt-5 md:flex-row md:justify-between md:gap-6 font-mono text-[13px] leading-relaxed text-muted">
+  <div class="flex flex-col gap-3 border-t border-ink pt-5 md:flex-row md:justify-between md:gap-6 text-[15px] leading-relaxed text-muted">
     <a href="/story/" data-cursor="next" class="text-ink">
       Read the full story →
     </a>

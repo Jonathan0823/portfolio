@@ -24,7 +24,7 @@ const { links, brandHref = '#top' } = Astro.props;
       {brandHref === '/' && <span aria-hidden="true">← </span>}Eguin Jonathan
     </a>
 
-    <div class="hidden gap-0.5 p-1.5 font-mono text-[13px] md:flex">
+    <div class="hidden gap-0.5 p-1.5 text-sm md:flex">
       {links.map((l) => (
         <a
           href={l.href}
@@ -43,10 +43,7 @@ const { links, brandHref = '#top' } = Astro.props;
       ))}
     </div>
 
-    <details
-      data-menu
-      class="open:bg-paper group-data-on-field:not-open:text-paper relative font-mono text-[13px] md:hidden"
-    >
+    <details data-menu class="open:bg-paper group-data-on-field:not-open:text-paper relative text-sm md:hidden">
       <summary data-pixel-btn class="cursor-pointer list-none px-4 py-3 [&::-webkit-details-marker]:hidden">
         <span class="in-open:hidden">Menu</span>
         <span class="hidden in-open:inline">Close</span>

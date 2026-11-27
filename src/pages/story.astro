@@ -46,7 +46,7 @@ const navLinks = [
         I’m a software engineer in Karawang, Indonesia. Three years ago I was a student who liked taking things apart.
         Now I write the software between factory machines and the people who watch them.
       </p>
-      <p class="text-muted mt-6 font-mono text-[13px] leading-relaxed">
+      <p class="text-muted mt-6 text-[15px] leading-relaxed">
         <a href={MAILTO_URL} class="text-ink hover:text-muted">
           {CONTACT_EMAIL}
         </a>{' '}
@@ -93,7 +93,7 @@ const navLinks = [
           </div>
           <div class="flex flex-col gap-2 md:col-span-9">
             <p class="text-3xl leading-[1.1] font-semibold tracking-[-0.03em] text-balance md:text-4xl">{g.subtitle}</p>
-            {g.meta && <p class="text-muted font-mono text-[13px] leading-relaxed">{g.meta}</p>}
+            {g.meta && <p class="text-muted text-[15px] leading-relaxed">{g.meta}</p>}
           </div>
         </div>
 
@@ -116,7 +116,7 @@ const navLinks = [
                   <p class="text-muted font-mono text-[13px] leading-relaxed">{m.data.tags.join(' · ')}</p>
                 )}
                 {m.data.link && (
-                  <p class="font-mono text-[13px] leading-relaxed">
+                  <p class="text-[15px] leading-relaxed">
                     <a href={m.data.link.href} class="text-ink hover:text-muted">
                       {m.data.link.text}
                     </a>
@@ -157,11 +157,10 @@ const navLinks = [
   .milestone-body > * + * {
     margin-top: 0.5rem;
   }
-  .milestone-body h2 {
+  .milestone-body h4 {
     margin-top: 1rem;
-    font-family: var(--font-mono);
-    font-size: 13px;
-    font-weight: 400;
+    font-size: 15px;
+    font-weight: 600;
     color: var(--color-muted);
   }
 </style>
