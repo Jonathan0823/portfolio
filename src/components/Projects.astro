@@ -144,13 +144,20 @@ const projects = await Promise.all(
     button.type = 'button';
     button.textContent = heading.textContent;
     button.className =
-      'cursor-[inherit] text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink';
+      'cursor-pointer text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink';
+    // the visible hint; aria-expanded already says it to screen readers
+    const hint = document.createElement('span');
+    hint.setAttribute('aria-hidden', 'true');
+    hint.className = 'mt-2 block text-[15px] leading-normal font-medium tracking-normal text-ink';
+    button.append(hint);
+    summary.classList.add('cursor-pointer');
     button.setAttribute('aria-controls', detail.id);
     heading.replaceChildren(button);
     const set = (open: boolean) => {
       detail.toggleAttribute('data-collapsed', !open);
       detail.toggleAttribute('inert', !open);
       button.setAttribute('aria-expanded', String(open));
+      hint.textContent = open ? 'Details −' : 'Details +';
     };
     set(false);
     const toggle = () => {
