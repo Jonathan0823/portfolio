@@ -46,7 +46,9 @@ describe('layoutWordmark', () => {
   it('reveals left to right, each column no earlier than the one before, within 600-800ms', () => {
     for (const small of [false, true]) {
       const word = layoutWordmark(3, small);
-      const cols = [...word.colDelay.entries()].sort((a, b) => a[0] - b[0]);
+      const cols = [...new Set(word.ink.map(([x]) => x))]
+        .sort((a, b) => a - b)
+        .map((x) => [x, Math.min(...word.ink.filter(([cx]) => cx === x).map(([, , d]) => d))]);
       for (let i = 1; i < cols.length; i++) expect(cols[i][1]).toBeGreaterThanOrEqual(cols[i - 1][1]);
       expect(cols[0][1]).toBe(0);
       const last = Math.max(...word.ink.map(([, , d]) => d));
@@ -95,7 +97,8 @@ describe('sink order', () => {
         return cellThreshold(d[2], k, word.height, 1);
       };
       // a sink empties cells in descending threshold order: within a column the higher cell goes first
-      for (const [x] of word.colDelay) {
+      const columns = [...new Set(word.ink.map(([x]) => x))];
+      for (const x of columns) {
         const ks = word.ink
           .filter(([cx]) => cx === x)
           .map(([, k]) => k)
@@ -103,7 +106,7 @@ describe('sink order', () => {
         for (let i = 1; i < ks.length; i++) expect(vanish(x, ks[i])).toBeGreaterThan(vanish(x, ks[i - 1]));
       }
       // the last column's bottom cell outlasts the first column's bottom cell
-      const xs = [...word.colDelay.keys()].sort((a, b) => a - b);
+      const xs = [...columns].sort((a, b) => a - b);
       expect(vanish(xs[xs.length - 1], 0)).toBeGreaterThan(vanish(xs[0], 0));
     }
   });

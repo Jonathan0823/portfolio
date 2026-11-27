@@ -29,9 +29,10 @@ describe('boil', () => {
     for (let time = 0.1; time < 4; time += 0.13) {
       stepField(f, time, 8.1, 0.94, shape);
       seen += thrown(f).length;
-      const mold = new Int8Array(f.columns * f.rows).fill(-1);
+      const mold = new Int8Array(f.columns * f.rows).fill(1);
       stepField(f, time, 8.1, 0.94, { ...shape, mold });
-      expect(f.bucket.every((k) => k < 0)).toBe(true);
+      // every cell above the surface keeps the letter's colour
+      expect(thrown(f).every((i) => f.bucket[i] === 0)).toBe(true);
     }
     expect(seen).toBeGreaterThan(0);
   });

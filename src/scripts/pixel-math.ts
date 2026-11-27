@@ -110,8 +110,10 @@ export interface FieldShape {
   stamp?: Float32Array;
   /** footer tide: highest row a raised surface may reach */
   cap?: number;
-  /** footer wordmark mould, per cell: 1 = letter, 10+n = letter at heat level n, 2 = foundation (forced present), -1 = carved out, 0 = the field's own */
+  /** footer wordmark mould, per cell: 1 = letter, 10+n = letter at heat level n, 0 = the field's own. Letters stand behind the body */
   mold?: Int8Array;
+  /** footer wordmark: the surface runs nearly level at `row` in front of columns `from`..`to`, at `strength` 0..1 */
+  shore?: { from: number; to: number; row: number; strength: number };
 }
 
 /** pointer and click heat: stays warm as it cools, never the dark end of the palette */
@@ -127,6 +129,18 @@ const bayer = (x: number, y: number) => (BAYER[(y & 3) * 4 + (x & 3)] + 0.5) / 1
 export function strataLevel(x: number, y: number, edge: number): number {
   const depth = y / Math.max(1, edge) + (bayer(x, y) - 0.5) * 0.13;
   return depth < 0.36 ? 1 : depth < 0.6 ? 2 : depth < 0.76 ? 3 : depth < 0.89 ? 4 : 5;
+}
+
+/** columns over which the surface eases from its own waves into the shore */
+const SHORE_EASE = 8;
+/** share of its own waves the surface keeps along the shore */
+const SHORE_RIPPLE = 0.15;
+
+/** the surface's height at column `x`, levelled toward the shore */
+function ashore(shore: NonNullable<FieldShape['shore']>, x: number, edge: number, rest: number): number {
+  const out = Math.max(shore.from - x, 0, x - shore.to);
+  const near = shore.strength * Math.max(0, 1 - out / SHORE_EASE);
+  return edge + (shore.row + (edge - rest) * SHORE_RIPPLE - edge) * near;
 }
 
 /** the surface's own waves, in rows over or under the horizon */
@@ -156,7 +170,10 @@ export function stepField(field: Field, time: number, seed: number, decay = 0.94
     const waves = wander(x, time, seed, hostRows, !!shape.low);
     // a dripping surface sits a little higher, leaving the drops room to fall
     const outline = runoff ? waves * 0.8 - horizonRow * 0.12 + sag(runoff, x) : waves + (boil ? dome(boil, x) : 0);
-    const top = (horizonRow + outline * (1 - settled)) * coverage + swell;
+    const rest = horizonRow * coverage;
+    let top = (horizonRow + outline * (1 - settled)) * coverage + swell;
+    // a footer tide takes the surface over from the shore
+    if (shape.shore && !swell) top = ashore(shape.shore, x, top, rest);
     surface[x] = swell > 0 && shape.cap ? Math.min(top, shape.cap) : top;
   }
 
@@ -169,7 +186,6 @@ export function stepField(field: Field, time: number, seed: number, decay = 0.94
       heat[i] *= decay;
       hottest = Math.max(hottest, heat[i]);
       const m = mold ? mold[i] : 0;
-      if (m < 0) continue;
       // overlays are recomputed by their owner every frame, so nothing they draw outlives them
       const stamped = stamp && y >= edge ? stamp[i] : 0;
       if (raised && y > shape.cap! && !(stamped > 0)) continue;
@@ -186,10 +202,9 @@ export function stepField(field: Field, time: number, seed: number, decay = 0.94
         level = body || stamped >= 0.3 ? Math.max(level, heatTone(touched)) : heatTone(touched);
         if (!body && !(stamped >= 0.3)) alpha[i] = heatFade(touched);
       }
-      // the footer letters are one flat dark colour; 10+n is a letter popping in
-      if (m === 1) level = 0;
-      else if (m >= 10) level = m - 10;
-      else if (m === 2 && !body) level = 1;
+      // the footer letters are one flat dark colour (10+n is one popping in), and only show above the body
+      if (!body && m === 1) level = 0;
+      else if (!body && m >= 10) level = m - 10;
 
       if (!shown) {
         // the soft edge: the surface's last rows, and the rows next to row 0
