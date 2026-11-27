@@ -84,6 +84,24 @@ export const PIXEL_ART = {
     ],
     palette: { O: '#f7941d', Y: '#fdc010', G: '#2e8b2e' },
   },
+  // Wi-Fi mark; the logo is black or white, so hover uses the accent
+  wifi: {
+    rows: [
+      '............DDDDDD..',
+      '...........DDDDDDDD.',
+      '..........DDDDDDDDDD',
+      '........D.DD...DD.DD',
+      'D..D..D...DD.DDDDDDD',
+      'D..D..D.D.DD.DDDD.DD',
+      'D..D..D.D.DD..DDD.DD',
+      'D.D.D.D.D.DD.DDDD.DD',
+      'D.D.D.D.D.DD.DDDD.DD',
+      '.D...D..D.DD.DDDD.DD',
+      '..........DDDDDDDDD.',
+      '..........DDDDDDD...',
+    ],
+    palette: { D: '#7c5cfa' },
+  },
 } as const satisfies Record<string, PixelArt>;
 
 export type PixelArtName = keyof typeof PIXEL_ART;

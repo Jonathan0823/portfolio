@@ -31,7 +31,7 @@
     - { name: MQTT, icon: mqtt }
     - { name: Mosquitto, icon: eclipsemosquitto }
     - { name: Bluetooth, icon: bluetooth }
-    - { name: Wi-Fi, mono: WI }
+    - { name: Wi-Fi, art: wifi }
     - { name: Arduino, icon: arduino }
 - group: Data
   items:
