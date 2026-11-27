@@ -103,7 +103,8 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
       const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
       const range = document.createRange();
       for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-        if (!node.textContent?.trim()) continue;
+        // screen-reader text takes no room, but its range would measure as if it did
+        if (!node.textContent?.trim() || node.parentElement?.closest('.sr-only')) continue;
         range.selectNodeContents(node);
         right = Math.max(right, range.getBoundingClientRect().right - heroRect.left);
       }

@@ -65,9 +65,9 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
         )}
       </div>
       <div class="col-span-12 flex flex-col md:col-span-9">
-        <p class="mt-2.5 text-[26px] leading-[1.15] font-semibold tracking-[-0.02em] md:mt-0 md:text-[32px] md:leading-[1.1] md:tracking-[-0.03em]">
+        <h3 class="mt-2.5 text-[26px] leading-[1.15] font-semibold tracking-[-0.02em] md:mt-0 md:text-[32px] md:leading-[1.1] md:tracking-[-0.03em]">
           {role.data.title}
-        </p>
+        </h3>
         <p class="mt-1 text-[15px] leading-relaxed text-muted md:pb-3">{place(role.data)}</p>
         <div class="my-4 flex max-w-[156px] flex-wrap gap-[3px] md:hidden" role="img" aria-label={summary(squares)}>
           {squares.map((q) => (
@@ -127,9 +127,9 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
               </div>
               {a.detail && (
                 <details class="group mt-2 md:mt-0">
-                  <summary class="cursor-pointer list-none text-right font-mono text-[13px] leading-relaxed text-ink [&::-webkit-details-marker]:hidden">
-                    <span class="group-open:hidden">Open +</span>
-                    <span class="hidden group-open:inline">Close −</span>
+                  <summary class="flex min-h-11 cursor-pointer list-none items-center justify-end text-[15px] leading-relaxed text-ink [&::-webkit-details-marker]:hidden">
+                    <span class="group-open:hidden">How I did it +</span>
+                    <span class="hidden group-open:inline">How I did it −</span>
                   </summary>
                   <div class:list={['grid gap-6 pt-5 pb-2', a.visual?.src && 'md:grid-cols-[1.1fr_1fr]']}>
                     {a.visual?.src && <Visual visual={a.visual} />}
@@ -174,9 +174,9 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
         Education<span class="md:hidden"> · {formatRange(e.data.start, e.data.end)}</span>
       </p>
       <div class="col-span-12 flex flex-col gap-1 md:col-span-9">
-        <p class="text-lg leading-snug text-ink md:text-body">
+        <h3 class="text-lg leading-snug text-ink md:text-body">
           {e.data.title}, {e.data.org}
-        </p>
+        </h3>
         <p class="font-mono text-[13px] leading-relaxed text-muted">
           <span class="hidden md:inline">{formatRange(e.data.start, e.data.end)} · </span>
           {e.data.note && <span class="md:hidden">{cap(e.data.note)}</span>}

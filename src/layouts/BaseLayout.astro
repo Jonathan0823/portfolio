@@ -56,6 +56,12 @@ const { title, description, image, imageAlt, jsonLd, noindex } = Astro.props;
     )}
   </head>
   <body>
+    <a
+      href="#main"
+      class="bg-ink text-paper sr-only text-sm focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-[110] focus-visible:px-4 focus-visible:py-3"
+    >
+      Skip to content
+    </a>
     <slot />
     <script>
       import '@/scripts/page-cover-init';

@@ -33,6 +33,8 @@
   --color-line-soft: #ededed;
   --color-square: #c8c8c8;
   --color-accent: #e5484d;
+  /* the accent for small text, dark enough to read on paper */
+  --color-accent-ink: #c9343a;
   --color-paper: #ffffff;
 
   --color-pixel-night: #1e1b4b;
@@ -176,7 +178,7 @@ html.drip-pending [data-drip-period] {
   position: absolute;
   top: calc(100% + 10px);
   left: 0;
-  color: var(--color-accent);
+  color: var(--color-accent-ink);
   font: 600 13px/1.2 var(--font-sans);
   white-space: nowrap;
   opacity: 0;
