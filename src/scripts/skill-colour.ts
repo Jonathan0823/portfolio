@@ -197,9 +197,31 @@ export function mountSkillColour(section: HTMLElement): SkillColour {
 
   return {
     sweep(row) {
-      // touch: the row has just landed, so let the band wipe its colour in now
-      if (!fine) return queue();
-      if (reduced || swept.has(row)) return;
+      if (reduced) return;
+      if (!fine) {
+        // touch: the row has just landed. Wipe each tile in, staggered, up to what the band wants now, then hand over
+        const rowTiles = [...row.querySelectorAll<HTMLElement>('.skill-tile')];
+        const plan = sweepSchedule(rowTiles.length);
+        rowTiles.forEach((tile, i) => {
+          const target = tile.hasAttribute('data-lit')
+            ? 0
+            : bandFraction(tile.getBoundingClientRect().top + tile.offsetHeight / 2, window.innerHeight);
+          if (target <= 0) return;
+          sweeping.add(tile);
+          const hot = hotOf(tile);
+          hot.style.transitionDelay = plan.fill[i] + 'ms';
+          hot.style.clipPath = insetClip(target);
+        });
+        later(() => {
+          for (const tile of rowTiles) {
+            hotOf(tile).style.transitionDelay = '';
+            sweeping.delete(tile);
+          }
+          queue();
+        }, plan.drainAt - SWEEP_HOLD_MS);
+        return;
+      }
+      if (swept.has(row)) return;
       swept.add(row);
       const rowTiles = [...row.querySelectorAll<HTMLElement>('.skill-tile')];
       const plan = sweepSchedule(rowTiles.length);
