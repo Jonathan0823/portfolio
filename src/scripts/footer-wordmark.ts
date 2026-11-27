@@ -1,8 +1,8 @@
 // Footer wordmark: EGUIN rises out of the footer field's skyline as part of the field itself. The letters are field
 // cells in one flat dark colour standing behind the lava, which laps over their feet, left-aligned to the page gutter. They appear in
 // an ordered reveal (letter by letter, left to right, each cell popping in hot yellow and cooling to its resting colour) each
-// time 30% of the footer field is scrolled into view, sink back into the field (right to left, top cells first) when it scrolls out, and dissolve out and back in around a closing button's logo (hover on a fine pointer, the cycle
-// on touch). Reduced motion shows the word static. Driven from the field's shape callback every paint, through the
+// time 30% of the footer field is scrolled into view, sink back into the field (right to left, top cells first) when it scrolls out, and dissolve out and back in around a closing button's logo (hover on a fine pointer; touch has no
+// logos, the word just stands). Reduced motion shows the word static. Driven from the field's shape callback every paint, through the
 // `mold` of the shape.
 import type { FieldShape } from './pixel-math';
 import type { HeroField } from './hero-field';

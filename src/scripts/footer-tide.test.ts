@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { crestRow, cycleDelay, inCycle, nextCycleIndex } from './footer-tide';
+import { crestRow } from './footer-tide';
 import { FOOTER_BITMAPS } from './glyph-model';
 
 describe('wave crest', () => {
@@ -15,23 +15,5 @@ describe('wave crest', () => {
       expect(rows.length).toBeLessThanOrEqual(18);
       expect(new Set(rows.map((row) => row.length)).size).toBe(1);
     }
-  });
-});
-
-describe('touch cycle', () => {
-  it('runs EGUIN, then each logo, then back to EGUIN', () => {
-    const steps: number[] = [];
-    let index = -1;
-    for (let i = 0; i < 5; i++) steps.push((index = nextCycleIndex(index, 3)));
-    expect(steps).toEqual([0, 1, 2, -1, 0]);
-  });
-
-  it('leaves the résumé out of the cycle', () => {
-    expect((['mail', 'git', 'linkedin', 'resume'] as const).filter(inCycle)).toEqual(['mail', 'git', 'linkedin']);
-  });
-
-  it('rests on the wordmark for less time than a logo stands', () => {
-    expect(cycleDelay(-1)).toBeLessThan(cycleDelay(0));
-    expect(cycleDelay(1)).toBe(cycleDelay(0));
   });
 });

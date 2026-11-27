@@ -43,7 +43,7 @@ The footer field's own motion: bubbles swell on its surface and pop, and hot spo
 _Avoid_: Bubbles effect, footer embers
 
 **Wordmark**:
-The word EGUIN standing in the footer field's skyline, made of field cells; it dissolves out around a closing button's logo and back in. On touch it is one step of the footer cycle.
+The word EGUIN standing in the footer field's skyline, made of field cells; it dissolves out around a closing button's logo and back in.
 _Avoid_: Footer logo, footer title
 
 **Mould**:

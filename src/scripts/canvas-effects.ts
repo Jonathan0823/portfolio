@@ -75,11 +75,11 @@ if (typeof window.matchMedia === 'function') {
   // the mould's drops wait for the hero's life to settle (its period is built), so it mounts with the life that gates it
   whenIdle(() => mountHeroInvite(hero, () => glyph, mountHeroLife(hero)));
   const foot = fields[hosts.findIndex((h) => h.dataset.pixelField === 'foot')];
-  // hover drives the tide on a fine pointer and a timer on touch, so switching pointer (or motion) remounts it
+  // hover drives the tide, so it exists on a fine pointer only and switching pointer remounts it
   let stopTide: (() => void) | null = null;
   const mountTide = () => {
     stopTide?.();
-    stopTide = foot ? mountFooterTide(foot) : null;
+    stopTide = foot && window.matchMedia(FINE_POINTER_QUERY).matches ? mountFooterTide(foot) : null;
   };
   whenIdle(mountTide);
   for (const q of [REDUCE_QUERY, FINE_POINTER_QUERY])
