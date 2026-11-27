@@ -131,8 +131,8 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
                     <span class="group-open:hidden">Open +</span>
                     <span class="hidden group-open:inline">Close −</span>
                   </summary>
-                  <div class="grid gap-6 pt-5 pb-2 md:grid-cols-[1.1fr_1fr]">
-                    {a.visual && <Visual visual={a.visual} />}
+                  <div class:list={['grid gap-6 pt-5 pb-2', a.visual?.src && 'md:grid-cols-[1.1fr_1fr]']}>
+                    {a.visual?.src && <Visual visual={a.visual} />}
                     <dl>
                       {(
                         [

@@ -6,12 +6,6 @@ import { GITHUB_REPOS_URL } from '@/lib/profile';
 import { projectAnchor, projectLinks, projectYear, splitProjectBody } from '@/lib/projects';
 
 const STATUS_COLOR: Record<string, string> = { 'Open source': '#4338CA', 'On npm': '#E5484D', 'Daily use': '#FF7A28' };
-const PEEK_BG = [
-  'linear-gradient(160deg, #F4F1FF, #7C5CFA)',
-  'linear-gradient(200deg, #1E1B4B, #111111)',
-  'radial-gradient(90% 80% at 50% 30%, #7C5CFA, #4338CA 50%, #1E1B4B)',
-  'linear-gradient(160deg, #1E1B4B, #4338CA)',
-];
 
 const projects = await Promise.all(
   (await getProjects()).map(async (p) => ({
@@ -85,17 +79,15 @@ const projects = await Promise.all(
         class="grid grid-rows-[1fr] transition-[grid-template-rows] duration-[450ms] ease-[cubic-bezier(.2,.7,.2,1)] data-[collapsed]:grid-rows-[0fr] motion-reduce:transition-none"
       >
         <div class="min-h-0 overflow-hidden">
-          <div class="grid gap-6 pt-5 pb-2 md:grid-cols-[1.1fr_1fr]">
-            <div class="relative self-start">
-              <div data-assemble>
-                <Visual visual={p.data.visual} />
+          <div class:list={['grid gap-6 pt-5 pb-2', p.data.visual.src && 'md:grid-cols-[1.1fr_1fr]']}>
+            {p.data.visual.src && (
+              <div class="relative self-start">
+                <div data-assemble>
+                  <Visual visual={p.data.visual} />
+                </div>
+                <canvas data-assemble-px aria-hidden="true" class="pointer-events-none absolute inset-0 size-full" />
               </div>
-              <canvas
-                data-assemble-px
-                aria-hidden="true"
-                class="pointer-events-none absolute inset-0 size-full"
-              ></canvas>
-            </div>
+            )}
             <dl>
               {sections.map((s) => (
                 <div class="grid grid-cols-[96px_1fr] gap-3 border-t border-line-soft py-2.5">
@@ -111,29 +103,25 @@ const projects = await Promise.all(
   ))}
   <div class="border-t border-ink"></div>
 
-  <div
-    data-peek
-    aria-hidden="true"
-    class="pointer-events-none fixed top-0 left-0 z-[45] hidden aspect-[16/10] w-[min(380px,32vw)] overflow-hidden"
-  >
-    <div data-peek-content class="absolute inset-0">
-      {projects.map(({ p }, index) => (
-        <div data-peek-item={p.id} hidden class="absolute inset-0">
-          {p.data.visual.src ? (
-            <img src={p.data.visual.src} alt="" loading="lazy" class="size-full object-cover" />
-          ) : (
-            <div
-              class="flex size-full items-end p-4 font-mono text-xs text-white"
-              style={`background:${PEEK_BG[index % PEEK_BG.length]}`}
-            >
-              {p.data.visual.label}
-            </div>
-          )}
-        </div>
-      ))}
+  {projects.some(({ p }) => p.data.visual.src) && (
+    <div
+      data-peek
+      aria-hidden="true"
+      class="pointer-events-none fixed top-0 left-0 z-[45] hidden aspect-[16/10] w-[min(380px,32vw)] overflow-hidden"
+    >
+      <div data-peek-content class="absolute inset-0">
+        {projects.map(
+          ({ p }) =>
+            p.data.visual.src && (
+              <div data-peek-item={p.id} hidden class="absolute inset-0">
+                <img src={p.data.visual.src} alt="" loading="lazy" class="size-full object-cover" />
+              </div>
+            ),
+        )}
+      </div>
+      <canvas data-peek-px class="absolute inset-0 size-full"></canvas>
     </div>
-    <canvas data-peek-px class="absolute inset-0 size-full"></canvas>
-  </div>
+  )}
 </Section>
 
 <script>
@@ -146,10 +134,9 @@ const projects = await Promise.all(
     const summary = project.querySelector<HTMLElement>('[data-summary]');
     const detail = project.querySelector<HTMLElement>('[data-detail]');
     if (!summary || !detail) return;
-    const assembler = createAssembler(
-      [project.querySelector<HTMLElement>('[data-assemble]')!],
-      project.querySelector<HTMLCanvasElement>('[data-assemble-px]')!,
-    );
+    // only a project with an image has something to assemble
+    const art = project.querySelector<HTMLElement>('[data-assemble]');
+    const assembler = art && createAssembler([art], project.querySelector<HTMLCanvasElement>('[data-assemble-px]')!);
     // the project name becomes a real toggle button (set from script, so without JS the details just stay visible);
     // a click anywhere else on the summary toggles too, except on its links or while text is being selected
     const heading = summary.querySelector('h3')!;
@@ -169,8 +156,8 @@ const projects = await Promise.all(
     const toggle = () => {
       const open = button.getAttribute('aria-expanded') !== 'true';
       set(open);
-      assembler.reset();
-      if (open && !prefersReducedMotion()) assembler.show(0, 'left', 700, assembler.reset);
+      assembler?.reset();
+      if (open && !prefersReducedMotion()) assembler?.show(0, 'left', 700, assembler.reset);
     };
     summary.addEventListener('click', (e) => {
       if ((e.target as Element).closest('a') || getSelection()?.toString()) return;
