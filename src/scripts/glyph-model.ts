@@ -345,6 +345,15 @@ export interface LayoutInput {
   gap: number;
 }
 
+/** the largest whole cell, from `cell` down to `minCell`, whose grid fits right of the text; `cell` if none does */
+export function fittingCell(
+  o: Pick<LayoutInput, 'heroWidth' | 'cell' | 'columns' | 'rightMargin' | 'textRight' | 'gap'> & { minCell: number },
+): number {
+  for (let cell = o.cell; cell >= o.minCell; cell--)
+    if (Math.floor((o.heroWidth - o.rightMargin - o.columns * cell) / cell) * cell >= o.textRight + o.gap) return cell;
+  return o.cell;
+}
+
 export function glyphCanvasLayout(o: LayoutInput): GlyphCanvasLayout {
   const width = o.columns * o.cell;
   const originColumn = Math.max(0, Math.floor((o.heroWidth - o.rightMargin - width) / o.cell));

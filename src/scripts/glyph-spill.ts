@@ -2,6 +2,7 @@ import { HEAT_PALETTE, fbm, hash } from './pixel-math';
 import {
   BITMAPS,
   assignPixels,
+  fittingCell,
   glyphCanvasLayout,
   isCompactHero,
   pickSourceColumns,
@@ -20,6 +21,8 @@ const CYCLE_AFTER_TOUCH_MS = 6000;
 const NAMES: GlyphName[] = ['mail', 'git', 'linkedin'];
 const DESKTOP = { rightMargin: 96, minTop: 64, gap: 40 };
 const COMPACT = { rightMargin: 20, minTop: 60, gap: 16 };
+/** how far the desktop logos shrink to stay beside the text, as a share of the field's cell */
+const MIN_CELL_SHARE = 0.6;
 
 interface Particle {
   targetColumn: number;
@@ -112,9 +115,18 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     const field = hero.field();
     fieldCell = field.cellSize;
     const compact = isCompact();
-    cell = compact ? fieldCell / 2 : fieldCell;
     const heroRect = section.getBoundingClientRect();
     const text = measureText(heroRect, compact ? textBlocks.slice(0, 1) : textBlocks);
+    cell = compact
+      ? fieldCell / 2
+      : fittingCell({
+          heroWidth: heroRect.width,
+          cell: fieldCell,
+          minCell: fieldCell * MIN_CELL_SHARE,
+          columns: GLYPH_COLUMNS,
+          textRight: text.right,
+          ...DESKTOP,
+        });
     layout = glyphCanvasLayout({
       heroWidth: heroRect.width,
       cell,
