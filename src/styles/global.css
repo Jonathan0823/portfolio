@@ -43,6 +43,57 @@
   --color-pixel-mist: #f4f1ff;
 }
 
+/* the hold-to-charge hint (hold-hint.ts): three pixels filling one by one */
+.hold-hint {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.hold-hint span {
+  margin-right: 5px;
+}
+.hold-hint i {
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  opacity: 0.25;
+  animation: hold-fill 1.4s steps(1) infinite;
+}
+.hold-hint i:nth-of-type(2) {
+  animation-name: hold-fill-2;
+}
+.hold-hint i:nth-of-type(3) {
+  animation-name: hold-fill-3;
+}
+@keyframes hold-fill {
+  20% {
+    opacity: 1;
+  }
+}
+@keyframes hold-fill-2 {
+  40% {
+    opacity: 1;
+  }
+}
+@keyframes hold-fill-3 {
+  60% {
+    opacity: 1;
+  }
+}
+
+/* pops in around its own centre: it is placed with `translate`, which `scale` does not stretch */
+.hold-hint-praise {
+  animation: hold-praise 0.35s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+@keyframes hold-praise {
+  from {
+    scale: 0.4;
+  }
+}
+
 .sq {
   transition: background-color 0.4s;
 }
