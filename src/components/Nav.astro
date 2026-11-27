@@ -43,17 +43,21 @@ const { links, brandHref = '#top' } = Astro.props;
       ))}
     </div>
 
-    <details data-menu class="bg-paper font-mono text-[13px] md:hidden">
+    <details
+      data-menu
+      class="open:bg-paper group-data-on-field:not-open:text-paper relative font-mono text-[13px] md:hidden"
+    >
       <summary data-pixel-btn class="cursor-pointer list-none px-4 py-3 [&::-webkit-details-marker]:hidden">
         <span class="in-open:hidden">Menu</span>
         <span class="hidden in-open:inline">Close</span>
       </summary>
-      <div class="flex min-w-[180px] flex-col gap-1 px-4 pt-1 pb-4">
-        {links.map((l) => (
+      <div class="border-line bg-paper absolute top-full right-0 mt-2 flex min-w-[180px] flex-col border py-1 shadow-lg">
+        {links.map((l, i) => (
           <a
             href={l.href}
             data-sec={l.sec}
-            class="py-1 font-sans text-[28px] font-semibold tracking-[-0.03em] text-ink no-underline decoration-accent decoration-2 underline-offset-4 aria-[current=true]:underline"
+            style={`--i:${i + 1}`}
+            class="text-ink px-4 py-2.5 font-sans text-base font-semibold tracking-[-0.02em] no-underline decoration-accent decoration-2 underline-offset-4 aria-[current=true]:underline"
           >
             {l.label}
           </a>
@@ -169,6 +173,13 @@ const { links, brandHref = '#top' } = Astro.props;
   }
 
   const menu = document.querySelector<HTMLDetailsElement>('details[data-menu]');
+  // a dropdown closes on a tap anywhere else, or Escape
+  addEventListener('pointerdown', (e) => {
+    if (menu?.open && !menu.contains(e.target as Node)) menu.open = false;
+  });
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && menu) menu.open = false;
+  });
   menu?.addEventListener('click', (e) => {
     if ((e.target as HTMLElement).closest('a')) menu.open = false;
   });

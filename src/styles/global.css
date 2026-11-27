@@ -82,6 +82,36 @@ html.has-pixel-pointer :is(input, textarea, select, [contenteditable]) {
   text-shadow: 0 1px 3px rgb(30 27 75 / 0.9);
   transition: color 120ms 60ms;
 }
+/* the mobile menu: the panel unrolls in steps, the links follow one by one, and it fades on the way out */
+@media (prefers-reduced-motion: no-preference) {
+  [data-menu]::details-content {
+    opacity: 0;
+    transition:
+      opacity 160ms,
+      content-visibility 160ms allow-discrete;
+  }
+  [data-menu][open]::details-content {
+    opacity: 1;
+  }
+  [data-menu][open] > div {
+    animation: menu-unroll 260ms steps(8) both;
+  }
+  [data-menu][open] > div > a {
+    animation: menu-item 220ms ease-out both;
+    animation-delay: calc(var(--i) * 45ms);
+  }
+}
+@keyframes menu-unroll {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+}
+@keyframes menu-item {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
 /* the hero drip builds the headline's period: absent until built */
 html.drip-pending [data-drip-period] {
   color: transparent;
