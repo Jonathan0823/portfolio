@@ -2,6 +2,7 @@ import type { HeroField } from './hero-field';
 import { TAP_MS, impactRamp } from './cursor-math';
 import { isShapeName } from './cursor-shapes';
 import { startCharge, type Charger } from './charger';
+import { mountHoldHint } from './hold-hint';
 import { createHeroStamper, injectFieldRing, pointInField } from './hero-stamp';
 import { mountMagnetRing } from './magnet-ring';
 import { mountNavMagnet } from './nav-magnet';
@@ -29,6 +30,7 @@ export function mountCursor(fields: HeroField[]): () => void {
   const magnets = mountMagnetRing();
   const navMagnet = mountNavMagnet();
   const stamper = createHeroStamper(fields);
+  const hint = mountHoldHint();
 
   let inside = false,
     x = 0,
@@ -36,7 +38,8 @@ export function mountCursor(fields: HeroField[]): () => void {
   let overTextField = false,
     overShape = false;
   let charger: Charger | null = null,
-    chargeStrong = false;
+    chargeStrong = false,
+    pressedClickable = false;
   let scrollRaf = 0;
 
   const syncVisible = () => pointer.setVisible(inside && !overTextField);
@@ -50,6 +53,7 @@ export function mountCursor(fields: HeroField[]): () => void {
     // the in-field look is the same for the arrow and the hot arrow, so over a nav item keep the hot one's colours
     pointer.setInField(pointInField(fields, x, y) && !target?.closest('[data-nav-magnet]'));
     syncVisible();
+    hint.move(x, y, !!target?.closest(`${CLICKABLE},${OWN_CLICK}`));
   };
 
   const onMove = (e: MouseEvent) => {
@@ -81,6 +85,7 @@ export function mountCursor(fields: HeroField[]): () => void {
     pointer.setInField(false);
     // leaving the window cancels a charge: the release would land somewhere we cannot see
     charger?.cancel();
+    hint.leave();
     stamper.reset();
     navMagnet.update(x, y, false);
     syncVisible();
@@ -103,6 +108,8 @@ export function mountCursor(fields: HeroField[]): () => void {
     const target = e.target instanceof Element ? e.target : null;
     if (target?.closest(OWN_CLICK)) return;
     pointer.press(true);
+    hint.press();
+    pressedClickable = !!target?.closest(CLICKABLE);
     chargeStrong = !!target?.closest(STRONG);
     // the charge reads the live pointer each frame, so moving while holding drags it along
     charger = startCharge(pointer, () => ({ x, y }));
@@ -110,6 +117,7 @@ export function mountCursor(fields: HeroField[]): () => void {
   const onUp = (e: MouseEvent) => {
     if (e.button !== 0) return;
     pointer.press(false);
+    hint.up();
     if (!charger) return;
     const result = charger.release();
     charger = null;
@@ -120,6 +128,7 @@ export function mountCursor(fields: HeroField[]): () => void {
     spawnShockwave(at.x, at.y, chargeStrong, charge);
     injectFieldRing(fields, at.x, at.y, chargeStrong, charge, impactRamp(charge));
     pageImpact(at.x, at.y, charge);
+    hint.release({ charge, clickable: pressedClickable });
   };
   // a drag that starts selecting text is a selection, not a charge
   const onSelection = () => {
@@ -148,6 +157,7 @@ export function mountCursor(fields: HeroField[]): () => void {
     window.removeEventListener('blur', onLeave);
     document.removeEventListener('visibilitychange', onVisibility);
     charger?.dispose();
+    hint.destroy();
     document.documentElement.classList.remove(DRAWN_CLASS);
     pointer.destroy();
     magnets.destroy();
