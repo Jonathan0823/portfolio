@@ -3,7 +3,7 @@ import { cellDelays, cellProgress, coverLevel, radialDelays } from './pixel-wipe
 import { prefersReducedMotion } from './motion';
 
 const COVER_MS = 420;
-const REVEAL_MS = { intro: 900, arrive: 560 };
+const REVEAL_MS = { intro: 600, arrive: 560 };
 export const ARRIVE_KEY = 'px-arrive';
 
 const cellSize = () => (window.innerWidth < 700 ? 16 : 24);

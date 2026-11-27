@@ -4,6 +4,7 @@ import { isShapeName } from './cursor-shapes';
 import { startCharge, type Charger } from './charger';
 import { createHeroStamper, injectFieldRing, pointInField } from './hero-stamp';
 import { mountMagnetRing } from './magnet-ring';
+import { mountNavMagnet } from './nav-magnet';
 import { pageImpact } from './page-impact';
 import { createPixelPointer } from './pixel-pointer';
 import { pointerStateFor } from './pointer-sprite';
@@ -26,6 +27,7 @@ const TEXT_FIELD = 'input,textarea,select,[contenteditable]';
 export function mountCursor(fields: HeroField[]): () => void {
   const pointer = createPixelPointer();
   const magnets = mountMagnetRing();
+  const navMagnet = mountNavMagnet();
   const stamper = createHeroStamper(fields);
 
   let inside = false,
@@ -45,7 +47,8 @@ export function mountCursor(fields: HeroField[]): () => void {
     const named = target?.closest<HTMLElement>('[data-cursor]')?.dataset.cursor;
     overShape = isShapeName(named);
     pointer.setState(pointerStateFor(named, !!target?.closest(CLICKABLE)));
-    pointer.setInField(pointInField(fields, x, y));
+    // the in-field look is the same for the arrow and the hot arrow, so over a nav item keep the hot one's colours
+    pointer.setInField(pointInField(fields, x, y) && !target?.closest('[data-nav-magnet]'));
     syncVisible();
   };
 
@@ -57,7 +60,9 @@ export function mountCursor(fields: HeroField[]): () => void {
     pointer.move(x, y);
     inside = true;
     evaluate(e.target instanceof Element ? e.target : null);
-    stamper.move(x, y, e.timeStamp);
+    // while a nav item holds the pointer, the trail's heat takes the item's shape instead of trailing
+    if (navMagnet.update(x, y, true)) stamper.reset();
+    else stamper.move(x, y, e.timeStamp);
     syncMagnets();
   };
   // scrolling moves content under a still pointer, so what it is over changes without a mouse move
@@ -67,6 +72,7 @@ export function mountCursor(fields: HeroField[]): () => void {
       scrollRaf = 0;
       if (!inside) return;
       evaluate(document.elementFromPoint(x, y));
+      navMagnet.update(x, y, true);
       syncMagnets();
     });
   };
@@ -76,6 +82,7 @@ export function mountCursor(fields: HeroField[]): () => void {
     // leaving the window cancels a charge: the release would land somewhere we cannot see
     charger?.cancel();
     stamper.reset();
+    navMagnet.update(x, y, false);
     syncVisible();
     syncMagnets();
   };
@@ -144,5 +151,6 @@ export function mountCursor(fields: HeroField[]): () => void {
     document.documentElement.classList.remove(DRAWN_CLASS);
     pointer.destroy();
     magnets.destroy();
+    navMagnet.destroy();
   };
 }
