@@ -1,8 +1,7 @@
 ---
 import { CONTACT_EMAIL, GITHUB_URL, LINKEDIN_URL, MAILTO_URL } from '@/lib/profile';
 import { cvAvailable } from '@/lib/site-data';
-import { HEAT_PALETTE } from '@/lib/palette';
-import { SMALL_BITMAPS, pixelIcon, type GlyphName } from '@/scripts/glyph-model';
+import { heatIcons } from '@/lib/heat-icons';
 import ButtonIcon from './ButtonIcon.astro';
 import PixelFooter from './PixelFooter.astro';
 
@@ -14,18 +13,7 @@ const { headline } = Astro.props;
 const cv = cvAvailable();
 const pill =
   'btn-with-icon rounded-full border border-[#d4d4d4] px-[23px] py-[15px] text-base font-medium no-underline';
-const ICON_PX = 15;
-// each icon warms to its heat colour when its button is hovered, focused or showing its logo
-const icon = (name: GlyphName, heat: string) => ({
-  ...pixelIcon(SMALL_BITMAPS[name], ICON_PX),
-  style: `--heat:${heat}`,
-});
-const icons = {
-  mail: icon('mail', HEAT_PALETTE[3]),
-  git: icon('git', HEAT_PALETTE[4]),
-  linkedin: icon('linkedin', HEAT_PALETTE[2]),
-  resume: icon('resume', HEAT_PALETTE[5]),
-};
+const icons = heatIcons(15);
 ---
 
 <div id="contact" class="flex min-h-svh flex-col">

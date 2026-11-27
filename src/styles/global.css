@@ -56,31 +56,13 @@ html.has-pixel-pointer :is(input, textarea, select, [contenteditable]) {
   cursor: auto !important;
 }
 
-/* the contact links; `hint-lit` is the hero hint's target: accent colour and a pixel underline drawn in steps */
-a[data-glyph-for] {
-  padding-bottom: 3px;
-  background: linear-gradient(var(--color-accent), var(--color-accent)) left bottom / 0 2px no-repeat;
-  transition: color 0.2s;
-}
-a[data-glyph-for].hint-lit {
-  color: var(--color-accent);
-  animation: guide-underline 0.45s steps(6) forwards;
-}
-@keyframes guide-underline {
-  to {
-    background-size: 100% 2px;
+/* touch has the hero's contact links stacked at any width */
+@media not all and (hover: hover) and (pointer: fine) {
+  .hero-links {
+    flex-direction: column;
   }
 }
-/* the small pixel icon before each link takes the link's heat colour */
-.link-icon {
-  display: inline-block;
-  margin-right: 6px;
-  vertical-align: -2px;
-}
-a[data-glyph-for]:is(:hover, :focus-visible, .hint-lit) .link-icon {
-  color: var(--heat);
-}
-/* pixel icon before each closing button's label; its heat colour shows on hover, focus and while its logo is on show */
+/* pixel icon before a button's label; its heat colour shows on hover, focus and while its logo is on show */
 .btn-with-icon {
   display: inline-flex;
   align-items: center;
@@ -101,6 +83,19 @@ html.drip-pending [data-drip-period],
 /* the closing button whose logo the footer tide is showing (touch) */
 [data-pixel-btn].tide-shown {
   box-shadow: 0 0 0 2px var(--color-accent);
+}
+/* the Mould's caption, under the hero's contact links (hero-mould.ts) */
+.pour-caption {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  color: var(--color-accent);
+  font: 600 13px/1.2 var(--font-mono);
+  white-space: nowrap;
+  opacity: 0;
+}
+.pour-caption.on {
+  opacity: 1;
 }
 .sq.sq-hidden {
   background-color: var(--color-line);

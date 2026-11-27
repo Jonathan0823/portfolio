@@ -3,7 +3,9 @@ import {
   BITMAPS,
   assignPixels,
   glyphCanvasLayout,
+  isCompactHero,
   pickSourceColumns,
+  sourceBucket,
   type GlyphCanvasLayout,
   type GlyphName,
 } from './glyph-model';
@@ -48,10 +50,18 @@ const LAVA_GRAVITY = 150; // cells/s²
 const LAVA_OOZE = 0.14; // s hanging at the field before letting go
 const LAVA_COOL = 0.16; // s per heat level while cooling
 
+/** where the spill's logos stand: its grid's box in section px, in cells of `cell` px */
+export interface GlyphSlot {
+  left: number;
+  top: number;
+  columns: number;
+  rows: number;
+  cell: number;
+}
+
 export interface GlyphSpill {
-  /** spill a logo as if its link were hovered; `hide` retracts it */
-  show(name: GlyphName): void;
-  hide(): void;
+  /** lays the grid out for the hero as it is now, retracts a logo it showed by itself while compact, and says where it is */
+  refit(): GlyphSlot;
   stop(): void;
 }
 
@@ -76,7 +86,7 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
   let overField = false;
 
   const canRun = () => onScreen && !document.hidden;
-  const isCompact = () => hero.field().cellSize < 10;
+  const isCompact = () => isCompactHero(hero.field().cellSize);
   const autoShow = () => isCompact() || !fineQuery.matches;
   const autoCycle = () => autoShow() && !reduced;
 
@@ -146,11 +156,14 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
       const fieldRow = field.lowestRow[Math.floor(originField + i / ratio)];
       lowestRows.push(usable && fieldRow !== undefined && fieldRow >= 0 ? (fieldRow + 1) * ratio - 1 : fallbackRow);
     }
-    return pickSourceColumns(lowestRows).map((column) => ({
-      column,
-      row: lowestRows[column] + 1,
-      bucket: usable ? field.lowestBucket[Math.floor(originField + column / ratio)] : 1,
-    }));
+    return pickSourceColumns(lowestRows).map((column) => {
+      const fieldColumn = Math.floor(originField + column / ratio);
+      return {
+        column,
+        row: lowestRows[column] + 1,
+        bucket: usable ? sourceBucket(field.lowestRow[fieldColumn], field.lowestBucket[fieldColumn]) : 1,
+      };
+    });
   };
 
   const spill = (name: GlyphName | null) => {
@@ -470,5 +483,10 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     ctx.clearRect(0, 0, layout.width, layout.height);
     canvas.classList.add('hidden');
   };
-  return { show, hide, stop };
+  const refit = (): GlyphSlot => {
+    const { left, top, rows } = layoutCanvas();
+    settleMode();
+    return { left, top, rows, columns: GLYPH_COLUMNS, cell };
+  };
+  return { refit, stop };
 }

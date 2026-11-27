@@ -10,7 +10,7 @@ import { mountHeroField, type HeroField } from './hero-field';
 import { mountCursor } from './cursor';
 import { mountGlyphSpill, type GlyphSpill } from './glyph-spill';
 import { FIELD_BLEED, fieldShape } from './field-edges';
-import { mountHeroHint } from './hero-hint';
+import { mountHeroInvite } from './hero-invite';
 import { FOOT_BLEED, mountFooterTide, tideSwell } from './footer-tide';
 import { heroLifeShape, mountHeroLife } from './hero-life';
 import { footWordmarkShape } from './footer-wordmark';
@@ -76,8 +76,8 @@ if (typeof window.matchMedia === 'function') {
     }
   };
   whenIdle(sync);
-  // the hint plays once the hero's life has settled (its caret blinks), so it mounts with the life that gates it
-  whenIdle(() => mountHeroHint(() => glyph, mountHeroLife(hero)));
+  // the mould's drops wait for the hero's life to settle (its caret blinks), so it mounts with the life that gates it
+  whenIdle(() => mountHeroInvite(hero, () => glyph, mountHeroLife(hero)));
   const foot = fields[hosts.findIndex((h) => h.dataset.pixelField === 'foot')];
   // hover drives the tide on a fine pointer and a timer on touch, so switching pointer (or motion) remounts it
   let stopTide: (() => void) | null = null;

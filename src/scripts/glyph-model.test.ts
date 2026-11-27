@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { BITMAPS, SMALL_BITMAPS, assignPixels, glyphCanvasLayout, pickSourceColumns, pixelIcon } from './glyph-model';
+import {
+  BITMAPS,
+  SMALL_BITMAPS,
+  assignPixels,
+  glyphCanvasLayout,
+  pickSourceColumns,
+  pixelIcon,
+  sourceBucket,
+  WARM_BUCKET,
+} from './glyph-model';
 
 describe('pixelIcon', () => {
   it('merges each row into runs of cells', () => {
@@ -150,5 +159,18 @@ describe('assignPixels order', () => {
   it('sends the highest rows first when rising', () => {
     const [list] = assignPixels(BITMAPS.mail, 28, 36, [14], true);
     expect(list[0].row).toBeLessThanOrEqual(list[list.length - 1].row);
+  });
+});
+
+describe('sourceBucket', () => {
+  it('takes the heat of the field column the lava hangs from', () => {
+    expect(sourceBucket(12, 2)).toBe(2);
+    expect(sourceBucket(0, 0)).toBe(0);
+  });
+
+  it('stays warm over a column without terrain, so a logo spilled during the ignite does not cool navy', () => {
+    expect(sourceBucket(-1, 0)).toBe(WARM_BUCKET);
+    expect(sourceBucket(undefined, 0)).toBe(WARM_BUCKET);
+    expect(WARM_BUCKET).toBeGreaterThanOrEqual(3);
   });
 });

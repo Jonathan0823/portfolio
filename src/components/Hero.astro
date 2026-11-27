@@ -1,19 +1,12 @@
 ---
 import { CONTACT_EMAIL, GITHUB_URL, LINKEDIN_URL, MAILTO_URL } from '@/lib/profile';
-import { HEAT_PALETTE } from '@/lib/palette';
-import { SMALL_BITMAPS, pixelIcon, type GlyphName } from '@/scripts/glyph-model';
+import { heatIcons } from '@/lib/heat-icons';
+import ButtonIcon from './ButtonIcon.astro';
 
-const ICON_PX = 14;
-// each icon warms to its brand colour when its link is hovered or focused
-const icon = (name: GlyphName, heat: string) => ({
-  ...pixelIcon(SMALL_BITMAPS[name], ICON_PX),
-  style: `--heat:${heat}`,
-});
-const icons = {
-  mail: icon('mail', HEAT_PALETTE[3]),
-  git: icon('git', HEAT_PALETTE[4]),
-  linkedin: icon('linkedin', HEAT_PALETTE[2]),
-};
+// the footer's pill buttons a size down; stacked on phones and on touch
+const pill =
+  'btn-with-icon rounded-full border border-[#d4d4d4] px-[17px] py-[9px] text-sm leading-5 font-medium text-ink no-underline';
+const icons = heatIcons(14);
 ---
 
 <script is:inline>
@@ -51,56 +44,26 @@ const icons = {
         </a>
       </p>
     </div>
-    <p class="flex flex-col gap-2 font-mono text-sm leading-relaxed text-muted md:flex-row md:gap-0">
-      <a href={MAILTO_URL} data-glyph-for="mail" class="text-ink" style={icons.mail.style}>
-        <svg
-          class="link-icon"
-          aria-hidden="true"
-          shape-rendering="crispEdges"
-          fill="currentColor"
-          viewBox={icons.mail.viewBox}
-          width={icons.mail.width}
-          height={icons.mail.height}
-        >
-          <path d={icons.mail.d} />
-        </svg>
+    <div data-hero-links class="hero-links relative flex flex-col items-start gap-3.5 md:flex-row">
+      <a
+        href={MAILTO_URL}
+        data-glyph-for="mail"
+        data-pixel-btn="dark"
+        class="btn-with-icon rounded-full bg-ink px-[18px] py-[10px] text-sm leading-5 font-medium text-paper no-underline"
+        style={icons.mail.style}
+      >
+        <ButtonIcon icon={icons.mail} />
         {CONTACT_EMAIL}
       </a>
-      <span class="hidden md:inline">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
-      <span>
-        <a href={GITHUB_URL} data-glyph-for="git" class="text-ink" style={icons.git.style}>
-          <svg
-            class="link-icon"
-            aria-hidden="true"
-            shape-rendering="crispEdges"
-            fill="currentColor"
-            viewBox={icons.git.viewBox}
-            width={icons.git.width}
-            height={icons.git.height}
-          >
-            <path d={icons.git.d} />
-          </svg>
-          GitHub
-        </a>
-      </span>
-      <span class="hidden md:inline">&nbsp;&nbsp;·&nbsp;&nbsp;</span>
-      <span>
-        <a href={LINKEDIN_URL} data-glyph-for="linkedin" class="text-ink" style={icons.linkedin.style}>
-          <svg
-            class="link-icon"
-            aria-hidden="true"
-            shape-rendering="crispEdges"
-            fill="currentColor"
-            viewBox={icons.linkedin.viewBox}
-            width={icons.linkedin.width}
-            height={icons.linkedin.height}
-          >
-            <path d={icons.linkedin.d} />
-          </svg>
-          LinkedIn
-        </a>
-      </span>
-    </p>
+      <a href={GITHUB_URL} data-glyph-for="git" data-pixel-btn class={pill} style={icons.git.style}>
+        <ButtonIcon icon={icons.git} />
+        GitHub
+      </a>
+      <a href={LINKEDIN_URL} data-glyph-for="linkedin" data-pixel-btn class={pill} style={icons.linkedin.style}>
+        <ButtonIcon icon={icons.linkedin} />
+        LinkedIn
+      </a>
+    </div>
   </div>
 </section>
 
