@@ -30,7 +30,7 @@ const projects = await Promise.all(
   </a>
   {projects.map(({ p, links, year, description, sections }) => (
     <article id={projectAnchor(p.id)} data-project={p.id} class="border-t border-ink py-6 md:py-7">
-      <div data-cursor="eye" class="md:grid md:grid-cols-12 md:items-baseline md:gap-x-6">
+      <div data-cursor="eye" data-summary class="md:grid md:grid-cols-12 md:items-baseline md:gap-x-6">
         <div class="flex items-baseline justify-between md:col-span-3 md:block">
           <h3 class="text-[28px] leading-[1.1] font-semibold tracking-[-0.03em] md:text-[32px]">{p.data.name}</h3>
           <p class="font-mono text-[13px] leading-relaxed text-muted md:hidden">{year}</p>
@@ -68,23 +68,12 @@ const projects = await Promise.all(
               {links.map((l, i) => (
                 <>
                   {i > 0 && ' · '}
-                  <a href={l.href} class="text-ink">
+                  <a href={l.href} class="text-ink max-md:inline-flex max-md:min-h-11 max-md:items-center">
                     {l.text} ↗
                   </a>
                 </>
               ))}
             </p>
-            <button
-              type="button"
-              hidden
-              data-toggle
-              data-cursor="minus"
-              aria-expanded="true"
-              aria-controls={`${projectAnchor(p.id)}-detail`}
-              class="shrink-0 cursor-pointer font-mono text-[13px] leading-relaxed whitespace-nowrap text-ink"
-            >
-              Close −
-            </button>
           </div>
         </div>
       </div>
@@ -150,28 +139,40 @@ const projects = await Promise.all(
   import { createAssembler } from '@/scripts/pixel-assemble';
   import { prefersReducedMotion } from '@/scripts/motion';
 
+  // the whole summary is the open/close control on every device; links and selected text keep their own behaviour
   document.querySelectorAll<HTMLElement>('[data-project]').forEach((project) => {
-    const button = project.querySelector<HTMLButtonElement>('[data-toggle]');
+    const summary = project.querySelector<HTMLElement>('[data-summary]');
     const detail = project.querySelector<HTMLElement>('[data-detail]');
-    if (!button || !detail) return;
+    if (!summary || !detail) return;
     const assembler = createAssembler(
       [project.querySelector<HTMLElement>('[data-assemble]')!],
       project.querySelector<HTMLCanvasElement>('[data-assemble-px]')!,
     );
+    // the project name becomes a real toggle button (set from script, so without JS the details just stay visible);
+    // a click anywhere else on the summary toggles too, except on its links or while text is being selected
+    const heading = summary.querySelector('h3')!;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = heading.textContent;
+    button.className =
+      'cursor-[inherit] text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink';
+    button.setAttribute('aria-controls', detail.id);
+    heading.replaceChildren(button);
     const set = (open: boolean) => {
       detail.toggleAttribute('data-collapsed', !open);
       detail.toggleAttribute('inert', !open);
       button.setAttribute('aria-expanded', String(open));
-      button.textContent = open ? 'Close −' : 'Open +';
-      button.dataset.cursor = open ? 'minus' : 'plus';
     };
-    button.hidden = false;
     set(false);
-    button.addEventListener('click', () => {
+    const toggle = () => {
       const open = button.getAttribute('aria-expanded') !== 'true';
       set(open);
       assembler.reset();
       if (open && !prefersReducedMotion()) assembler.show(0, 'left', 700, assembler.reset);
+    };
+    summary.addEventListener('click', (e) => {
+      if ((e.target as Element).closest('a') || getSelection()?.toString()) return;
+      toggle();
     });
   });
 </script>

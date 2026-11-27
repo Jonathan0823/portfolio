@@ -61,9 +61,16 @@ const navLinks = [
       </p>
     </section>
 
-    <p class="text-muted px-5 pt-16 font-mono text-[13px] leading-relaxed md:px-24 md:pt-28">
-      Each square beside a year is a month. Red months have a milestone.
-    </p>
+    <div class="px-5 pt-16 md:px-24 md:pt-28">
+      <p class="flex items-center gap-4 font-mono text-[13px] leading-relaxed text-muted">
+        <span class="flex items-center gap-1.5">
+          <span aria-hidden="true" class="size-2.5 bg-square md:size-3.5"></span>month
+        </span>
+        <span class="flex items-center gap-1.5">
+          <span aria-hidden="true" class="size-2.5 bg-accent md:size-3.5"></span>milestone
+        </span>
+      </p>
+    </div>
 
     {groupsWithBodies.map((g) => (
       <section id={`y${g.year}`} class="px-5 pt-20 md:px-24 md:pt-36">

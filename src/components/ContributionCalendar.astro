@@ -78,41 +78,46 @@ const dayLabels = [
     </a>
   </div>
 
-  <div class="overflow-x-auto pb-1">
-    <svg
-      data-graph
-      data-cursor-own-click
-      role="img"
-      aria-label={calendarLabel(calendar.total)}
-      viewBox={'0 0 ' + (gutter + cols * cell) + ' ' + (labelH + 7 * cell)}
-      class="block h-auto w-full min-w-[640px] touch-pan-y overflow-visible select-none"
-    >
-      {months.map((m) => (
-        <text x={gutter + m.col * cell} y={9} font-size="9" class="fill-muted font-mono">
-          {m.label}
-        </text>
-      ))}
-      {dayLabels.map((d) => (
-        <text x={0} y={labelH + d.row * cell + 9} font-size="9" class="fill-muted font-mono">
-          {d.label}
-        </text>
-      ))}
-      {cells.map((c) => (
-        <rect
-          x={c.x}
-          y={c.y}
-          width={cell - 2}
-          height={cell - 2}
-          fill={c.fill}
-          data-tip={c.tip}
-          data-col={c.col}
-          data-row={c.row}
-          data-level={c.level}
-          data-count={c.count}
-          data-date={c.date}
-        />
-      ))}
-    </svg>
+  <p data-readout aria-live="polite" class="mb-2 min-h-[1.6em] font-mono text-[13px] leading-relaxed text-ink"></p>
+  <div data-scroller class="overflow-x-auto pb-1">
+    <div class="relative w-full min-w-[1100px] md:min-w-[640px]">
+      <svg
+        data-graph
+        data-cursor-own-click
+        role="group"
+        tabindex="0"
+        aria-label={calendarLabel(calendar.total)}
+        viewBox={'0 0 ' + (gutter + cols * cell) + ' ' + (labelH + 7 * cell)}
+        class="block h-auto w-full overflow-visible select-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
+      >
+        {months.map((m) => (
+          <text x={gutter + m.col * cell} y={9} font-size="9" class="fill-muted font-mono">
+            {m.label}
+          </text>
+        ))}
+        {dayLabels.map((d) => (
+          <text x={0} y={labelH + d.row * cell + 9} font-size="9" class="fill-muted font-mono">
+            {d.label}
+          </text>
+        ))}
+        {cells.map((c) => (
+          <rect
+            x={c.x}
+            y={c.y}
+            width={cell - 2}
+            height={cell - 2}
+            fill={c.fill}
+            data-tip={c.tip}
+            data-col={c.col}
+            data-row={c.row}
+            data-level={c.level}
+            data-count={c.count}
+            data-date={c.date}
+          />
+        ))}
+      </svg>
+      <div data-grab aria-hidden="true" class="absolute hidden size-11 touch-none"></div>
+    </div>
   </div>
   <div
     data-calendar-tip
@@ -120,8 +125,7 @@ const dayLabels = [
     aria-hidden="true"
   ></div>
 
-  <figcaption class="mt-3 flex flex-wrap items-center justify-between gap-3 font-mono text-[13px] leading-relaxed text-muted">
-    <span>Click anywhere on it. It ripples when you arrive and leave, too.</span>
+  <figcaption class="mt-3 flex flex-wrap items-center justify-end gap-3 font-mono text-[13px] leading-relaxed text-muted">
     <span class="flex items-center">
       <span class="mr-1">Less</span>
       {HEAT_PALETTE.map((color) => (
@@ -141,9 +145,10 @@ const dayLabels = [
 
 <script>
   import { HEAT_PALETTE } from '@/lib/palette';
-  import { prefersReducedMotion } from '@/scripts/motion';
+  import { FINE_POINTER_QUERY, prefersReducedMotion } from '@/scripts/motion';
   import { SHOCKWAVE_EVENT, type ShockwaveDetail } from '@/scripts/cursor-math';
   import {
+    CAL,
     gridCell,
     gridPoint,
     lift,
@@ -163,6 +168,13 @@ const dayLabels = [
   // the day under the pointer is marked: it grows, rises and gets an outline, easing in and out per cell
   const PICK_FADE_MS = 120;
   const PICK_SCALE = 1.6;
+  // a tap that moves less than this selects a day; more is a swipe
+  const TAP_SLOP = 8;
+  // the touch grab target is at least this big, whatever the cell size
+  const GRAB = 44;
+  // while scrubbing, a finger this close to the scroller's edge scrolls it, up to MAX_SCROLL px a frame
+  const EDGE_ZONE = 56;
+  const MAX_SCROLL = 12;
 
   for (const fig of document.querySelectorAll<HTMLElement>('[data-calendar]')) {
     const svg = fig.querySelector<SVGSVGElement>('svg[data-graph]');
@@ -189,6 +201,23 @@ const dayLabels = [
     svg.appendChild(layer);
     const raised = new Map<SVGRectElement, SVGRectElement>();
     let selected: (typeof cells)[number] | null = null;
+    let hover: (typeof cells)[number] | null = null;
+    let chosen: (typeof cells)[number] | null = null;
+    // set by the last touch: only then is the grab target shown
+    let touched = false;
+    let start: { x: number; y: number } | null = null;
+    let moved = false;
+    // the pointer that began the current touch gesture; other fingers are ignored until it ends
+    let pid = -1;
+    const fine = matchMedia(FINE_POINTER_QUERY);
+    const idle = () => (fine.matches ? 'Hover a day' : 'Tap a day, then drag it to scrub');
+    const readout = fig.querySelector<HTMLElement>('[data-readout]')!;
+    const scroller = fig.querySelector<HTMLElement>('[data-scroller]')!;
+    const grab = fig.querySelector<HTMLElement>('[data-grab]')!;
+    readout.textContent = idle();
+    fine.addEventListener('change', () => {
+      if (!selected) readout.textContent = idle();
+    });
 
     const frame = (now: number) => {
       const dt = now - (spot.last || now);
@@ -259,7 +288,7 @@ const dayLabels = [
       raf ||= requestAnimationFrame(frame);
     };
     /** the grid cell under the pointer, even when it is over a gap between cells */
-    const under = (e: PointerEvent) => {
+    const under = (e: { clientX: number; clientY: number }) => {
       const box = svg.getBoundingClientRect(),
         vb = svg.viewBox.baseVal;
       return gridCell(
@@ -276,47 +305,184 @@ const dayLabels = [
       const { col, row } = under(e);
       ripple(col, row, 'edge');
     };
-    const move = (e: PointerEvent) => {
-      if (e.pointerType === 'mouse') {
-        const box = svg.getBoundingClientRect(),
-          vb = svg.viewBox.baseVal;
-        const p = gridPoint(
-          ((e.clientX - box.left) / box.width) * vb.width,
-          ((e.clientY - box.top) / box.height) * vb.height,
-        );
-        spot.col = p.col;
-        spot.row = p.row;
-        spot.target = 1;
-        const { col, row } = under(e);
-        selected = byPosition.get(col + ',' + row) ?? null;
-        raf ||= requestAnimationFrame(frame);
+    const cellAt = (e: { clientX: number; clientY: number }) => {
+      const { col, row } = under(e);
+      return byPosition.get(col + ',' + row) ?? null;
+    };
+    // the hovered day (mouse) wins over the chosen day (a click, a tap or a scrub), which stays after the pointer leaves
+    const show = () => {
+      selected = hover ?? chosen;
+      readout.textContent = selected?.el.dataset.tip ?? idle();
+      raf ||= requestAnimationFrame(frame);
+      placeGrab();
+    };
+    /** a transparent target over the chosen day (touch only): it is a separate element because touch-action is read when the finger lands */
+    const placeGrab = () => {
+      if (!touched || !chosen) {
+        grab.style.display = 'none';
+        return;
       }
-      // a mouse reads the selected day, so the tip holds across the gaps between cells; touch reads what it hit
-      const text =
-        e.pointerType === 'mouse' ? selected?.el.dataset.tip : (e.target as Element).getAttribute?.('data-tip');
-      const box = fig.getBoundingClientRect();
+      const k = svg.clientWidth / svg.viewBox.baseVal.width;
+      const cx = (CAL.gutter + chosen.col * CAL.cell + CAL.cell / 2) * k;
+      const cy = (CAL.top + chosen.row * CAL.cell + CAL.cell / 2) * k;
+      grab.style.display = 'block';
+      grab.style.left = cx - GRAB / 2 + 'px';
+      grab.style.top = cy - GRAB / 2 + 'px';
+    };
+    const choose = (e: { clientX: number; clientY: number }, ripples: boolean) => {
+      chosen = cellAt(e);
+      show();
+      if (!ripples) return;
+      const { col, row } = under(e);
+      ripple(col, row, 'click');
+    };
+    const move = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') {
+        if (start && e.pointerId === pid && Math.hypot(e.clientX - start.x, e.clientY - start.y) >= TAP_SLOP)
+          moved = true;
+        return;
+      }
+      const box = svg.getBoundingClientRect(),
+        vb = svg.viewBox.baseVal;
+      const p = gridPoint(
+        ((e.clientX - box.left) / box.width) * vb.width,
+        ((e.clientY - box.top) / box.height) * vb.height,
+      );
+      spot.col = p.col;
+      spot.row = p.row;
+      spot.target = 1;
+      hover = cellAt(e);
+      show();
+      const text = hover?.el.dataset.tip;
+      const fb = fig.getBoundingClientRect();
       if (!text) {
         tip.style.opacity = '0';
         return;
       }
       tip.textContent = text;
-      tip.style.transform = `translate(${Math.max(0, Math.min(e.clientX - box.left + 12, box.width - 260))}px,${e.clientY - box.top - 48}px)`;
+      tip.style.transform = `translate(${Math.max(0, Math.min(e.clientX - fb.left + 12, fb.width - 260))}px,${e.clientY - fb.top - 48}px)`;
       tip.style.opacity = '1';
-    };
-    const click = (e: PointerEvent) => {
-      const { col, row } = under(e);
-      ripple(col, row, 'click');
     };
     svg.addEventListener('pointerenter', edge);
     svg.addEventListener('pointerleave', edge);
     svg.addEventListener('pointerleave', () => {
       tip.style.opacity = '0';
       spot.target = 0;
-      selected = null;
-      raf ||= requestAnimationFrame(frame);
+      hover = null;
+      show();
     });
     svg.addEventListener('pointermove', move);
-    svg.addEventListener('pointerdown', click);
+    svg.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse') {
+        touched = false;
+        choose(e, true);
+        return;
+      }
+      // a touch only selects when it lifts without having moved; a drag is the browser scrolling the graph
+      if (!e.isPrimary) return;
+      touched = true;
+      pid = e.pointerId;
+      start = { x: e.clientX, y: e.clientY };
+      moved = false;
+    });
+    svg.addEventListener('pointerup', (e) => {
+      if (e.pointerType === 'mouse' || !start || e.pointerId !== pid) return;
+      const tap = !moved;
+      start = null;
+      pid = -1;
+      if (tap) choose(e, true);
+    });
+    svg.addEventListener('pointercancel', (e) => {
+      if (e.pointerId !== pid) return;
+      start = null;
+      pid = -1;
+    });
+
+    // keyboard: the graph is one tab stop; arrows move a day or a week, Home/End jump to the first/last day
+    svg.addEventListener('keydown', (e) => {
+      const dx = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      const dy = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+      const edgeKey = e.key === 'Home' || e.key === 'End';
+      if (!dx && !dy && !edgeKey) return;
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      e.preventDefault();
+      const current = chosen;
+      const next = edgeKey
+        ? cells[e.key === 'Home' ? 0 : cells.length - 1]
+        : !current
+          ? cells[cells.length - 1]
+          : (byPosition.get(current.col + dx + ',' + (current.row + dy)) ?? current);
+      touched = false;
+      chosen = next;
+      show();
+      ripple(next.col, next.row, 'click');
+      const box = scroller.getBoundingClientRect();
+      const r = next.el.getBoundingClientRect();
+      if (r.left < box.left) scroller.scrollLeft += r.left - box.left;
+      else if (r.right > box.right) scroller.scrollLeft += r.right - box.right;
+    });
+
+    // scrubbing: press the chosen day and drag; the day under the finger follows, and the graph scrolls when the finger nears its edge
+    let scrubbing = false;
+    let finger = { x: 0, y: 0 };
+    let scrollRaf = 0;
+    const follow = () => {
+      const box = scroller.getBoundingClientRect();
+      const toward = finger.x < box.left + EDGE_ZONE ? -1 : finger.x > box.right - EDGE_ZONE ? 1 : 0;
+      if (toward) {
+        const depth = toward < 0 ? box.left + EDGE_ZONE - finger.x : finger.x - (box.right - EDGE_ZONE);
+        scroller.scrollLeft += toward * Math.min(1, depth / EDGE_ZONE) * MAX_SCROLL;
+      }
+      chosen = cellAt({ clientX: finger.x, clientY: finger.y }) ?? chosen;
+      show();
+      scrollRaf = scrubbing ? requestAnimationFrame(follow) : 0;
+    };
+    const endScrub = () => {
+      scrubbing = false;
+      cancelAnimationFrame(scrollRaf);
+      scrollRaf = 0;
+    };
+    grab.addEventListener('pointerdown', (e) => {
+      if (!e.isPrimary) return;
+      grab.setPointerCapture(e.pointerId);
+      pid = e.pointerId;
+      start = { x: e.clientX, y: e.clientY };
+      moved = false;
+      finger = { x: e.clientX, y: e.clientY };
+    });
+    grab.addEventListener('pointermove', (e) => {
+      if (!start || e.pointerId !== pid) return;
+      finger = { x: e.clientX, y: e.clientY };
+      if (!moved && Math.hypot(e.clientX - start.x, e.clientY - start.y) < TAP_SLOP) return;
+      moved = true;
+      if (!scrubbing) {
+        scrubbing = true;
+        scrollRaf = requestAnimationFrame(follow);
+      }
+    });
+    grab.addEventListener('pointerup', (e) => {
+      if (e.pointerId !== pid) return;
+      const tap = !moved;
+      start = null;
+      pid = -1;
+      // commit the release point before endScrub cancels the pending follow frame
+      if (!tap) {
+        chosen = cellAt(e) ?? chosen;
+        show();
+      }
+      endScrub();
+      // a tap on the target lands on whichever day is under the finger, since it covers its neighbours too
+      if (tap) choose(e, true);
+    });
+    grab.addEventListener('pointercancel', (e) => {
+      if (e.pointerId !== pid) return;
+      start = null;
+      pid = -1;
+      endScrub();
+    });
+    // iOS Safari can still start a scroll from a target that says touch-action: none
+    grab.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+    new ResizeObserver(placeGrab).observe(svg);
     // a charged click elsewhere sends a front across the page: the graph ripples from the cell facing it when the front arrives
     window.addEventListener(SHOCKWAVE_EVENT, (ev) => {
       const { x, y, speed } = (ev as CustomEvent<ShockwaveDetail>).detail;
@@ -345,7 +511,6 @@ const dayLabels = [
       io.observe(svg);
     }
     // on a narrow screen the graph scrolls sideways: start at the most recent weeks
-    const scroller = svg.parentElement!;
     scroller.scrollLeft = scroller.scrollWidth;
   }
 </script>

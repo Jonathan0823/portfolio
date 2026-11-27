@@ -17,9 +17,9 @@ const icons = heatIcons(14);
 
 <!-- phones: the hero is as tall as its content, so the next section peeks in; md and up fill the screen -->
 <section id="top" class="relative flex flex-col md:h-svh md:min-h-[800px]">
-  <div data-pixel-field="hero" aria-hidden="true" class="h-[300px] w-full md:h-[336px]"></div>
+  <div data-pixel-field="hero" aria-hidden="true" class="h-[200px] w-full md:h-[336px]"></div>
   <canvas data-glyph aria-hidden="true" class="pointer-events-none absolute top-0 left-0 z-[5] hidden"></canvas>
-  <div class="flex flex-col justify-end gap-6 px-5 pt-8 pb-6 md:flex-1 md:gap-7 md:px-24 md:pt-0 md:pb-[72px]">
+  <div class="flex flex-col justify-end gap-6 px-5 pt-3 pb-6 md:flex-1 md:gap-7 md:px-24 md:pt-0 md:pb-[72px]">
     <p class="sr-only">Eguin Jonathan, Software Engineer</p>
     <h1
       data-glyph-text
@@ -35,9 +35,13 @@ const icons = heatIcons(14);
     </h1>
     <div data-glyph-text class="flex flex-col gap-1.5 md:gap-2.5">
       <p class="font-mono text-sm leading-normal text-ink md:text-[15px]">
-        Software Engineer · Backend & Full-Stack<span class="md:hidden">{' · '}</span>
+        <span class="block md:inline">Software Engineer</span>
+        <span class="hidden md:inline"> · </span>
+        <span class="block md:inline">Backend & Full-Stack</span>
         <br class="hidden md:inline" />
-        Karawang, Indonesia (UTC+7) · open to remote roles
+        <span class="block md:inline">Karawang, Indonesia (UTC+7)</span>
+        <span class="hidden md:inline"> · </span>
+        <span class="block md:inline">open to remote roles</span>
       </p>
       <p class="font-mono text-[13px] leading-relaxed text-muted md:text-sm">
         Latest: cut a 300M-point dashboard from 5 min to under 10 s.{' '}
@@ -69,12 +73,9 @@ const icons = heatIcons(14);
   </div>
 </section>
 
-<section class="px-5 pt-16 md:px-24 md:pt-40">
-  <p class="text-[28px] leading-tight font-medium tracking-[-0.02em] text-pretty md:max-w-5/6 md:text-5xl md:leading-[1.2] md:tracking-[-0.03em]">
+<section class="px-5 pt-10 md:px-24 md:pt-40">
+  <p class="text-[25px] leading-tight font-medium tracking-[-0.02em] text-pretty md:max-w-5/6 md:text-5xl md:leading-[1.2] md:tracking-[-0.03em]">
     I’m a software engineer in Karawang, Indonesia. I write the software between factory machines and the people who
     watch them: device gateways, data pipelines and dashboards that load fast.
-  </p>
-  <p class="mt-6 font-mono text-[13px] leading-relaxed text-muted md:mt-8">
-    Backend, IoT and full-stack · Go, Python, TypeScript, Rust
   </p>
 </section>
