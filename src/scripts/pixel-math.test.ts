@@ -103,6 +103,17 @@ describe('stepField', () => {
     expect(lit(f, f.hostRows + 4, f.rows)).toBe(0);
   });
 
+  it('keeps pointer heat warm as it cools, fading it out past the body', () => {
+    const f = createField(1440, 336, 200);
+    const i = (f.hostRows + 2) * f.columns + 10;
+    for (const heat of [1, 0.6, 0.35]) {
+      f.heat[i] = heat;
+      stepField(f, 0, 1.3, 1);
+      expect(f.bucket[i]).toBeGreaterThanOrEqual(3);
+    }
+    expect(f.alpha[i]).toBeLessThan(1);
+  });
+
   it('decays heat by 0.94 per step and paints hot cells in the top bucket', () => {
     const f = createField(700, 336);
     const i = 5 * f.columns + 10;

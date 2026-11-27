@@ -1,7 +1,8 @@
 // The part of a click's field blast that reaches past the field's canvas, which would otherwise be sliced flat there.
 // A short-lived layer behind the content carries on the same cells. It covers only what is on screen and in reach,
 // draws only cells the field cannot, and is gone once they have cooled; a blast that stays inside creates nothing.
-import { HEAT_PALETTE, bucketFor } from './pixel-math';
+import { HEAT_PALETTE, heatFade, heatTone } from './pixel-math';
+import { paintCell } from './field-paint';
 import { decayFactor } from './timing';
 import type { HeroField } from './hero-field';
 
@@ -87,7 +88,7 @@ function createStrip(hero: HeroField, box: SpillBox): (column: number, row: numb
       let hottest = 0;
       for (let i = 0; i < heat.length; i++) {
         const h = (heat[i] *= decay);
-        level[i] = h < 0.3 ? -1 : bucketFor(0.1 + h);
+        level[i] = h < 0.3 ? -1 : heatTone(h);
         // cells under 0.3 are no longer drawn, so only warmer ones keep the strip alive
         if (h >= 0.3) hottest = h;
       }
@@ -99,7 +100,7 @@ function createStrip(hero: HeroField, box: SpillBox): (column: number, row: numb
           const column = i % width,
             row = Math.floor(i / width);
           const y = (hero.flipped ? height - 1 - row : row) * cell;
-          ctx.fillRect(column * cell, y, cell, cell);
+          paintCell(ctx, column * cell, y, cell, heatFade(heat[i]));
         }
       }
       if (!hottest && (stamped || now - born > UNLIT_MS)) return canvas.remove();

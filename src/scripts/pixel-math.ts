@@ -108,6 +108,11 @@ export interface FieldShape {
   mold?: Int8Array;
 }
 
+/** pointer and click heat: stays warm as it cools, never the dark end of the palette */
+export const heatTone = (h: number) => (h >= 0.75 ? 5 : h >= 0.52 ? 4 : 3);
+/** and past the field's body, where there is nothing under it, it fades out as it cools */
+export const heatFade = (h: number) => Math.max(0.15, Math.min(1, (h - 0.28) / 0.3));
+
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 /** the ordered blending pattern, 0..1 */
 const bayer = (x: number, y: number) => (BAYER[(y & 3) * 4 + (x & 3)] + 0.5) / 16;
@@ -167,7 +172,10 @@ export function stepField(field: Field, time: number, seed: number, decay = 0.94
 
       let level = body ? strataLevel(x, y, edge) : 0;
       if (stamped >= 0.3) level = Math.max(level, bucketFor(0.1 + stamped));
-      if (touched >= 0.3) level = Math.max(level, bucketFor(0.1 + touched));
+      if (touched >= 0.3) {
+        level = body || stamped >= 0.3 ? Math.max(level, heatTone(touched)) : heatTone(touched);
+        if (!body && !(stamped >= 0.3)) alpha[i] = heatFade(touched);
+      }
       // the footer letters are one flat dark colour; 10+n is a letter popping in
       if (m === 1) level = 0;
       else if (m >= 10) level = m - 10;
