@@ -76,7 +76,7 @@ if (typeof window.matchMedia === 'function') {
     }
   };
   whenIdle(sync);
-  // the mould's drops wait for the hero's life to settle (its caret blinks), so it mounts with the life that gates it
+  // the mould's drops wait for the hero's life to settle (its period is built), so it mounts with the life that gates it
   whenIdle(() => mountHeroInvite(hero, () => glyph, mountHeroLife(hero)));
   const foot = fields[hosts.findIndex((h) => h.dataset.pixelField === 'foot')];
   // hover drives the tide on a fine pointer and a timer on touch, so switching pointer (or motion) remounts it

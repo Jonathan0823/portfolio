@@ -8,7 +8,7 @@ import { holdHeat } from './heat-hold';
 export const APPEAR_AFTER_MS = 1000;
 /** the ghost outline fades in over this long */
 export const FADE_IN_MS = 800;
-/** beat between the headline's caret blinking and the first gather */
+/** beat between the headline's period being built and the first gather */
 export const FIRST_DRIP_MS = 600;
 /** a hot spot gathers under the field, then its bead hangs, before it lets go */
 export const GATHER_MS = 550;

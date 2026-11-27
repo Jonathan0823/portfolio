@@ -56,7 +56,6 @@ describe('reduced motion switched on mid-session', () => {
     expect(resolved).toBe(true);
     expect(dom.canvases.size).toBe(0);
     expect(dom.root.classList.contains('drip-pending')).toBe(false);
-    expect(dom.period.classList.contains('drip-caret')).toBe(false);
     expect(vi.getTimerCount()).toBe(0);
   };
 
@@ -108,12 +107,11 @@ describe('reduced motion switched on mid-session', () => {
     await expectStatic();
   });
 
-  it('stops the blinking caret', async () => {
+  it('leaves the built period as it is', async () => {
     mount();
     await startIgnite();
     await endIgnite();
     await vi.advanceTimersByTimeAsync(5000);
-    expect(dom.period.classList.contains('drip-caret')).toBe(true);
     dom.setReduced(true);
     await expectStatic();
   });
