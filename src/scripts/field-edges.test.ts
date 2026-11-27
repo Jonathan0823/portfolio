@@ -18,6 +18,8 @@ describe('fieldShape', () => {
     expect(fieldShape('foot', { top: 400, height: 300 }, 0, 800, true).coverage).toBe(1);
     expect(fieldShape('foot', box, 0, 800, true).fadeRows).toBeGreaterThan(0);
     expect(fieldShape('hero', box, 0, 800, true).fadeRows).toBeUndefined();
+    expect(fieldShape('hero', box, 0, 800, true).runoff).toBe(true);
+    expect(fieldShape('foot', box, 0, 800, true).runoff).toBeUndefined();
   });
 
   it('holds still under reduced motion', () => {

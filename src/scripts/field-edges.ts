@@ -7,7 +7,7 @@ const ease = (t: number) => t * t * (3 - 2 * t);
 
 /**
  * The outline of a field. The footer's surface rolls low and its anchored edge fades
- * into the page. With motion, top fields drain as you scroll away and the footer rises into view.
+ * into the page; the other fields drip. With motion, top fields drain as you scroll away and the footer rises into view.
  */
 export function fieldShape(
   kind: string,
@@ -22,5 +22,5 @@ export function fieldShape(
       fadeRows: 2.5,
       coverage: motion ? ease(clamp((viewportHeight - box.top) / box.height)) : 1,
     };
-  return { coverage: motion ? 1 - ease(clamp(scrollY / (box.height * 1.4))) * 0.85 : 1 };
+  return { runoff: true, coverage: motion ? 1 - ease(clamp(scrollY / (box.height * 1.4))) * 0.85 : 1 };
 }

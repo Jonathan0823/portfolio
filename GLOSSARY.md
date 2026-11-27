@@ -34,6 +34,10 @@ _Avoid_: Intro, loading animation, boot
 After the Ignite, lava gathers above the hero headline's red period and drops fall from it to build the period.
 _Avoid_: Typing effect, cursor animation
 
+**Runoff**:
+The hero field's own drops, which swell, fall and shrink away above the headline. Not the Drip, which happens once and builds the period.
+_Avoid_: Drips, rain
+
 **Wordmark**:
 The word EGUIN standing in the footer field's skyline, made of field cells; it dissolves out around a closing button's logo and back in. On touch it is one step of the footer cycle.
 _Avoid_: Footer logo, footer title

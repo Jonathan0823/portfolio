@@ -1,4 +1,5 @@
 export { HEAT_PALETTE } from '@/lib/palette';
+import { drawRunoff, drips, sag } from './field-runoff';
 
 export function hash(a: number, b: number, c = 0): number {
   const h = Math.sin(a * 127.1 + b * 311.7 + c * 74.7) * 43758.5453;
@@ -94,6 +95,8 @@ export function createField(width: number, height: number, bleed = 0): Field {
 export interface FieldShape {
   /** share of the horizon kept, 0..1; lower drains the field toward row 0 */
   coverage?: number;
+  /** drops swell under the surface and fall from it */
+  runoff?: boolean;
   /** a low rolling surface instead of the broad waves */
   low?: boolean;
   /** rows next to row 0 that fade out into paper */
@@ -140,13 +143,16 @@ export function stepField(field: Field, time: number, seed: number, decay = 0.94
   lowestRow.fill(-1);
   lowestBucket.fill(0);
   alpha.fill(1);
+  const runoff = shape.runoff ? drips(columns, time, seed) : null;
 
   for (let x = 0; x < columns; x++) {
     const swell = shape.swell?.[x] ?? 0;
     // a raised wave takes its own shape: the surface's own waves settle out of it, so they don't push it past the cap
     const settled = shape.cap ? Math.max(0, Math.min(1, swell / 8)) : 0;
     const waves = wander(x, time, seed, hostRows, !!shape.low);
-    const top = (horizonRow + waves * (1 - settled)) * coverage + swell;
+    // a dripping surface sits a little higher, leaving the drops room to fall
+    const outline = runoff ? waves * 0.8 - horizonRow * 0.12 + sag(runoff, x) : waves;
+    const top = (horizonRow + outline * (1 - settled)) * coverage + swell;
     surface[x] = swell > 0 && shape.cap ? Math.min(top, shape.cap) : top;
   }
 
@@ -193,5 +199,7 @@ export function stepField(field: Field, time: number, seed: number, decay = 0.94
       }
     }
   }
+  // reduced motion holds time at 0, where a drop would hang frozen in mid-air
+  if (runoff && time > 0) drawRunoff(field, runoff, coverage);
   field.hottest = hottest;
 }
