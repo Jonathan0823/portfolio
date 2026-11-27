@@ -124,8 +124,7 @@ const dayLabels = [
     aria-hidden="true"
   ></div>
 
-  <figcaption class="mt-3 flex flex-wrap items-center justify-between gap-3 font-mono text-[13px] leading-relaxed text-muted">
-    <span data-caption>Hover or click a day. It ripples when you arrive and leave, too.</span>
+  <figcaption class="mt-3 flex flex-wrap items-center justify-end gap-3 font-mono text-[13px] leading-relaxed text-muted">
     <span class="flex items-center">
       <span class="mr-1">Less</span>
       {HEAT_PALETTE.map((color) => (
@@ -145,7 +144,7 @@ const dayLabels = [
 
 <script>
   import { HEAT_PALETTE } from '@/lib/palette';
-  import { prefersReducedMotion } from '@/scripts/motion';
+  import { FINE_POINTER_QUERY, prefersReducedMotion } from '@/scripts/motion';
   import { SHOCKWAVE_EVENT, type ShockwaveDetail } from '@/scripts/cursor-math';
   import {
     CAL,
@@ -207,14 +206,15 @@ const dayLabels = [
     let touched = false;
     let start: { x: number; y: number } | null = null;
     let moved = false;
-    const IDLE = 'Pick a day to read it.';
+    const fine = matchMedia(FINE_POINTER_QUERY);
+    const idle = () => (fine.matches ? 'Hover a day' : 'Tap a day, then drag it to scrub');
     const readout = fig.querySelector<HTMLElement>('[data-readout]')!;
-    const caption = fig.querySelector<HTMLElement>('[data-caption]')!;
     const scroller = fig.querySelector<HTMLElement>('[data-scroller]')!;
     const grab = fig.querySelector<HTMLElement>('[data-grab]')!;
-    readout.textContent = IDLE;
-    if (matchMedia('(pointer: coarse)').matches)
-      caption.textContent = 'Swipe to scroll. Tap a day, then drag it to scrub.';
+    readout.textContent = idle();
+    fine.addEventListener('change', () => {
+      if (!selected) readout.textContent = idle();
+    });
 
     const frame = (now: number) => {
       const dt = now - (spot.last || now);
@@ -309,7 +309,7 @@ const dayLabels = [
     // the hovered day (mouse) wins over the chosen day (a click, a tap or a scrub), which stays after the pointer leaves
     const show = () => {
       selected = hover ?? chosen;
-      readout.textContent = selected?.el.dataset.tip ?? IDLE;
+      readout.textContent = selected?.el.dataset.tip ?? idle();
       raf ||= requestAnimationFrame(frame);
       placeGrab();
     };
