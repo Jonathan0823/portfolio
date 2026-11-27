@@ -11,7 +11,7 @@
   items:
     - { name: NestJS, icon: nestjs }
     - { name: Express, icon: express }
-    - { name: WebSocket, mono: WS }
+    - { name: WebSocket, art: websocket }
 - group: Frontend & mobile
   items:
     - { name: Next.js, icon: nextdotjs }
@@ -27,18 +27,18 @@
     - { name: Pi agent, art: pi }
 - group: IoT
   items:
-    - { name: Modbus, mono: MB }
+    - { name: Modbus, art: modbus }
     - { name: MQTT, icon: mqtt }
     - { name: Mosquitto, icon: eclipsemosquitto }
     - { name: Bluetooth, icon: bluetooth }
-    - { name: Wi-Fi, mono: WI }
+    - { name: Wi-Fi, art: wifi }
     - { name: Arduino, icon: arduino }
 - group: Data
   items:
     - { name: PostgreSQL, icon: postgresql }
     - { name: Redis, icon: redis }
     - { name: MySQL, icon: mysql }
-    - { name: SQL Server, mono: SQL }
+    - { name: SQL Server, art: sqlserver }
     - { name: MongoDB, icon: mongodb }
 - group: DevOps & tools
   items:
