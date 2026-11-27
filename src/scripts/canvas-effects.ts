@@ -30,10 +30,8 @@ if (typeof window.matchMedia === 'function') {
           ...(kind === 'foot'
             ? {
                 swell: tideSwell.rows,
-                crest: tideSwell.crest,
                 stamp: tideSwell.stamp,
                 cap: tideSwell.cap,
-                solid: true,
               }
             : {}),
         };

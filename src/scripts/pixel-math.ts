@@ -60,6 +60,10 @@ export interface Field {
   lowestRow: Int16Array;
   lowestBucket: Int8Array;
   hottest: number;
+  /** each cell's opacity, 1 except along soft edges */
+  alpha: Float32Array;
+  /** rows the field's surface stands at, per column, as of the last step */
+  surface: Float32Array;
 }
 
 /** A field for a host of `width` × `height` px, with `bleed` px of extra rows past the host. */
@@ -81,6 +85,8 @@ export function createField(width: number, height: number, bleed = 0): Field {
     lowestRow: new Int16Array(columns).fill(-1),
     lowestBucket: new Int8Array(columns),
     hottest: 0,
+    alpha: new Float32Array(columns * rows).fill(1),
+    surface: new Float32Array(columns),
   };
 }
 
@@ -88,109 +94,94 @@ export function createField(width: number, height: number, bleed = 0): Field {
 export interface FieldShape {
   /** share of the horizon kept, 0..1; lower drains the field toward row 0 */
   coverage?: number;
-  /** how far the horizon wanders per column, as a share of the host rows */
-  skyline?: number;
-  /** share of the host rows next to row 0 that dither out into paper */
-  fadeEdge?: number;
-  /** footer tide: extra rows per column added on top of the horizon; the raised body fills solid */
+  /** a low rolling surface instead of the broad waves */
+  low?: boolean;
+  /** rows next to row 0 that fade out into paper */
+  fadeRows?: number;
+  /** footer tide: extra rows per column added on top of the horizon */
   swell?: Float32Array;
-  /** footer tide: heat per column for the few rows just under the swollen surface; drawn, never stored */
-  crest?: Float32Array;
   /** footer tide: heat per cell drawn only above the surface (what the water has uncovered); never stored */
   stamp?: Float32Array;
-  /** footer tide: highest row a raised surface may reach; the wandering skyline plus a swell can't lift it past this */
+  /** footer tide: highest row a raised surface may reach */
   cap?: number;
-  /** no gaps in the body under the surface; only the loose top and the dithered bottom edge stay ragged */
-  solid?: boolean;
-  /** footer wordmark mould, per cell: 1 = letter (forced present, one step hotter), 10+n = letter at heat level n, 2 = foundation (forced present), -1 = carved out, 0 = the field's own */
+  /** footer wordmark mould, per cell: 1 = letter, 10+n = letter at heat level n, 2 = foundation (forced present), -1 = carved out, 0 = the field's own */
   mold?: Int8Array;
 }
 
-/** the warm band that wanders through a field's body, 0..1, at `depth` (rows over the horizon row) and `across` 0..1 */
-export function ridgeAt(across: number, depth: number, time: number, seed: number): number {
-  const line = 0.42 + 0.2 * Math.sin(across * 6.2 + time * 0.6 + seed) + 0.08 * Math.sin(across * 17 - time);
-  return Math.exp(-Math.pow(depth - line, 2) / 0.018);
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+/** the ordered blending pattern, 0..1 */
+const bayer = (x: number, y: number) => (BAYER[(y & 3) * 4 + (x & 3)] + 0.5) / 16;
+
+/** the resting colour of a body cell: by depth toward the surface, one layer blending into the next */
+export function strataLevel(x: number, y: number, edge: number): number {
+  const depth = y / Math.max(1, edge) + (bayer(x, y) - 0.5) * 0.13;
+  return depth < 0.36 ? 1 : depth < 0.6 ? 2 : depth < 0.76 ? 3 : depth < 0.89 ? 4 : 5;
 }
 
-/** a cell's palette level: its own terrain value, lifted to its held heat once that is hot enough to show */
-export const cellLevel = (value: number, heat: number, grain: number): number =>
-  bucketFor(heat >= 0.3 ? Math.max(value, 0.1 + heat + grain * 0.1) : value);
+/** the surface's own waves, in rows over or under the horizon */
+function wander(x: number, time: number, seed: number, hostRows: number, low: boolean): number {
+  return low
+    ? hostRows * (0.04 * Math.sin(x * 0.07 + time * 1.1) + 0.025 * Math.sin(x * 0.17 - time * 1.7))
+    : hostRows * (0.09 * Math.sin(x * 0.045 + time * 0.5 + seed) + 0.05 * Math.sin(x * 0.11 - time * 0.35));
+}
 
-export function stepField(
-  field: Field,
-  time: number,
-  seed: number,
-  density = 1,
-  decay = 0.94,
-  shape: FieldShape = {},
-): void {
-  const { columns, rows, hostRows, heat, bucket, lowestRow, lowestBucket } = field;
+export function stepField(field: Field, time: number, seed: number, decay = 0.94, shape: FieldShape = {}): void {
+  const { columns, rows, hostRows, horizonRow, heat, bucket, lowestRow, lowestBucket, alpha, surface } = field;
   const coverage = Math.max(0, Math.min(1, shape.coverage ?? 1));
-  const fadeRows = hostRows * (shape.fadeEdge ?? 0);
+  const fadeRows = shape.fadeRows ?? 0;
   const stamp = shape.stamp?.length === columns * rows ? shape.stamp : null;
   const mold = shape.mold?.length === columns * rows ? shape.mold : null;
   bucket.fill(-1);
   lowestRow.fill(-1);
   lowestBucket.fill(0);
+  alpha.fill(1);
+
+  for (let x = 0; x < columns; x++) {
+    const swell = shape.swell?.[x] ?? 0;
+    // a raised wave takes its own shape: the surface's own waves settle out of it, so they don't push it past the cap
+    const settled = shape.cap ? Math.max(0, Math.min(1, swell / 8)) : 0;
+    const waves = wander(x, time, seed, hostRows, !!shape.low);
+    const top = (horizonRow + waves * (1 - settled)) * coverage + swell;
+    surface[x] = swell > 0 && shape.cap ? Math.min(top, shape.cap) : top;
+  }
+
   let hottest = 0;
   for (let x = 0; x < columns; x++) {
-    const across = x / columns;
-    const sky = shape.skyline ? (noise(x * 0.06, seed * 3 + time * 0.08) - 0.5) * hostRows * shape.skyline * 2 : 0;
-    const swell = shape.swell?.[x] ?? 0;
-    // a raised wave takes its own shape: the skyline's wander settles out of it, so it doesn't push the crest past the cap
-    const settled = shape.cap ? Math.max(0, Math.min(1, swell / 8)) : 0;
-    const surface = (field.horizonRow + sky * (1 - settled)) * coverage;
-    // a swell lifts the wandering skyline, which could carry it above where the tide is meant to stop
-    const horizonRow =
-      swell > 0 && shape.cap
-        ? Math.min(surface + swell, shape.cap + Math.max(0, surface - shape.cap) * Math.max(0, 1 - swell / 3))
-        : surface + swell;
-    const crest = shape.crest?.[x] ?? 0;
-    // the loose, flame-like top settles onto a raised surface, and never reaches past the cap
-    const calm = swell > 0 && shape.cap ? Math.max(0, 1 - swell / 4) : 1;
-    const drip = Math.floor(
-      (Math.max(0, noise(x * 0.17, 3.1 + seed + time * 0.15) - 0.35) * 16 * density + hash(x, 7) * 2) * calm,
-    );
+    const edge = surface[x];
+    const raised = !!shape.cap && (shape.swell?.[x] ?? 0) > 0;
     for (let y = 0; y < rows; y++) {
       const i = y * columns + x;
       heat[i] *= decay;
       hottest = Math.max(hottest, heat[i]);
-      // overlays are recomputed by their owner every frame, so nothing they draw outlives them
-      let h = heat[i];
       const m = mold ? mold[i] : 0;
       if (m < 0) continue;
-      const forced = m > 0;
-      if (crest > 0 && y < horizonRow && y >= horizonRow - 3) h = Math.max(h, crest);
+      // overlays are recomputed by their owner every frame, so nothing they draw outlives them
+      const stamped = stamp && y >= edge ? stamp[i] : 0;
+      if (raised && y > shape.cap! && !(stamped > 0)) continue;
       // a negative stamp is the clearing around a logo: kept empty above the water so the logo stands apart
-      if (swell > 0 && shape.cap && y > shape.cap && !(stamp && stamp[i] > 0)) continue;
-      const stamped = stamp && y >= horizonRow ? stamp[i] : 0;
       if (stamped < 0) continue;
-      h = Math.max(h, stamped);
-      // everything under a raised surface is solid water, without the field's gaps, from the first rows it lifts. The
-      // dithered bottom edge stays, as it does across the rest of the footer
-      const water = (shape.solid || swell > 0.05) && y < horizonRow;
-      if (h < 0.3 && !forced) {
-        if (y >= horizonRow + drip * (0.4 + 0.6 * coverage)) continue;
-        if (y < fadeRows) {
-          const t = y / fadeRows;
-          if (hash(x, y, seed + 11) > t * t * (3 - 2 * t)) continue;
-        }
-        if (y >= horizonRow && hash(x, y, Math.floor(time * 2) + seed) < ((y - horizonRow) / (drip + 1)) * 0.55)
-          continue;
+      const touched = heat[i];
+      const body = y < edge;
+      const shown = touched >= 0.3 || stamped >= 0.3 || m > 0;
+      if (!body && !shown) continue;
+
+      let level = body ? strataLevel(x, y, edge) : 0;
+      if (stamped >= 0.3) level = Math.max(level, bucketFor(0.1 + stamped));
+      if (touched >= 0.3) level = Math.max(level, bucketFor(0.1 + touched));
+      // the footer letters are one flat dark colour; 10+n is a letter popping in
+      if (m === 1) level = 0;
+      else if (m >= 10) level = m - 10;
+      else if (m === 2 && !body) level = 1;
+
+      if (!shown) {
+        // the soft edge: the surface's last rows, and the rows next to row 0
+        if (!raised) alpha[i] = Math.min(1, 0.35 + (edge - y) * 0.28);
+        if (y < fadeRows) alpha[i] = Math.min(alpha[i], 0.3 + (0.7 * y) / fadeRows);
       }
-      const depth = y / field.horizonRow;
-      const base = fbm(x * 0.07 - time * 0.9 + seed, y * 0.11 + x * 0.03);
-      const ridge = ridgeAt(across, depth, time, seed);
-      const grain = hash(x, y) - 0.5;
-      const value = 0.1 + 0.5 * base + 0.42 * ridge * density + 0.18 * density + (h < 0.3 ? h : 0) + grain * 0.2;
-      if (base + grain * 0.25 < 0.36 + (1 - density) * 0.38 && ridge * density < 0.35 && h < 0.25 && !water && !forced)
-        continue;
-      const level = cellLevel(value, h, grain);
-      const lifted = m === 1 ? Math.min(4, level + 1) : m >= 10 ? m - 10 : level;
-      bucket[i] = lifted;
+      bucket[i] = level;
       if (y > lowestRow[x]) {
         lowestRow[x] = y;
-        lowestBucket[x] = lifted;
+        lowestBucket[x] = level;
       }
     }
   }

@@ -6,8 +6,6 @@ export interface HeroField {
   canvas: HTMLCanvasElement;
   field(): Field;
   time(): number;
-  /** the field's noise seed, for anything that has to match its colours */
-  seed: number;
   rect(): DOMRect;
   flipped: boolean;
   markDirty(): void;
@@ -61,15 +59,17 @@ export function mountHeroField(
     dirty = false;
     const steps = Math.min(Math.max(elapsed, 0), MAX_ELAPSED_MS) / STEP_MS;
     if (!reduced) t += TIME_STEP * steps;
-    stepField(field, t, seed, 1, decayFactor(HEAT_DECAY, steps), options.shape?.(!reduced) ?? {});
-    const { columns, rows, cellSize, bucket } = field;
+    stepField(field, t, seed, decayFactor(HEAT_DECAY, steps), options.shape?.(!reduced) ?? {});
+    const { columns, rows, cellSize, bucket, alpha } = field;
     ctx.clearRect(0, 0, columns * cellSize, rows * cellSize);
     for (let k = 0; k < HEAT_PALETTE.length; k++) {
       ctx.fillStyle = HEAT_PALETTE[k];
       for (let i = 0; i < columns * rows; i++) {
-        if (bucket[i] === k) paintCell(ctx, (i % columns) * cellSize, Math.floor(i / columns) * cellSize, cellSize);
+        if (bucket[i] === k)
+          paintCell(ctx, (i % columns) * cellSize, Math.floor(i / columns) * cellSize, cellSize, alpha[i]);
       }
     }
+    ctx.globalAlpha = 1;
   };
 
   const frame = (now: number) => {
@@ -117,7 +117,6 @@ export function mountHeroField(
     canvas,
     field: () => field,
     time: () => t,
-    seed,
     // the host box, not the canvas: the bleed is not part of the field the cursor enters
     rect: () => host.getBoundingClientRect(),
     flipped,

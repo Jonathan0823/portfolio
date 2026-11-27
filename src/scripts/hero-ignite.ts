@@ -152,8 +152,10 @@ export function createIgnite(seed: number): Ignite {
           bucket: new Int8Array(real.bucket.length),
           lowestRow: new Int16Array(real.columns),
           lowestBucket: new Int8Array(real.columns),
+          alpha: new Float32Array(real.alpha.length),
+          surface: new Float32Array(real.columns),
         };
-      stepField(scratch, hero.time(), seed, 1, 0.94, base);
+      stepField(scratch, hero.time(), seed, 0.94, base);
       const c = hero.canvas;
       if (overlay.width !== c.width || overlay.height !== c.height) {
         overlay.width = c.width;
