@@ -11,14 +11,16 @@ import {
   type GlyphCanvasLayout,
   type GlyphName,
 } from './glyph-model';
+import { clockBitmap, clockTime } from './glyph-clock';
 import { FINE_POINTER_QUERY } from './motion';
 import type { HeroField } from './hero-field';
 
 const GLYPH_ROWS = 28;
 const SHIMMER_INTERVAL_MS = 50;
-const CYCLE_MS = 3500;
-const CYCLE_AFTER_TOUCH_MS = 6000;
-const NAMES: GlyphName[] = ['mail', 'git', 'linkedin'];
+/** how long a tapped logo stands before the clock returns, where no pointer ever leaves */
+const CLOCK_AFTER_TOUCH_MS = 6000;
+/** the clock's colon is lit for this long, then dark for as long */
+const BLINK_MS = 500;
 const DESKTOP = { rightMargin: 96, minTop: 64, gap: 40 };
 const COMPACT = { rightMargin: 20, minTop: 60, gap: 16 };
 /** how far the desktop logos shrink to stay beside the text, as a share of the field's cell */
@@ -36,6 +38,8 @@ interface Particle {
   sourceIndex: number;
   fadeFromRow?: number;
   level?: number;
+  /** part of the clock's colon */
+  blinks: boolean;
   /** the glyph row the drop leaves the field at: a hot spout above it, else the field's bottom edge */
   lavaFrom?: number;
   /** the glyph column of that spout; the drop drifts from it to its own column as it falls */
@@ -63,7 +67,7 @@ export interface GlyphSlot {
 }
 
 export interface GlyphSpill {
-  /** lays the grid out for the hero as it is now, retracts a logo it showed by itself while compact, and says where it is */
+  /** lays the grid out for the hero as it is now, and says where it is */
   refit(): GlyphSlot;
   stop(): void;
 }
@@ -77,20 +81,20 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
   let sources: Source[] = [];
   let raf = 0,
     timer = 0,
-    cycleTimer = 0,
+    returnTimer = 0,
+    clockTimer = 0,
     fallbackTime = 0,
     sizeKey = '';
   let onScreen = true;
-  let current: GlyphName | null = null;
-  let cycleIndex = -1;
+  let current: GlyphName | 'clock' | null = null;
+  /** the time the clock on show was poured with */
+  let shownTime = '';
   let layout: GlyphCanvasLayout;
   let cell = 10,
     fieldCell = 10;
 
   const canRun = () => onScreen && !document.hidden;
   const isCompact = () => isCompactHero(hero.field().cellSize);
-  const autoShow = () => isCompact() || !fineQuery.matches;
-  const autoCycle = () => autoShow() && !reduced;
 
   const measureText = (heroRect: DOMRect, blocks: HTMLElement[]) => {
     let right = 0,
@@ -177,8 +181,12 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     });
   };
 
-  const spill = (name: GlyphName | null) => {
+  const spill = (name: GlyphName | 'clock') => {
+    current = name;
     layoutCanvas();
+    const clock = name === 'clock' ? clockBitmap(new Date()) : null;
+    if (clock) shownTime = clock.time;
+    const bitmap = clock ?? BITMAPS[name as GlyphName];
     const now = performance.now();
     if (reduced) particles = [];
     for (const particle of particles) {
@@ -189,74 +197,78 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
         particle.delay = hash(particle.targetColumn, particle.targetRow) * 0.12;
       }
     }
-    if (name) {
-      sources = pickSources();
-      const pixelsBySource = assignPixels(
-        BITMAPS[name],
-        GLYPH_COLUMNS,
-        layout.rows,
-        sources.map((s) => s.column),
-        layout.rising,
-      );
-      // where the field's bottom edge sits over each glyph column, in glyph rows
-      const field = hero.field();
-      const ratio = fieldCell / cell;
-      const lavaEdge = Array.from({ length: GLYPH_COLUMNS }, (_, i) => {
-        const fieldRow =
-          field.cellSize === fieldCell ? field.lowestRow[Math.floor(layout.left / fieldCell + i / ratio)] : -1;
-        return fieldRow !== undefined && fieldRow >= 0 ? ((fieldRow + 1) * fieldCell - layout.top) / cell - 1 : -1;
-      });
-      // spouts: the bottom of each orange/yellow run in the field, per glyph column, in glyph rows
-      const fieldColumnOf = (i: number) => Math.floor(layout.left / fieldCell + i / ratio);
-      const toGlyphRow = (fieldRow: number) => ((fieldRow + 1) * fieldCell - layout.top) / cell - 1;
-      const spouts = Array.from({ length: GLYPH_COLUMNS }, (_, i) => {
-        const found: number[] = [];
-        const fc = fieldColumnOf(i);
-        if (field.cellSize !== fieldCell || fc < 0 || fc >= field.columns) return found;
-        for (let r = 0; r < field.rows; r++) {
-          const hot = field.bucket[r * field.columns + fc] >= 4;
-          const below = r + 1 < field.rows && field.bucket[(r + 1) * field.columns + fc] >= 4;
-          if (hot && !below) found.push(toGlyphRow(r));
+    sources = pickSources();
+    const pixelsBySource = assignPixels(
+      bitmap,
+      GLYPH_COLUMNS,
+      layout.rows,
+      sources.map((s) => s.column),
+      layout.rising,
+    );
+    /** the grid column the bitmap's first column lands on */
+    const bitmapLeft = Math.floor((GLYPH_COLUMNS - bitmap.rows[0].length * bitmap.scale) / 2);
+    const inColon = (column: number) =>
+      !!clock && column - bitmapLeft >= clock.colon[0] && column - bitmapLeft <= clock.colon[1];
+    // where the field's bottom edge sits over each glyph column, in glyph rows
+    const field = hero.field();
+    const ratio = fieldCell / cell;
+    const lavaEdge = Array.from({ length: GLYPH_COLUMNS }, (_, i) => {
+      const fieldRow =
+        field.cellSize === fieldCell ? field.lowestRow[Math.floor(layout.left / fieldCell + i / ratio)] : -1;
+      return fieldRow !== undefined && fieldRow >= 0 ? ((fieldRow + 1) * fieldCell - layout.top) / cell - 1 : -1;
+    });
+    // spouts: the bottom of each orange/yellow run in the field, per glyph column, in glyph rows
+    const fieldColumnOf = (i: number) => Math.floor(layout.left / fieldCell + i / ratio);
+    const toGlyphRow = (fieldRow: number) => ((fieldRow + 1) * fieldCell - layout.top) / cell - 1;
+    const spouts = Array.from({ length: GLYPH_COLUMNS }, (_, i) => {
+      const found: number[] = [];
+      const fc = fieldColumnOf(i);
+      if (field.cellSize !== fieldCell || fc < 0 || fc >= field.columns) return found;
+      for (let r = 0; r < field.rows; r++) {
+        const hot = field.bucket[r * field.columns + fc] >= 4;
+        const below = r + 1 < field.rows && field.bucket[(r + 1) * field.columns + fc] >= 4;
+        if (hot && !below) found.push(toGlyphRow(r));
+      }
+      return found;
+    });
+    /** the nearest hot spout above a pixel: its column and row, searching outward a few columns */
+    const spoutFor = (column: number, row: number): [number, number] | null => {
+      for (let reach = 0; reach <= 6; reach++) {
+        for (const c of reach ? [column - reach, column + reach] : [column]) {
+          const rows = spouts[c]?.filter((r) => r < row - 1);
+          if (rows?.length) return [c, Math.max(...rows)];
         }
-        return found;
-      });
-      /** the nearest hot spout above a pixel: its column and row, searching outward a few columns */
-      const spoutFor = (column: number, row: number): [number, number] | null => {
-        for (let reach = 0; reach <= 6; reach++) {
-          for (const c of reach ? [column - reach, column + reach] : [column]) {
-            const rows = spouts[c]?.filter((r) => r < row - 1);
-            if (rows?.length) return [c, Math.max(...rows)];
-          }
-        }
-        return null;
-      };
-      pixelsBySource.forEach((pixels, sourceIndex) => {
-        const source = sources[sourceIndex];
-        pixels.forEach((pixel) => {
-          particles.push({
-            targetColumn: pixel.column,
-            targetRow: pixel.row,
-            ...(() => {
-              const spout = spoutFor(pixel.column, pixel.row);
-              return spout
-                ? { lavaFrom: spout[1], lavaColumn: spout[0] }
-                : { lavaFrom: lavaEdge[pixel.column], lavaColumn: pixel.column };
-            })(),
-            sourceRow: source.row,
-            startedAt: reduced ? now - 1e6 : now,
-            // the glyph fills from the bottom up, like a pouring mould
-            delay:
-              (pixel.row <= lavaEdge[pixel.column] ? 0 : 0.15 + (1 - pixel.row / layout.rows) * 0.6) +
-              hash(pixel.column, pixel.row, 7) * 0.18,
-            fadingOut: false,
-            column: source.column,
-            row: source.row - (layout.rising ? -1 : 1),
-            sourceIndex,
-          });
+      }
+      return null;
+    };
+    pixelsBySource.forEach((pixels, sourceIndex) => {
+      const source = sources[sourceIndex];
+      pixels.forEach((pixel) => {
+        particles.push({
+          targetColumn: pixel.column,
+          targetRow: pixel.row,
+          ...(() => {
+            const spout = spoutFor(pixel.column, pixel.row);
+            return spout
+              ? { lavaFrom: spout[1], lavaColumn: spout[0] }
+              : { lavaFrom: lavaEdge[pixel.column], lavaColumn: pixel.column };
+          })(),
+          sourceRow: source.row,
+          startedAt: reduced ? now - 1e6 : now,
+          // the glyph fills from the bottom up, like a pouring mould
+          delay:
+            (pixel.row <= lavaEdge[pixel.column] ? 0 : 0.15 + (1 - pixel.row / layout.rows) * 0.6) +
+            hash(pixel.column, pixel.row, 7) * 0.18,
+          fadingOut: false,
+          column: source.column,
+          row: source.row - (layout.rising ? -1 : 1),
+          sourceIndex,
+          blinks: inColon(pixel.column),
         });
       });
-    }
+    });
     kick();
+    armClock();
   };
 
   const loop = (now: number) => {
@@ -273,6 +285,7 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
       level: number;
       streak: number;
       falling: boolean;
+      blinks: boolean;
     }> = [];
     particles = particles.filter((p) => {
       const elapsed = ((now - p.startedAt) / 1000) * SPILL_SPEED - p.delay;
@@ -338,10 +351,14 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
         level: heat >= 0 ? Math.max(level, heat) : level,
         streak,
         falling,
+        blinks: p.blinks && !p.fadingOut,
       });
       return true;
     });
+    // the colon blinks on the wall clock once the digits have settled; without motion it stays lit
+    const dark = !moving && !reduced && Date.now() % (2 * BLINK_MS) >= BLINK_MS;
     for (const d of draws) {
+      if (dark && d.blinks) continue;
       // a molten streak trails behind a falling drop, cooling toward its tail
       for (let k = 1; k <= d.streak; k++) {
         ctx.globalAlpha = d.alpha * (1 - k / (d.streak + 1));
@@ -374,51 +391,46 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     timer = 0;
   };
 
-  const stopCycle = () => {
-    clearTimeout(cycleTimer);
-    cycleTimer = 0;
+  const stopTimers = () => {
+    clearTimeout(returnTimer);
+    clearTimeout(clockTimer);
+    returnTimer = 0;
+    clockTimer = 0;
   };
-  const armCycle = (delay: number) => {
-    stopCycle();
-    if (!autoCycle() || !canRun()) return;
-    cycleTimer = window.setTimeout(() => {
-      cycleTimer = 0;
-      cycleIndex = (cycleIndex + 1) % NAMES.length;
-      current = NAMES[cycleIndex];
-      spill(current);
-      armCycle(CYCLE_MS);
-    }, delay);
+  /** wakes at the next minute, when the clock on show goes stale */
+  const armClock = () => {
+    clearTimeout(clockTimer);
+    clockTimer = 0;
+    if (current !== 'clock' || !canRun()) return;
+    clockTimer = window.setTimeout(() => settleMode(), 60_000 - (Date.now() % 60_000));
   };
+  const showClock = () => {
+    hovered = null;
+    spill('clock');
+  };
+  const armReturn = () => {
+    clearTimeout(returnTimer);
+    returnTimer = 0;
+    if (canRun()) returnTimer = window.setTimeout(showClock, CLOCK_AFTER_TOUCH_MS);
+  };
+  /** the clock stands, up to date, unless a button's logo is asked for */
   const settleMode = () => {
-    if (autoCycle()) armCycle(current ? CYCLE_MS : 300);
-    else if (autoShow()) {
-      if (!current) {
-        cycleIndex = 0;
-        current = NAMES[0];
-      }
-      spill(current);
-    } else {
-      stopCycle();
-      if (current && !hovered) {
-        current = null;
-        spill(null);
-      }
-    }
+    if (!canRun()) return;
+    if (hovered) {
+      if (!fineQuery.matches) armReturn();
+    } else if (current !== 'clock' || shownTime !== clockTime(new Date())) spill('clock');
+    else armClock();
   };
   let hovered: GlyphName | null = null;
 
   const show = (name: GlyphName) => {
     hovered = name;
-    current = name;
-    cycleIndex = NAMES.indexOf(name);
     spill(name);
-    if (autoCycle()) armCycle(CYCLE_AFTER_TOUCH_MS);
+    if (!fineQuery.matches) armReturn();
   };
   const hide = () => {
-    hovered = null;
-    if (autoShow()) return;
-    current = null;
-    spill(null);
+    // a tapped logo leaves on its timer
+    if (fineQuery.matches && hovered) showClock();
   };
 
   let resizeFrame = 0;
@@ -426,8 +438,11 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     if (resizeFrame) return;
     resizeFrame = requestAnimationFrame(() => {
       resizeFrame = 0;
+      const before = JSON.stringify(layout);
       layoutCanvas();
-      if (current) spill(current);
+      // a phone's collapsing address bar resizes the window without moving the glyph: no second pour
+      if (current && JSON.stringify(layout) !== before) spill(current);
+      else kick();
       settleMode();
     });
   };
@@ -435,7 +450,7 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
   const onVisibility = () => {
     if (document.hidden) {
       halt();
-      stopCycle();
+      stopTimers();
     } else {
       kick();
       settleMode();
@@ -451,7 +466,7 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
             settleMode();
           } else {
             halt();
-            stopCycle();
+            stopTimers();
           }
         })
       : null;
@@ -481,7 +496,7 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     cancelAnimationFrame(resizeFrame);
     io?.disconnect();
     halt();
-    stopCycle();
+    stopTimers();
     particles = [];
     ctx.clearRect(0, 0, layout.width, layout.height);
     canvas.classList.add('hidden');
