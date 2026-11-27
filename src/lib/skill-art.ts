@@ -58,6 +58,32 @@ export const PIXEL_ART = {
     ],
     palette: { G: '#3d780a' },
   },
+  // Modbus hub emblem, without the wordmark
+  modbus: {
+    rows: [
+      '....................',
+      '.....YY......YY.....',
+      '....YYYY....YYYY....',
+      '....YYYY....YYYY....',
+      '....YYYG.OO.GYYY....',
+      '.......GOOOOG.......',
+      '......OGGOOGGO......',
+      '.....OOOGOOGOOO.....',
+      '.YYY.OOOGGGGOOO.YYY.',
+      'YYYYOOOOOGGOOOOOYYYY',
+      'YYYYGGGGGGGGGGGGYYYY',
+      '.YYY.OOOGGGGOOO.YYY.',
+      '.....OOOGOOGOOO.....',
+      '......OGGOOGGO......',
+      '.......GOOOOG.......',
+      '....YYYG.OO.GYYY....',
+      '....YYYY....YYYY....',
+      '....YYYY....YYYY....',
+      '.....YY......YY.....',
+      '....................',
+    ],
+    palette: { O: '#f7941d', Y: '#fdc010', G: '#2e8b2e' },
+  },
 } as const satisfies Record<string, PixelArt>;
 
 export type PixelArtName = keyof typeof PIXEL_ART;
