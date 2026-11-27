@@ -30,7 +30,7 @@ const projects = await Promise.all(
   </a>
   {projects.map(({ p, links, year, description, sections }) => (
     <article id={projectAnchor(p.id)} data-project={p.id} class="border-t border-ink py-6 md:py-7">
-      <div data-cursor="eye" data-summary class="cursor-pointer md:grid md:grid-cols-12 md:items-baseline md:gap-x-6">
+      <div data-cursor="eye" data-summary class="md:grid md:grid-cols-12 md:items-baseline md:gap-x-6">
         <div class="flex items-baseline justify-between md:col-span-3 md:block">
           <h3 class="text-[28px] leading-[1.1] font-semibold tracking-[-0.03em] md:text-[32px]">{p.data.name}</h3>
           <p class="font-mono text-[13px] leading-relaxed text-muted md:hidden">{year}</p>
@@ -148,7 +148,7 @@ const projects = await Promise.all(
 <script>
   import '@/scripts/project-peek';
   import { createAssembler } from '@/scripts/pixel-assemble';
-  import { prefersReducedMotion } from '@/scripts/motion';
+  import { FINE_POINTER_QUERY, prefersReducedMotion } from '@/scripts/motion';
 
   document.querySelectorAll<HTMLElement>('[data-project]').forEach((project) => {
     const button = project.querySelector<HTMLButtonElement>('[data-toggle]');
@@ -177,8 +177,10 @@ const projects = await Promise.all(
       e.stopPropagation();
       toggle();
     });
-    // the whole summary is the tap target, not just the small button; links and selecting text keep working
+    // on touch the whole summary is the tap target, not just the small button; links and selecting text keep working.
+    // a mouse keeps the button only, so hovering the summary still shows the project preview
     project.querySelector<HTMLElement>('[data-summary]')!.addEventListener('click', (e) => {
+      if (matchMedia(FINE_POINTER_QUERY).matches) return;
       if ((e.target as Element).closest('a,button') || getSelection()?.toString()) return;
       toggle();
     });
