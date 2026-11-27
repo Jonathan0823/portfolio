@@ -100,18 +100,26 @@ export function mountHeroMould(hero: HeroField, spill: () => GlyphSpill | null, 
     leaving = false,
     leftAt = -1,
     poured = false;
-  /** where the spill's logos stand, from the spill that said so; null after a resize */
+  /** where the spill's logos stand, from the spill that said so; null after a section or window resize */
   let slot: (GlyphSlot & { of: GlyphSpill }) | null = null;
   let drop: Drop | null = null;
   let landed = 0,
     landedAt = 0,
     nextAt = Infinity;
 
+  /** the section or the window changed size: ask the spill again where it stands */
+  const refit = () => {
+    slot = null;
+    drop = null;
+    ticker?.wake();
+  };
+
   const remove = () => {
     gone = true;
     events.abort();
     ticker?.stop();
     resize?.disconnect();
+    window.removeEventListener('resize', refit);
     canvas.remove();
     caption.remove();
   };
@@ -258,12 +266,10 @@ export function mountHeroMould(hero: HeroField, spill: () => GlyphSpill | null, 
     const already = links.find((link) => link.matches(':hover, :focus'));
     if (already) return found(already);
     ticker = createTicker(section, step);
+    // the spill also depends on the window's height, which can change while the section keeps its own
+    window.addEventListener('resize', refit);
     if ('ResizeObserver' in window) {
-      resize = new ResizeObserver(() => {
-        slot = null;
-        drop = null;
-        ticker?.wake();
-      });
+      resize = new ResizeObserver(refit);
       resize.observe(section);
     }
     void options.life.then(() => {
