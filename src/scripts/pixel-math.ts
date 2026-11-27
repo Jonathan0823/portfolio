@@ -52,7 +52,7 @@ export interface Field {
   cellSize: number;
   columns: number;
   rows: number;
-  /** rows inside the host box; rows past it are bleed, where only heat and embers show */
+  /** rows inside the host box; rows past it are bleed, where only heat shows */
   hostRows: number;
   horizonRow: number;
   heat: Float32Array;
