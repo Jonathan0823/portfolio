@@ -3,6 +3,7 @@ import {
   BITMAPS,
   SMALL_BITMAPS,
   assignPixels,
+  fittingCell,
   glyphCanvasLayout,
   pickSourceColumns,
   pixelIcon,
@@ -125,6 +126,19 @@ describe('glyphCanvasLayout', () => {
     const l = glyphCanvasLayout({ ...base, ...text, heroWidth: 100, textTop: 100, textRight: 1200, textBottom: 200 });
     expect(l.originColumn).toBe(0);
     expect(l.height).toBe(350);
+  });
+});
+
+describe('fittingCell', () => {
+  const base = { cell: 10, minCell: 6, columns: 28, rightMargin: 96, gap: 40, textRight: 656 };
+  it('keeps the full size where it fits beside the text', () => {
+    expect(fittingCell({ ...base, heroWidth: 1280 })).toBe(10);
+  });
+  it('shrinks until it fits', () => {
+    expect(fittingCell({ ...base, heroWidth: 1024 })).toBe(8);
+  });
+  it('keeps the full size when even the smallest does not fit, so it goes above the text', () => {
+    expect(fittingCell({ ...base, heroWidth: 800 })).toBe(10);
   });
 });
 
