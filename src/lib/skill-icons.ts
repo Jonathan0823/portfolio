@@ -122,13 +122,13 @@ export function rasterize(path: string): boolean[] {
 }
 
 /** Lit cells merged into horizontal runs, so a whole icon is one SVG path. */
-export function runsPath(lit: readonly boolean[]): string {
+export function runsPath(lit: readonly boolean[], width = GRID): string {
   let d = '';
-  for (let y = 0; y < GRID; y++)
-    for (let x = 0; x < GRID; x++) {
-      if (!lit[y * GRID + x]) continue;
+  for (let y = 0; y < lit.length / width; y++)
+    for (let x = 0; x < width; x++) {
+      if (!lit[y * width + x]) continue;
       let w = 1;
-      while (x + w < GRID && lit[y * GRID + x + w]) w++;
+      while (x + w < width && lit[y * width + x + w]) w++;
       d += `M${x} ${y}h${w}v1h-${w}z`;
       x += w - 1;
     }
