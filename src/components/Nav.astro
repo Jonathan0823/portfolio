@@ -121,7 +121,8 @@ const { links, brandHref = '#top' } = Astro.props;
     dress();
   };
   // the hero's ignite pours for about two seconds, longer on a slow machine; white links before it lands sit on nothing
-  if (field?.matches('[data-pixel-field="hero"]')) void whenHeroPoured().then(onField);
+  // without motion nothing pours, and the pour's mark only comes after the page has loaded
+  if (field?.matches('[data-pixel-field="hero"]') && !prefersReducedMotion()) void whenHeroPoured().then(onField);
   else if (field) void whenCoverGone().then(() => setTimeout(onField, prefersReducedMotion() ? 0 : POURED_MS));
   dress();
 
