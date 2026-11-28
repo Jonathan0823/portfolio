@@ -42,12 +42,16 @@ _Avoid_: Drips, rain
 The footer field's own motion: bubbles swell on its surface and pop, and hot spots rise through it.
 _Avoid_: Bubbles effect, footer embers
 
+**Wave**:
+The hero's and footer's surfaces moving like water under a hovering mouse: the pointer just outside a surface presses it in, sweeping along it pushes waves out both ways, and a hard slosh shakes a drop loose from the hero's edge. The surfaces are the only thing the pointer moves; it leaves no mark inside the lava.
+_Avoid_: Ripple, trail, cursor effect
+
 **Wordmark**:
 The word EGUIN standing in the footer field's skyline, made of field cells; it dissolves out around a closing button's logo and back in.
 _Avoid_: Footer logo, footer title
 
 **Mascots**:
-Clawd and Pi, two pixel characters standing on the Wordmark's letter tops. They burst out of the lava when the Wordmark rises and sink with it when it goes.
+Clawd and Pi, two pixel characters standing on the Wordmark's letter tops. They burst out of the lava when the Wordmark rises and sink with it when it goes, and ride the footer's Wave.
 _Avoid_: Cameo, sprites, pets
 
 **Clock**:

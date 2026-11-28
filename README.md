@@ -50,7 +50,7 @@ src/
   layouts/        BaseLayout.astro, the shared shell
   pages/          Routes: index, story, 404, /og/[page].png, robots.txt
   lib/            Content loading, schemas, SEO, Open Graph, GitHub stats, timeline helpers
-  scripts/        Browser effects: pixel canvases, cursor trail, smooth scroll, page cover
+  scripts/        Browser effects: pixel canvases, pixel pointer, surface waves, smooth scroll, page cover
   styles/         global.css with the design tokens
   data/           github.json, the committed GitHub stats snapshot
 scripts/          github-snapshot.ts, the stats refresh script
