@@ -220,14 +220,15 @@ function play(hero: HeroField | null): () => void {
   const frame = (now: number) => {
     if (done) return;
     raf = requestAnimationFrame(frame);
-    const dt = Math.min(50, last ? now - last : 16) / 1000;
-    last = now;
     if (pi.mode === 'idle') introDone = true;
     const held = pointer.heldMs(now);
     const charge = introDone && held !== null && held > 200 ? chargeOf(held) : 0;
     const charging = introDone && held !== null && held > 200;
     const resting = actors.every((a) => a.mode === 'idle' || a.mode === 'wait');
     if (!lettersLive && resting && !charging && !effects.busy() && now - lastDrawn < IDLE_FRAME_MS) return;
+    // a skipped frame leaves `last` alone, so the next update gets all the time that has passed
+    const dt = Math.min(50, last ? now - last : 16) / 1000;
+    last = now;
     lastDrawn = now;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -326,6 +327,7 @@ function play(hero: HeroField | null): () => void {
         // thrown by a blast: tumbling through the air until it lands on the headline again
         a.vy += GRAVITY * dt;
         a.x += a.vx * dt;
+        const fromY = a.y;
         a.y += a.vy * dt;
         a.ang += a.spin * dt;
         tilt = a.ang;
@@ -340,7 +342,7 @@ function play(hero: HeroField | null): () => void {
         // tumbling
         blink = true;
         const cx = a.x + w / 2;
-        const ground = floorUnder(letters, cx, a.y, lastLineTop(cx));
+        const ground = floorUnder(letters, cx, fromY, lastLineTop(cx));
         if (a.vy > 0 && a.y >= ground && a.t > 0.08) {
           a.y = ground;
           a.mode = 'stunned';

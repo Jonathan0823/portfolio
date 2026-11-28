@@ -35,10 +35,16 @@ export function inkTop(rgba: Uint8ClampedArray, w: number, y0: number, dpr: numb
 
 /** numbers each letter's line by its baseline (within 8px is the same line) and returns the lines, left to right */
 export function groupLines(letters: Letter[]): Letter[][] {
-  const key = (l: Letter) => Math.round(l.baseline / 8);
-  const keys = [...new Set(letters.map(key))].sort((a, b) => a - b);
-  letters.forEach((l) => (l.line = keys.indexOf(key(l))));
-  return keys.map((_, i) => letters.filter((l) => l.line === i).sort((a, b) => a.x - b.x));
+  // sorted by baseline, a letter starts a new line when it sits more than 8px below the previous letter
+  const sorted = [...letters].sort((a, b) => a.baseline - b.baseline);
+  let line = -1;
+  let prev = -Infinity;
+  for (const l of sorted) {
+    if (l.baseline - prev > 8) line++;
+    l.line = line;
+    prev = l.baseline;
+  }
+  return Array.from({ length: line + 1 }, (_, i) => letters.filter((l) => l.line === i).sort((a, b) => a.x - b.x));
 }
 
 /** measures the headline's letters relative to `origin`; the screen-reader-only text is left out */
