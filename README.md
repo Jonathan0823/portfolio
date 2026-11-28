@@ -1,99 +1,57 @@
-# Eguin portfolio
+# Eguin Jonathan's portfolio
 
-Personal portfolio site for Eguin Jonathan, built with [Astro](https://astro.build) and deployed as static files to Cloudflare Pages. It has two pages, home (`/`) and story (`/story`), and the content is kept in Markdown and YAML so it can be edited without touching the components.
+The source code of [eguinjonathan.com](https://eguinjonathan.com), my personal website. I'm a backend and full-stack software engineer in Karawang, Indonesia.
 
-## Stack
+**[Visit the site](https://eguinjonathan.com)** · **[Read my story](https://eguinjonathan.com/story/)**
 
-- **Astro 7** for static pages, with TypeScript throughout
-- **Tailwind CSS 4** via the Vite plugin, with global styles in `src/styles/global.css`
-- **Vitest** for unit tests of the logic in `src/lib` and `src/scripts`
-- **satori** and **@resvg/resvg-js** to render the Open Graph images at build time
-- **Lenis** for smooth scrolling
-- **Geist** and **Geist Mono** fonts, self-hosted through Fontsource
-- **pnpm** as the package manager (pinned by `packageManager` in `package.json`)
+## What's on the site
 
-## Quick start
+- **Home:** my experience, skills and projects, and how to contact me.
+- **Story:** how I got here, year by year.
 
-Requires Node 24 and pnpm.
+## Things to try
 
-```
-pnpm install --frozen-lockfile
-pnpm dev      # local dev server
-pnpm test     # unit tests
-pnpm check    # astro check (type and content checks)
-pnpm build    # static build into dist/
-pnpm preview  # serve dist/ locally
-pnpm lhci     # Lighthouse CI on / and /story, mobile and desktop
-```
+- Move your mouse along the edge of the lava at the top or bottom of the page to make waves.
+- Press and hold on the top section, then let go.
+- Watch the two pixel characters after the page loads, and find them again in the footer.
+- On a phone, tap near the lava's edge or fling the page to the bottom.
 
-`pnpm lhci` runs Lighthouse against `astro preview` on port 4321. Performance, accessibility and best-practices must each score at least 0.95. Set `CHROME_PATH` if Chrome is not on the default path.
+## Built with
 
-## Scripts
+[Astro](https://astro.build), TypeScript and [Tailwind CSS](https://tailwindcss.com), with [Lenis](https://lenis.darkroom.engineering) for smooth scrolling. It's a static site hosted on Cloudflare Pages.
 
-| Script           | What it does                                                           |
-| ---------------- | ---------------------------------------------------------------------- |
-| `dev`            | Starts the Astro dev server                                            |
-| `build`          | Builds the static site into `dist/`                                    |
-| `preview`        | Serves the built `dist/`                                               |
-| `check`          | Runs `astro check`                                                     |
-| `test`           | Runs the Vitest suite once                                             |
-| `lhci`           | Runs Lighthouse CI for mobile and desktop                              |
-| `stats:snapshot` | Refreshes the committed GitHub stats snapshot (needs `GH_STATS_TOKEN`) |
+## Run it on your computer
 
-## Project layout
+You need [Node.js](https://nodejs.org) 24 and [pnpm](https://pnpm.io).
 
-```
-src/
-  content/        Site content: milestones, projects, roles (Markdown), skills.yaml, years.yaml
-  content.config.ts  Content collection schemas
-  components/     Astro components for each section of the pages
-  layouts/        BaseLayout.astro, the shared shell
-  pages/          Routes: index, story, 404, /og/[page].png, robots.txt
-  lib/            Content loading, schemas, SEO, Open Graph, GitHub stats, timeline helpers
-  scripts/        Browser effects: pixel canvases, pixel pointer, surface waves, smooth scroll, page cover
-  styles/         global.css with the design tokens
-  data/           github.json, the committed GitHub stats snapshot
-scripts/          github-snapshot.ts, the stats refresh script
-public/           Static assets, including favicons and cv.pdf
-docs/             Notes for agents and architecture decisions
+```sh
+git clone https://github.com/Jonathan0823/portfolio.git
+cd portfolio
+pnpm install
+pnpm dev
 ```
 
-Two notes on the layout:
+Then open the address shown in your terminal. No API keys or tokens are needed.
 
-- Pure logic (no DOM access) lives in `src/lib` and `src/scripts` as small modules with tests beside them. Browser code that needs the DOM sits in the same folders and is kept separate from the maths.
-- `src/content.config.ts` validates every content file at build time. A bad entry fails the build rather than reaching the page.
+## Use the code for your own site
 
-## Editing content
+You're welcome to reuse the code. Please replace everything that is about me first:
 
-- **Milestones** (`src/content/milestones/`): dated Markdown files named `YYYY-MM-slug.md`, shown on the story page.
-- **Projects** (`src/content/projects/`): Markdown files with the project details. A `## ` heading in the body becomes a labelled section.
-- **Roles** (`src/content/roles/`): Markdown files for each job or role, shown on the experience timeline.
-- **Skills** (`src/content/skills.yaml`): skill groups, shown in file order.
-- **Years** (`src/content/years.yaml`): the subtitle and meta line for each year on `/story`.
-- **CV**: place `public/cv.pdf`. CV links only render once the file exists.
-- **Contact and profile links**: edit `src/lib/profile.ts`.
-- **Site address**: set once in `astro.config.mjs`.
+| What                              | Where                                             |
+| --------------------------------- | ------------------------------------------------- |
+| Story, projects, jobs and skills  | `src/content/`                                    |
+| Contact details and profile links | `src/lib/profile.ts`                              |
+| Name and intro text               | `src/components/`, `src/pages/`, `src/lib/seo.ts` |
+| Site address                      | `astro.config.mjs`                                |
+| CV and icons                      | `public/`                                         |
+| GitHub stats                      | `src/data/github.json`                            |
 
-## GitHub stats
+Some text also lives elsewhere, so search the project for "Eguin" before publishing. The workflow in `.github/workflows/deploy.yml` deploys to my Cloudflare project, so change or delete it.
 
-The stats on the page come from `src/data/github.json`, a snapshot committed to the repo. If `GH_STATS_TOKEN` is set at build time, the build fetches live numbers from the GitHub GraphQL API instead. If the fetch fails, the build logs a warning and uses the snapshot, so it never fails because of GitHub.
+## License
 
-To refresh the committed snapshot:
+The source code is released under the [MIT License](LICENSE).
 
-```
-GH_STATS_TOKEN=<token> pnpm stats:snapshot
-```
+My personal content is not covered by that license and remains © Eguin Jonathan, all rights reserved. This includes the writing about me, `src/content/`, `public/cv.pdf`, the favicons and touch icon, and my personal details.
 
-## Testing and CI
-
-- `pnpm test` runs the Vitest suite (`src/**/*.test.ts`).
-- The CI workflow (`.github/workflows/ci.yml`) runs on every pull request: install with the frozen lockfile, `test`, `check`, `build`, then `lhci`.
-
-## Deployment
-
-The deploy workflow (`.github/workflows/deploy.yml`) runs on pushes to `main`, on a daily schedule, and on manual dispatch. It builds the site with `GH_STATS_TOKEN` from the repository secrets, then uploads `dist/` to Cloudflare Pages (project `eguinjonathan`, branch `main`). It needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets.
-
-## Further reading
-
-- [GLOSSARY.md](GLOSSARY.md): domain terms used across the code and content
-- [docs/](docs/): agent workflow notes, the issue tracker, and triage labels
+Third-party names, logos and characters (including Clawd and Pi), fonts and packages belong to their owners and keep their own terms.
