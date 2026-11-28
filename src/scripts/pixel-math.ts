@@ -164,7 +164,7 @@ export function stepField(field: Field, time: number, seed: number, decay = 0.94
   const coverage = Math.max(0, Math.min(1, shape.coverage ?? 1));
   const fadeRows = shape.fadeRows ?? 0;
   const darkRows = (shape.darkTop ?? 0) / field.cellSize;
-  const darkShare = DARK_SHARE + (1 - DARK_SHARE) * Math.max(0, Math.min(1, (coverage - 0.4) / 0.6));
+  const darkShare = DARK_SHARE + (1 - DARK_SHARE) * Math.max(0, Math.min(1, (coverage - 0.93) / 0.07));
   const stamp = shape.stamp?.length === columns * rows ? shape.stamp : null;
   const mold = shape.mold?.length === columns * rows ? shape.mold : null;
   bucket.fill(-1);
@@ -215,7 +215,7 @@ export function stepField(field: Field, time: number, seed: number, decay = 0.94
         if (!body && !(stamped >= 0.3)) alpha[i] = heatFade(touched);
       }
       // after the heat, so a warm cell cannot lighten the band
-      // a body that has drained keeps its whole palette: the band shrinks to the lava's own indigo as it goes
+      // a body that has begun to drain keeps its whole palette: the band shrinks to the lava's own indigo at once
       if (body && y < Math.min(darkRows, edge * darkShare)) level = Math.min(level, 1);
       // the footer letters are one flat dark colour (10+n is one popping in), and only show above the body
       if (!body && m === 1) level = 0;
