@@ -45,6 +45,12 @@
   --color-pixel-mist: #f4f1ff;
 }
 
+/* selected text takes the lava's deep indigo, white on it about 8:1 */
+::selection {
+  background: var(--color-pixel-indigo);
+  color: var(--color-paper);
+}
+
 /* the hold-to-charge hint (hold-hint.ts): three pixels filling one by one */
 .hold-hint {
   display: flex;
