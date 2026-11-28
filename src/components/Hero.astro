@@ -9,12 +9,6 @@ const pill =
 const icons = heatIcons(14);
 ---
 
-<script is:inline>
-  // the drip builds the headline's period from nothing, so hide it before the first paint. Without JS, or with
-  // reduced motion (which skips the drip), it stays visible
-  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('drip-pending');
-</script>
-
 <!-- phones: the hero is as tall as its content, so the next section peeks in; md and up fill the screen -->
 <section id="top" class="relative flex flex-col md:h-svh md:min-h-[800px]">
   <div data-pixel-field="hero" aria-hidden="true" class="h-[200px] w-full md:h-[336px]"></div>
@@ -29,9 +23,7 @@ const icons = heatIcons(14);
       Hi, I’m
       <br />
       Eguin
-      <span class="text-accent" data-drip-period>
-        .
-      </span>
+      <span class="text-accent">.</span>
     </h1>
     <div data-glyph-text class="flex flex-col gap-1.5 md:gap-2.5">
       <p class="text-[15px] leading-normal text-ink md:text-[17px]">

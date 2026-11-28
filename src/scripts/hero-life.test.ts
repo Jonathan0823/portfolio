@@ -23,7 +23,7 @@ describe('emptyDepth', () => {
   });
 });
 
-describe('reduced motion switched on mid-session', () => {
+describe('the settled hero', () => {
   let dom: ReturnType<typeof fakeHeroDom>;
   let life: typeof import('./hero-life');
   let resolved: boolean;
@@ -55,9 +55,27 @@ describe('reduced motion switched on mid-session', () => {
     await vi.advanceTimersByTimeAsync(10_000);
     expect(resolved).toBe(true);
     expect(dom.canvases.size).toBe(0);
-    expect(dom.root.classList.contains('drip-pending')).toBe(false);
     expect(vi.getTimerCount()).toBe(0);
   };
+
+  it('waits for the ignite, then settles a beat after it', async () => {
+    mount();
+    await startIgnite();
+    await vi.advanceTimersByTimeAsync(IGNITE_MS);
+    expect(resolved).toBe(false);
+    paint();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(resolved).toBe(false);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(resolved).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('settles at once without a hero', async () => {
+    void life.mountHeroLife(null).then(() => (resolved = true));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(resolved).toBe(true);
+  });
 
   it('ends the ignite, and does not replay it when motion comes back', async () => {
     mount();
@@ -77,41 +95,11 @@ describe('reduced motion switched on mid-session', () => {
     await expectStatic();
   });
 
-  it('cancels the drip waiting to start', async () => {
+  it('settles at once when motion is reduced while the beat after the ignite runs', async () => {
     mount();
     await startIgnite();
     await endIgnite();
     await vi.advanceTimersByTimeAsync(0);
-    dom.setReduced(true);
-    await expectStatic();
-  });
-
-  it('never starts the drip waiting for the hero to come into view', async () => {
-    dom.setInView(false);
-    mount();
-    await startIgnite();
-    await endIgnite();
-    await vi.advanceTimersByTimeAsync(1000);
-    dom.setReduced(true);
-    dom.setInView(true);
-    await expectStatic();
-  });
-
-  it('stops a drip that is still falling', async () => {
-    mount();
-    await startIgnite();
-    await endIgnite();
-    await vi.advanceTimersByTimeAsync(400);
-    expect(dom.canvases.size).toBe(1);
-    dom.setReduced(true);
-    await expectStatic();
-  });
-
-  it('leaves the built period as it is', async () => {
-    mount();
-    await startIgnite();
-    await endIgnite();
-    await vi.advanceTimersByTimeAsync(5000);
     dom.setReduced(true);
     await expectStatic();
   });

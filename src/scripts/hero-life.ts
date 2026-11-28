@@ -1,4 +1,4 @@
-// Hero life after the intro cover lifts: the ignite boot, then the drip that builds the headline's period.
+// Hero life after the intro cover lifts: the ignite boot, and the moment the hero has settled after it.
 // Everything is skipped under prefers-reduced-motion, which keeps today's static hero.
 import type { FieldShape } from './pixel-math';
 import type { HeroField } from './hero-field';
@@ -6,12 +6,11 @@ import { REDUCE_QUERY, prefersReducedMotion } from './motion';
 import { whenCoverGone } from './page-cover';
 import { applyHolds } from './heat-hold';
 import { IGNITE_MS, createIgnite } from './hero-ignite';
-import { DRIP_PENDING_CLASS, mountHeroDrip } from './hero-drip';
 
 /** the hero field's own seed (canvas-effects.ts): the ignite's last frame must equal the resting field */
 const HERO_SEED = 1.3;
-/** the drip starts this long after the ignite has handed back to the real field */
-const AFTER_IGNITE_MS = 150;
+/** the hero counts as settled this long after the ignite has handed back to the real field */
+const SETTLE_MS = 150;
 
 const ignite = createIgnite(HERO_SEED);
 let igniteStart = -1;
@@ -59,56 +58,32 @@ export function heroLifeShape(hero: HeroField | undefined, motion: boolean, base
 }
 
 /**
- * Once the ignite is over, plays the drip when the hero is in view. Resolves once the period is built
- * (at once without motion, or when there is nothing to build). Reduced motion switched on
- * at any point stops all of it for good, leaving the plain period.
+ * Resolves a beat after the ignite has handed back to the real field, so whatever waits on a settled hero can start
+ * (at once without motion). Reduced motion switched on at any point ends the ignite and resolves it too.
  */
 export function mountHeroLife(hero: HeroField | null): Promise<void> {
-  const root = document.documentElement;
   if (!hero || prefersReducedMotion()) {
     // a paint before this call may already have put the overlay up
     finishIgnite();
-    root.classList.remove(DRIP_PENDING_CLASS);
     return Promise.resolve();
   }
   return new Promise<void>((resolve) => {
     const reduce = window.matchMedia(REDUCE_QUERY);
-    let stopped = false;
     let wait = 0;
-    let io: IntersectionObserver | null = null;
-    let stopDrip: (() => void) | null = null;
-    const drip = () => (stopDrip = mountHeroDrip(hero, resolve));
     // listened to here rather than seen by a field paint, which an off-screen hero does not get
     const stop = () => {
       if (!reduce.matches) return;
       reduce.removeEventListener('change', stop);
-      stopped = true;
       clearTimeout(wait);
-      io?.disconnect();
-      stopDrip?.();
       finishIgnite();
-      root.classList.remove(DRIP_PENDING_CLASS);
       resolve();
     };
     reduce.addEventListener('change', stop);
-    void ignited
-      .then(
-        () =>
-          new Promise<void>((go) => {
-            if (!stopped) wait = window.setTimeout(go, AFTER_IGNITE_MS);
-          }),
-      )
-      .then(() => {
-        if (stopped) return;
-        const section = document.getElementById('top');
-        if (!section || !('IntersectionObserver' in window)) return void drip();
-        // an off-screen drip teaches nothing: wait until the hero is in view
-        io = new IntersectionObserver(([entry]) => {
-          if (stopped || !entry.isIntersecting) return;
-          io?.disconnect();
-          drip();
-        });
-        io.observe(section);
-      });
+    void ignited.then(() => {
+      wait = window.setTimeout(() => {
+        reduce.removeEventListener('change', stop);
+        resolve();
+      }, SETTLE_MS);
+    });
   });
 }
