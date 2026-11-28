@@ -295,6 +295,11 @@ export function mountFooterMascots(foot: HeroField, reduced: boolean, ride: Ride
 
   /** the water under a mascot: its pose is in half cells, the wave in field columns */
   const under = (m: Mascot): WaveUnder => (m.pose ? ride(m.pose.P / 2, (m.pose.P + m.sprite.width) / 2) : CALM);
+  /** where a mascot is drawn and tapped: its pose lifted and tipped by the crest under its feet */
+  const shown = (m: Mascot, pose: Pose): Pose => {
+    const w = under(m);
+    return { ...pose, F: pose.F + w.lift * 2, tilt: pose.tilt + w.tilt };
+  };
 
   const draw = (s: Stance, now: number) => {
     const w = host.clientWidth;
@@ -328,9 +333,7 @@ export function mountFooterMascots(foot: HeroField, reduced: boolean, ride: Ride
     for (const m of all) {
       if (!m.pose) continue;
       // a crest under its feet lifts it and tips it along the slope
-      const w = under(m);
-      const pose = { ...m.pose, F: m.pose.F + w.lift * 2, tilt: m.pose.tilt + w.tilt };
-      drawMascot(ctx, m.sprite, pose, view, m === clawd && now < clawd.blinkUntil);
+      drawMascot(ctx, m.sprite, shown(m, m.pose), view, m === clawd && now < clawd.blinkUntil);
     }
     for (const { p, born } of particles) {
       const d = particleAt(p, now - born);
@@ -367,7 +370,7 @@ export function mountFooterMascots(foot: HeroField, reduced: boolean, ride: Ride
     const x = e.clientX - box.left;
     const y = e.clientY - box.top;
     for (const m of all)
-      if (m.pose && m.presence.phase === 'up' && hits(m.sprite, m.pose, view, x, y, TAP_SLOP)) hopInPlace(m);
+      if (m.pose && m.presence.phase === 'up' && hits(m.sprite, shown(m, m.pose), view, x, y, TAP_SLOP)) hopInPlace(m);
   };
   window.addEventListener('pointerdown', onPointerDown, { passive: true });
 
