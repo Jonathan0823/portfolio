@@ -29,6 +29,9 @@ export function mountHeroPointer(area: HTMLElement, on: Handlers): HeroPointer {
   const onMove = (e: PointerEvent) => void track(e);
   const onDown = (e: PointerEvent) => {
     const r = track(e);
+    // a press on the page's scrollbar lands outside the content box: it is a drag to scroll, not a hold
+    const root = document.documentElement;
+    if (e.clientX >= root.clientWidth || e.clientY >= root.clientHeight) return;
     on.press(ptr.x, ptr.y);
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     if ((e.target as HTMLElement | null)?.closest?.(INTERACTIVE)) return;

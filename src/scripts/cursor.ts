@@ -100,6 +100,9 @@ export function mountCursor(fields: HeroField[]): () => void {
 
   const onDown = (e: MouseEvent) => {
     if (e.button !== 0) return;
+    // a press on the page's scrollbar is a scroll drag, not a charge
+    const root = document.documentElement;
+    if (e.clientX >= root.clientWidth || e.clientY >= root.clientHeight) return;
     charger?.dispose();
     charger = null;
     const target = e.target instanceof Element ? e.target : null;
