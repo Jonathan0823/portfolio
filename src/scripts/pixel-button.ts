@@ -3,7 +3,8 @@ import { HEAT_PALETTE, hash } from './pixel-math';
 import { cellDelays, cellProgress, entrySide, type Side } from './pixel-wipe';
 import { REFERENCE_FRAME_MS, frameScale } from './timing';
 
-const CELL = 5;
+// the hero field's cell (pixel-math): 8px on narrow screens, 10px wide, so the fill has the same grain as the hero
+const cellSize = (width: number) => (width < 700 ? 8 : 10);
 const DURATION_MS = 300;
 const INK = '#111111';
 const DARK_SETTLE = HEAT_PALETTE[1];
@@ -20,7 +21,8 @@ function setup(button: HTMLElement, reduced: boolean) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  let columns = 0,
+  let cell = 10,
+    columns = 0,
     rows = 0,
     delays = cellDelays(0, 0, 'left');
   let side: Side = 'left';
@@ -39,10 +41,10 @@ function setup(button: HTMLElement, reduced: boolean) {
         if (p <= 0) continue;
         ctx.fillStyle = p >= 1 ? settle : HOT[Math.floor(hash(x, y, 9) * HOT.length)];
         ctx.fillRect(
-          Math.floor(x * CELL * scale),
-          Math.floor(y * CELL * scale),
-          Math.ceil(CELL * scale),
-          Math.ceil(CELL * scale),
+          Math.floor(x * cell * scale),
+          Math.floor(y * cell * scale),
+          Math.ceil(cell * scale),
+          Math.ceil(cell * scale),
         );
       }
     }
@@ -57,10 +59,11 @@ function setup(button: HTMLElement, reduced: boolean) {
     const w = button.clientWidth,
       h = button.clientHeight;
     const dpr = window.devicePixelRatio || 1;
+    cell = cellSize(w);
     canvas.width = Math.max(1, Math.round(w * dpr));
     canvas.height = Math.max(1, Math.round(h * dpr));
-    columns = Math.ceil(w / CELL);
-    rows = Math.ceil(h / CELL);
+    columns = Math.ceil(w / cell);
+    rows = Math.ceil(h / cell);
     delays = cellDelays(columns, rows, side);
     render();
   };
