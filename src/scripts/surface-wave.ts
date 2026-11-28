@@ -97,6 +97,11 @@ export function sloshWave(wave: SurfaceWave, push: number, phase: number): void 
     wave.velocity[x] += p * (1 - SLOSH_VARY + SLOSH_VARY * Math.sin(x * 0.13 + phase));
 }
 
+/** A blast front reaches `column`: the surface there is shoved `push` rows per step into the lava (toward the anchored edge). */
+export function hitWave(wave: SurfaceWave, column: number, push: number): void {
+  if (column >= 0 && column < wave.height.length) wave.velocity[column] -= push;
+}
+
 /** one WAVE_STEP_MS step: each column is pulled toward its neighbours and back toward calm */
 export function stepWave(wave: SurfaceWave): void {
   const { height, velocity } = wave;

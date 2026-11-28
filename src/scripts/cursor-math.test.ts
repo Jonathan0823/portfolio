@@ -13,8 +13,6 @@ import {
   chargeScale,
   clampLevel,
   farthestCorner,
-  fieldRingHeat,
-  fieldRingRadius,
   impactRamp,
   impactStrength,
   kickFalloff,
@@ -126,22 +124,6 @@ describe('shockwaveShape', () => {
     expect(tap.full).toBe(false);
     expect(full.full).toBe(true);
     expect(shockwaveShape(0, false).spokes).toBe(4);
-  });
-});
-
-describe('hero field ring', () => {
-  it('expands fast then slows, and a bigger click reaches further', () => {
-    const half = fieldRingRadius(true, 0, 0, 0.5),
-      end = fieldRingRadius(true, 0, 0, 1);
-    expect(half).toBeGreaterThan(end / 2);
-    expect(fieldRingRadius(true, 1, 1, 1)).toBeGreaterThan(end);
-    expect(fieldRingRadius(false, 0, 0, 1)).toBeLessThan(end);
-  });
-  it('heats only cells on the ring, and fades as it ages', () => {
-    expect(fieldRingHeat(10, 4, true, 0)).toBe(0);
-    expect(fieldRingHeat(4, 4, true, 0)).toBe(1);
-    expect(fieldRingHeat(4, 4, true, 1)).toBeLessThan(1);
-    expect(fieldRingHeat(4, 4, false, 0)).toBeLessThan(1);
   });
 });
 

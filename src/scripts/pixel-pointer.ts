@@ -38,8 +38,14 @@ export function createPixelPointer(): PixelPointer {
   canvas.setAttribute('aria-hidden', 'true');
   canvas.width = CANVAS * dpr;
   canvas.height = CANVAS * dpr;
-  canvas.style.cssText = `position:fixed;left:0;top:0;width:${CANVAS}px;height:${CANVAS}px;pointer-events:none;z-index:9998;opacity:0;image-rendering:pixelated;transition:opacity 80ms linear`;
+  // the top layer is above every z-index (the dev toolbar, a prototype's bar), so the pointer is never drawn under anything;
+  // a popover's UA box (centred, bordered, filled) is reset, and z-index stays as the fallback without popover support
+  canvas.style.cssText = `position:fixed;inset:0 auto auto 0;margin:0;border:0;padding:0;background:transparent;overflow:visible;width:${CANVAS}px;height:${CANVAS}px;pointer-events:none;z-index:9998;opacity:0;image-rendering:pixelated;transition:opacity 80ms linear`;
   document.body.appendChild(canvas);
+  if ('showPopover' in canvas) {
+    canvas.popover = 'manual';
+    canvas.showPopover();
+  }
   const ctx = canvas.getContext('2d')!;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 

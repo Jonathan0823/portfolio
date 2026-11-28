@@ -1,5 +1,5 @@
 // Wave, mounted: the hero's and the footer's surfaces move like water. This is the thin driver: it steps each field's
-// wave model (surface-wave.ts), lets an input (a hovering mouse, or taps and scrolling on touch) push the water, shakes
+// wave model (surface-wave.ts), lets inputs (a hovering mouse and a charged blast, or taps and scrolling on touch) push the water, shakes
 // drops loose from the hero's hanging edge, and hands both to the field's shape each frame. It runs only while
 // something moves.
 import type { HeroField } from './hero-field';
@@ -44,6 +44,30 @@ export interface WaveInput {
 
 /** an input, mounted with the driver's wake (call it when there is something new to push with) */
 export type MountWaveInput = (wake: () => void) => WaveInput;
+
+/** several inputs as one: each gets every call, and the driver stays busy while any of them is */
+export function combineInputs(...mounts: MountWaveInput[]): MountWaveInput {
+  return (wake) => {
+    const inputs = mounts.map((mount) => mount(wake));
+    return {
+      frame(now) {
+        for (const input of inputs) input.frame?.(now);
+      },
+      step(field, wave) {
+        for (const input of inputs) input.step?.(field, wave);
+      },
+      busy(now) {
+        // every input sees the call, even after one already says busy: busy() may also settle its own state
+        let busy = false;
+        for (const input of inputs) busy = (input.busy?.(now) ?? false) || busy;
+        return busy;
+      },
+      stop() {
+        for (const input of inputs) input.stop();
+      },
+    };
+  };
+}
 
 /** a viewport point against a field: its column, and how many rows it is outside the surface there (negative: inside) */
 export function pointOnField(field: HeroField, x: number, y: number): { column: number; outside: number } {
