@@ -1,0 +1,43 @@
+---
+import { getSkills } from '@/lib/content';
+import { GRID, skillIcon, type SkillIcon } from '@/lib/skill-icons';
+
+interface Props {
+  tags: string[];
+}
+
+const { tags } = Astro.props;
+
+// a tag is a skill by name; failing that a simple-icons slug (a few tags are spelled differently there); failing that, text only
+const ALIASES: Record<string, string> = { 'c++': 'cplusplus', esp32: 'espressif', mcp: 'modelcontextprotocol' };
+const skills = (await getSkills()).flatMap((g) => g.data.items);
+
+function iconFor(tag: string): SkillIcon | null {
+  const key = tag.toLowerCase();
+  const skill = skills.find((s) => s.name.toLowerCase() === key);
+  try {
+    if (skill) return skillIcon(skill);
+    return skillIcon({ icon: ALIASES[key] ?? key.replace(/[^a-z0-9]/g, '') });
+  } catch {
+    return null;
+  }
+}
+
+const items = tags.map((name) => ({ name, icon: iconFor(name) }));
+---
+
+<ul class="flex flex-wrap items-center gap-x-4 gap-y-2">
+  {items.map(({ name, icon }) => (
+    <li class="inline-flex items-center gap-1.5">
+      {icon && (
+        <svg viewBox={`0 0 ${GRID} ${GRID}`} aria-hidden="true" shape-rendering="crispEdges" class="size-4 shrink-0">
+          <path class="fill-ink" d={icon.base} />
+          {icon.layers.map((l) => (
+            <path d={l.d} fill={l.color} />
+          ))}
+        </svg>
+      )}
+      <span>{name}</span>
+    </li>
+  ))}
+</ul>

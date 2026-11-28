@@ -1,6 +1,7 @@
 ---
 import Section from './Section.astro';
 import Visual from './Visual.astro';
+import TechStack from './TechStack.astro';
 import { cvAvailable } from '@/lib/site-data';
 import { getProjects, getRoles } from '@/lib/content';
 import { projectAnchor, projectForAchievement } from '@/lib/projects';
@@ -19,29 +20,38 @@ const work = (await getRoles('work')).map((role) => {
   };
 });
 const cv = cvAvailable();
-const education = await getRoles('education');
-const place = (r: { org: string; location?: string }) => [r.org, r.location].filter(Boolean).join(' · ');
+const place = (r: { org: string; location?: string }) => [r.org, r.location].filter(Boolean).join(', ');
 const summary = (sq: { hasAchievement: boolean }[]) =>
   `${sq.length} months, ${sq.filter((q) => q.hasAchievement).length} with a result listed`;
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 ---
 
 <Section id="experience" title="Experience.">
-  {cv && (
-    <a slot="aside" href="/cv.pdf" class="text-ink">
-      <span class="md:hidden">CV (PDF)</span>
-      <span class="hidden md:inline">Download CV (PDF)</span>
-    </a>
-  )}
-  {work.map(({ role, squares, range, duration }, i) => (
-    // the first role carries the key for the month squares, right beside them
+  <div
+    slot="aside"
+    class="flex flex-wrap items-baseline gap-x-6 gap-y-2 text-[15px] leading-relaxed text-muted md:justify-end"
+  >
+    <p class="flex items-center gap-4">
+      <span class="flex items-center gap-1.5">
+        <span aria-hidden="true" class="size-2.5 bg-square"></span>month
+      </span>
+      <span class="flex items-center gap-1.5">
+        <span aria-hidden="true" class="size-2.5 bg-accent"></span>result shipped
+      </span>
+    </p>
+    {cv && (
+      <a href="/cv.pdf" class="text-ink">
+        <span class="md:hidden">CV (PDF)</span>
+        <span class="hidden md:inline">Download CV (PDF)</span>
+      </a>
+    )}
+  </div>
+  {work.map(({ role, squares, range, duration }) => (
     <div data-role class="grid grid-cols-12 gap-x-6 border-t border-ink pt-8 pb-4 md:py-10">
       <div class="col-span-12 flex flex-col md:sticky md:top-24 md:col-span-3 md:gap-2.5 md:self-start">
-        <p class="font-mono text-[13px] leading-relaxed text-muted md:hidden">
-          {range} · {duration}
+        <p class="flex flex-wrap gap-x-4 gap-y-2 text-[15px] leading-relaxed text-muted">
+          <span>{range}</span>
+          <span>{duration}</span>
         </p>
-        <p class="hidden text-[22px] leading-tight font-semibold tracking-[-0.02em] md:block">{range}</p>
-        <p class="hidden font-mono text-[13px] leading-relaxed text-muted md:block">{duration}</p>
         <div class="hidden max-w-[204px] flex-wrap gap-[3px] md:flex" role="img" aria-label={summary(squares)}>
           {squares.map((q) => (
             <span
@@ -51,21 +61,9 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
             ></span>
           ))}
         </div>
-        {i === 0 && (
-          <div class="hidden md:block">
-            <p class="flex items-center gap-4 font-mono text-[13px] leading-relaxed text-muted">
-              <span class="flex items-center gap-1.5">
-                <span aria-hidden="true" class="size-2.5 bg-square"></span>month
-              </span>
-              <span class="flex items-center gap-1.5">
-                <span aria-hidden="true" class="size-2.5 bg-accent"></span>result shipped
-              </span>
-            </p>
-          </div>
-        )}
       </div>
       <div class="col-span-12 flex flex-col md:col-span-9">
-        <h3 class="mt-2.5 text-[26px] leading-[1.15] font-semibold tracking-[-0.02em] md:mt-0 md:text-[32px] md:leading-[1.1] md:tracking-[-0.03em]">
+        <h3 class="mt-2.5 text-[28px] leading-[1.1] font-semibold tracking-[-0.03em] md:text-[32px] md:mt-0">
           {role.data.title}
         </h3>
         <p class="mt-1 text-[15px] leading-relaxed text-muted md:pb-3">{place(role.data)}</p>
@@ -78,88 +76,60 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
             ></span>
           ))}
         </div>
-        {i === 0 && (
-          <div class="-mt-2 mb-4 md:hidden">
-            <p class="flex items-center gap-4 font-mono text-[13px] leading-relaxed text-muted">
-              <span class="flex items-center gap-1.5">
-                <span aria-hidden="true" class="size-2.5 bg-square"></span>month
-              </span>
-              <span class="flex items-center gap-1.5">
-                <span aria-hidden="true" class="size-2.5 bg-accent"></span>result shipped
-              </span>
-            </p>
-          </div>
-        )}
-        {role.data.achievements
-          .toSorted((a, b) => b.month.localeCompare(a.month))
-          .map((a, i) => (
+        {role.data.achievements.map((a, i) => {
+          const published = projectForAchievement(projects, a.id);
+          return (
             <div
               id={a.id}
               class:list={[i >= 3 && 'role-extra']}
               class="border-t border-line-soft py-3.5 md:-mx-3 md:px-3"
             >
-              <div class="md:grid md:grid-cols-[1fr_240px] md:items-baseline md:gap-6">
-                <p class="max-w-[68ch] text-[17px] leading-[1.55] text-body text-pretty md:text-lg md:leading-relaxed">
-                  {a.text}
-                  {(() => {
-                    const published = projectForAchievement(projects, a.id);
-                    return (
-                      published && (
-                        <>
-                          {' '}
-                          I also published an open-source version:{' '}
-                          <a
-                            href={`#${projectAnchor(published.id)}`}
-                            class="text-ink underline decoration-[#d4d4d4] underline-offset-4 hover:decoration-ink"
-                          >
-                            {published.data.name} ↓
-                          </a>
-                        </>
-                      )
-                    );
-                  })()}
-                </p>
-                <div class="mt-1.5 flex justify-between gap-3 md:mt-0 md:flex-col md:items-end md:gap-1 md:text-right">
-                  {a.tags.length > 0 && (
-                    <p class="font-mono text-[13px] leading-relaxed text-muted">{a.tags.join(' · ')}</p>
-                  )}
+              <p class="max-w-[68ch] text-[17px] leading-[1.55] md:text-lg text-body text-pretty">{a.text}</p>
+              {a.tags.length > 0 && (
+                <div aria-label="Tech stack" role="group" class="mt-2.5 text-[15px] leading-relaxed text-muted">
+                  <TechStack tags={a.tags} />
                 </div>
-              </div>
-              {a.detail && (
-                <details class="group mt-2 md:mt-0">
-                  <summary class="flex min-h-11 cursor-pointer list-none items-center justify-end text-[15px] leading-relaxed text-ink [&::-webkit-details-marker]:hidden">
-                    <span class="group-open:hidden">How I did it +</span>
-                    <span class="hidden group-open:inline">How I did it −</span>
+              )}
+              {published && (
+                <p class="mt-2 text-[15px] leading-relaxed text-muted">
+                  Open-source version:{' '}
+                  <a
+                    href={`#${projectAnchor(published.id)}`}
+                    class="inline-flex items-center text-ink underline decoration-line underline-offset-4 hover:decoration-ink max-md:min-h-11"
+                  >
+                    {published.data.name} ↗
+                  </a>
+                </p>
+              )}
+              {a.story && (
+                <details class="group mt-1 md:mt-0">
+                  <summary class="flex min-h-11 cursor-pointer list-none items-center gap-1 text-[15px] leading-relaxed text-ink [&::-webkit-details-marker]:hidden">
+                    How I did it
+                    <span aria-hidden="true" class="group-open:hidden">
+                      +
+                    </span>
+                    <span aria-hidden="true" class="hidden group-open:inline">
+                      −
+                    </span>
                   </summary>
-                  <div class:list={['grid gap-6 pt-5 pb-2', a.visual?.src && 'md:grid-cols-[1.1fr_1fr]']}>
+                  <div class:list={['grid gap-6 pt-3 pb-2', a.visual?.src && 'md:grid-cols-[1.1fr_1fr]']}>
                     {a.visual?.src && <Visual visual={a.visual} />}
-                    <dl>
-                      {(
-                        [
-                          ['Problem', a.detail.problem],
-                          ['What I did', a.detail.did],
-                          ['Why', a.detail.why],
-                          ['Result', a.detail.result],
-                        ] as const
-                      )
-                        .filter(([, v]) => v)
-                        .map(([k, v]) => (
-                          <div class="grid grid-cols-[96px_1fr] gap-3 border-t border-line-soft py-2.5">
-                            <dt class="text-sm leading-relaxed text-muted">{k}</dt>
-                            <dd class="max-w-[68ch] text-base leading-[1.55] text-body">{v}</dd>
-                          </div>
-                        ))}
-                    </dl>
+                    <div class="flex flex-col gap-4">
+                      {a.story.map((para) => (
+                        <p class="max-w-[68ch] text-[17px] leading-[1.55] md:text-lg text-body">{para}</p>
+                      ))}
+                    </div>
                   </div>
                 </details>
               )}
             </div>
-          ))}
+          );
+        })}
         {role.data.achievements.length > 3 && (
           <button
             type="button"
             data-showall
-            class="role-showall cursor-pointer border-t border-line-soft py-3 text-left text-[15px] text-ink"
+            class="role-showall cursor-pointer border-t border-line-soft py-3 text-left text-[15px] leading-relaxed text-ink"
           >
             Show all ({role.data.achievements.length}) +
           </button>
@@ -167,30 +137,6 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
       </div>
     </div>
   ))}
-
-  {education.map((e) => (
-    <div class="grid grid-cols-12 items-baseline gap-x-6 border-t border-ink py-6 md:py-8">
-      <p class="col-span-12 font-mono text-[13px] leading-relaxed text-muted md:col-span-3 md:font-sans md:text-[22px] md:leading-tight md:font-semibold md:tracking-[-0.02em] md:text-ink">
-        Education<span class="md:hidden"> · {formatRange(e.data.start, e.data.end)}</span>
-      </p>
-      <div class="col-span-12 flex flex-col gap-1 md:col-span-9">
-        <h3 class="text-lg leading-snug text-ink md:text-body">
-          {e.data.title}, {e.data.org}
-        </h3>
-        <p class="font-mono text-[13px] leading-relaxed text-muted">
-          <span class="hidden md:inline">{formatRange(e.data.start, e.data.end)} · </span>
-          {e.data.note && <span class="md:hidden">{cap(e.data.note)}</span>}
-          {e.data.note && <span class="hidden md:inline">{e.data.note}</span>}
-        </p>
-      </div>
-    </div>
-  ))}
-
-  <div class="flex flex-col gap-3 border-t border-ink pt-5 md:flex-row md:justify-between md:gap-6 text-[15px] leading-relaxed text-muted">
-    <a href="/story/" data-cursor="next" class="text-ink">
-      Read the full story →
-    </a>
-  </div>
 </Section>
 
 <style is:global>
@@ -211,7 +157,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 <script>
   document
-    .querySelectorAll<HTMLElement>('[data-showall]')
+    .querySelectorAll<HTMLElement>('#experience [data-showall]')
     .forEach((b) =>
       b.addEventListener('click', () => b.closest<HTMLElement>('[data-role]')!.setAttribute('data-all', '')),
     );
