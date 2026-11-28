@@ -2,7 +2,7 @@
 // that button's pixel logo standing where the wave reached. Switching buttons submerges the old logo
 // completely before the new one is uncovered; leaving washes the logo back down. Mirrors the hero's lava
 // spill (which pours down from above) by rising from below. Fine pointers only: touch has no hover to answer.
-import { FOOTER_BITMAPS, type GlyphName } from './glyph-model';
+import { BITMAPS, type GlyphName } from './glyph-model';
 import { prefersReducedMotion } from './motion';
 import type { HeroField } from './hero-field';
 
@@ -80,7 +80,7 @@ export function mountFooterTide(foot: HeroField): () => void {
   let wanted: GlyphName | null = null;
   let swapPending = false;
 
-  const rowsOf = (name: GlyphName) => FOOTER_BITMAPS[name];
+  const rowsOf = (name: GlyphName) => BITMAPS[name].rows;
 
   const head = (to: number, now: number) => {
     if (to === goal && duration) return;
