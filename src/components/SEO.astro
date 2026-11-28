@@ -23,7 +23,7 @@ const imageUrl = image ? canonicalUrl(site, image) : undefined;
 <meta property="og:site_name" content="Eguin Jonathan" />
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
-<meta property="og:url" content={canonical} />
+{!noindex && <meta property="og:url" content={canonical} />}
 {imageUrl && (
   <>
     <meta property="og:image" content={imageUrl} />

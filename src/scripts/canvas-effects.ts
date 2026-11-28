@@ -10,7 +10,6 @@ import { mountHeroField, type HeroField } from './hero-field';
 import { mountCursor } from './cursor';
 import { mountGlyphSpill, type GlyphSpill } from './glyph-spill';
 import { FIELD_BLEED, fieldShape } from './field-edges';
-import { mountHeroInvite } from './hero-invite';
 import { FOOT_BLEED, mountFooterTide, tideSwell } from './footer-tide';
 import { heroLifeShape, mountHeroLife } from './hero-life';
 import { footWordmarkShape } from './footer-wordmark';
@@ -64,17 +63,16 @@ if (typeof window.matchMedia === 'function') {
       stopCursor();
       stopCursor = null;
     }
-    // touch has no hover for the logos to answer, so the glyph spill is not mounted beside the headline at all
-    const key = window.matchMedia(FINE_POINTER_QUERY).matches ? String(reduced) : null;
+    // the glyph spill reads both when it mounts, so a change of either remounts it
+    const key = `${reduced}:${window.matchMedia(FINE_POINTER_QUERY).matches}`;
     if (hero && glyphCanvas && key !== glyphKey) {
       glyph?.stop();
-      glyph = key === null ? null : mountGlyphSpill(glyphCanvas, hero, reduced);
+      glyph = mountGlyphSpill(glyphCanvas, hero, reduced);
       glyphKey = key;
     }
   };
   whenIdle(sync);
-  // the mould's drops wait for the hero's life to settle (its period is built), so it mounts with the life that gates it
-  whenIdle(() => mountHeroInvite(hero, () => glyph, mountHeroLife(hero)));
+  whenIdle(() => void mountHeroLife(hero));
   const foot = fields[hosts.findIndex((h) => h.dataset.pixelField === 'foot')];
   // hover drives the tide, so it exists on a fine pointer only and switching pointer remounts it
   let stopTide: (() => void) | null = null;

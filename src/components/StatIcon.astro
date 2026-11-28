@@ -1,10 +1,19 @@
 ---
 import { statIcon, type StatIconName } from '@/lib/stat-icons';
+import { runsPath } from '@/lib/skill-icons';
 
 interface Props {
   name: StatIconName;
 }
 const icon = statIcon(Astro.props.name);
+// one path per colour in each frame
+const frames = icon.cells.map((cells) =>
+  [...new Set(cells.map((c) => c.fill))].map((fill) => {
+    const lit = new Array<boolean>(icon.width * icon.height).fill(false);
+    for (const c of cells) if (c.fill === fill) lit[c.y * icon.width + c.x] = true;
+    return { fill, d: runsPath(lit, icon.width) };
+  }),
+);
 ---
 
 <svg
@@ -14,10 +23,10 @@ const icon = statIcon(Astro.props.name);
   class="stat-icon h-9 w-auto md:h-14"
   style={`--loop:${icon.loop}s`}
 >
-  {icon.cells.map((frame, i) => (
-    <g class="frame" style={`--at:${(i / icon.cells.length) * 100}%`} data-frame={i}>
-      {frame.map((c) => (
-        <rect x={c.x} y={c.y} width="1" height="1" fill={c.fill} />
+  {frames.map((frame, i) => (
+    <g class="frame" style={`--at:${(i / frames.length) * 100}%`} data-frame={i}>
+      {frame.map((p) => (
+        <path d={p.d} fill={p.fill} />
       ))}
     </g>
   ))}

@@ -25,12 +25,19 @@ export function canonicalUrl(site: string, pathname: string): string {
   return new URL(pathname, site).href;
 }
 
+/** one identifier for the person, so each block points at the same one */
+function personId(site: string) {
+  return canonicalUrl(site, '/#person');
+}
+
 export function websiteJsonLd(site: string) {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: 'Eguin Jonathan',
     url: canonicalUrl(site, '/'),
+    publisher: { '@id': personId(site) },
+    author: { '@id': personId(site) },
   };
 }
 
@@ -38,10 +45,10 @@ export function websiteJsonLd(site: string) {
 function person(site: string) {
   return {
     '@type': 'Person',
+    '@id': personId(site),
     name: 'Eguin Jonathan',
     jobTitle: 'Software Engineer',
     url: canonicalUrl(site, '/'),
-    image: canonicalUrl(site, '/og/home.png'),
     sameAs: PROFILE_URLS,
     homeLocation: {
       '@type': 'Place',

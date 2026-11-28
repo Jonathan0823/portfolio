@@ -71,7 +71,9 @@ if (peek && list && canRunCursor()) {
   const evaluate = (target: Element | null, clientY: number) => {
     const row = target?.closest<HTMLElement>('[data-project]');
     const onSummary = row && target?.closest('[data-cursor="eye"]');
-    if (row && onSummary && !row.querySelector('[data-detail]:not([data-collapsed])'))
+    // a project without an image has no item, so no peek
+    const hasImage = items.some((el) => el.dataset.peekItem === row?.dataset.project);
+    if (row && onSummary && hasImage && !row.querySelector('[data-detail]:not([data-collapsed])'))
       show(row.dataset.project!, clientY >= lastY);
     else hide();
     lastY = clientY;

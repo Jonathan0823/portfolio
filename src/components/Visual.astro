@@ -5,11 +5,6 @@ interface Props {
 const { visual } = Astro.props;
 ---
 
-{visual.src ? (
+{visual.src && (
   <img src={visual.src} alt={visual.label} loading="lazy" class="aspect-[16/10] w-full rounded-md object-cover" />
-) : (
-  <div class="flex aspect-[16/10] flex-col items-center justify-center gap-2 rounded-md border border-dashed border-square bg-line px-6 text-center">
-    <p class="font-mono text-[13px] leading-relaxed text-muted">Coming soon</p>
-    <p class="text-base leading-snug text-body">{visual.label}</p>
-  </div>
 )}

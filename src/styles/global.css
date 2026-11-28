@@ -33,6 +33,8 @@
   --color-line-soft: #ededed;
   --color-square: #c8c8c8;
   --color-accent: #e5484d;
+  /* the accent for small text, dark enough to read on paper */
+  --color-accent-ink: #c9343a;
   --color-paper: #ffffff;
 
   --color-pixel-night: #1e1b4b;
@@ -113,7 +115,7 @@ html.has-pixel-pointer :is(input, textarea, select, [contenteditable]) {
     flex-direction: column;
   }
 }
-/* pixel icon before a button's label; its heat colour shows on hover, focus and while its logo is on show */
+/* pixel icon before a button's label; its heat colour shows on hover and focus */
 .btn-with-icon {
   display: inline-flex;
   align-items: center;
@@ -123,7 +125,7 @@ html.has-pixel-pointer :is(input, textarea, select, [contenteditable]) {
 .btn-icon {
   flex: none;
 }
-[data-pixel-btn]:is(:hover, :focus-visible, .tide-shown) .btn-icon {
+[data-pixel-btn]:is(:hover, :focus-visible) .btn-icon {
   color: var(--heat);
 }
 /* a nav item the trail's heat has taken the shape of (nav-magnet.ts): the word turns white as the heat arrives */
@@ -166,23 +168,6 @@ html.has-pixel-pointer :is(input, textarea, select, [contenteditable]) {
 /* the hero drip builds the headline's period: absent until built */
 html.drip-pending [data-drip-period] {
   color: transparent;
-}
-/* the closing button whose logo the footer tide is showing (touch) */
-[data-pixel-btn].tide-shown {
-  box-shadow: 0 0 0 2px var(--color-accent);
-}
-/* the Mould's caption, under the hero's contact links (hero-mould.ts) */
-.pour-caption {
-  position: absolute;
-  top: calc(100% + 10px);
-  left: 0;
-  color: var(--color-accent);
-  font: 600 13px/1.2 var(--font-mono);
-  white-space: nowrap;
-  opacity: 0;
-}
-.pour-caption.on {
-  opacity: 1;
 }
 .sq.sq-hidden {
   background-color: var(--color-line);

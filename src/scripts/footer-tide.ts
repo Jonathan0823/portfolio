@@ -37,8 +37,6 @@ const HEAD_CLEAR = 3;
 /** rows a logo stands above the field's highest skyline */
 const SKY_GAP = 4;
 const LOGOS: GlyphName[] = ['mail', 'git', 'linkedin', 'resume'];
-/** class on the closing button whose logo is on show without hover (the hero's touch mould); styled in global.css */
-export const TIDE_SHOWN_CLASS = 'tide-shown';
 
 interface Placed {
   cells: Array<[number, number]>;
@@ -235,7 +233,6 @@ export function mountFooterTide(foot: HeroField): () => void {
     events.abort();
     clearTimeout(leaveTimer);
     cancelAnimationFrame(raf);
-    buttons.forEach((b) => b.classList.remove(TIDE_SHOWN_CLASS));
     tideSwell.rows.fill(0);
     tideSwell.stamp.fill(0);
     tideSwell.cap = 0;

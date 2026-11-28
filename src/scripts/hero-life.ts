@@ -60,7 +60,7 @@ export function heroLifeShape(hero: HeroField | undefined, motion: boolean, base
 
 /**
  * Once the ignite is over, plays the drip when the hero is in view. Resolves once the period is built
- * (at once without motion, or when there is nothing to build): the mould's drops wait on it. Reduced motion switched on
+ * (at once without motion, or when there is nothing to build). Reduced motion switched on
  * at any point stops all of it for good, leaving the plain period.
  */
 export function mountHeroLife(hero: HeroField | null): Promise<void> {

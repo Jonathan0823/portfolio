@@ -13,7 +13,9 @@ const groups = (await getSkills()).map((g) => ({
   <div class="border-t border-ink">
     {groups.map(({ group, items }) => (
       <div data-skill-row class="grid grid-cols-12 gap-x-6 border-t border-line-soft py-5 md:py-7">
-        <p class="col-span-12 pb-3 font-mono text-[13px] leading-relaxed text-muted md:col-span-3 md:pb-0">{group}</p>
+        <h3 class="col-span-12 pb-3 text-[15px] leading-relaxed font-semibold text-muted md:col-span-3 md:pb-0 md:text-base">
+          {group}
+        </h3>
         <div class="relative col-span-12 md:col-span-9">
           <ul aria-label={group} class="grid grid-cols-4 items-end gap-x-2 gap-y-5 md:flex md:flex-wrap md:gap-x-6">
             {items.map((s) => (
@@ -32,7 +34,7 @@ const groups = (await getSkills()).map((g) => ({
                     ))}
                   </g>
                 </svg>
-                <span class="text-center font-mono text-[12px] leading-tight text-ink">{s.name}</span>
+                <span class="max-w-full text-center text-[12px] leading-tight break-words text-ink">{s.name}</span>
               </li>
             ))}
           </ul>

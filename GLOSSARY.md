@@ -50,6 +50,6 @@ _Avoid_: Footer logo, footer title
 Clawd and Pi, two pixel characters standing on the Wordmark's letter tops. They burst out of the lava when the Wordmark rises and sink with it when it goes.
 _Avoid_: Cameo, sprites, pets
 
-**Mould**:
-The ghost outline of a contact link's logo in the hero that drops of lava fill, inviting visitors to the links. On a fine pointer it stays part-filled until a link is hovered or focused; on touch a small one fills and cycles by itself.
-_Avoid_: Hint, placeholder, footer mold (the field mask that forms the Wordmark)
+**Clock**:
+The time in Karawang as pixel digits, poured from the hero field. It stands by default; a contact link's logo takes its place while that link is hovered or focused, or for a while after it is tapped.
+_Avoid_: Timer, widget, glyph cycle

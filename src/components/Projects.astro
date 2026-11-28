@@ -6,12 +6,6 @@ import { GITHUB_REPOS_URL } from '@/lib/profile';
 import { projectAnchor, projectLinks, projectYear, splitProjectBody } from '@/lib/projects';
 
 const STATUS_COLOR: Record<string, string> = { 'Open source': '#4338CA', 'On npm': '#E5484D', 'Daily use': '#FF7A28' };
-const PEEK_BG = [
-  'linear-gradient(160deg, #F4F1FF, #7C5CFA)',
-  'linear-gradient(200deg, #1E1B4B, #111111)',
-  'radial-gradient(90% 80% at 50% 30%, #7C5CFA, #4338CA 50%, #1E1B4B)',
-  'linear-gradient(160deg, #1E1B4B, #4338CA)',
-];
 
 const projects = await Promise.all(
   (await getProjects()).map(async (p) => ({
@@ -37,13 +31,15 @@ const projects = await Promise.all(
         </div>
         <div class="mt-2.5 flex flex-col gap-2 md:col-span-6 md:mt-0 md:gap-2.5">
           {p.data.hook && (
-            <p class="text-[22px] leading-[1.25] font-medium tracking-[-0.02em] text-balance md:text-2xl">
+            <p class="max-w-[68ch] text-[22px] leading-[1.25] font-medium tracking-[-0.02em] text-balance md:text-2xl">
               {p.data.hook}
             </p>
           )}
-          <p class="text-[17px] leading-[1.55] text-body text-pretty md:text-lg md:leading-relaxed">{description}</p>
-          <p class="text-[15px] leading-normal text-ink md:text-base">
-            <span class="font-mono text-[13px] leading-relaxed text-muted">Result&nbsp;&nbsp;</span>
+          <p class="max-w-[68ch] text-[17px] leading-[1.55] text-body text-pretty md:text-lg md:leading-relaxed">
+            {description}
+          </p>
+          <p class="max-w-[68ch] text-[15px] leading-normal text-ink md:text-base">
+            <span class="text-sm leading-relaxed text-muted">Result&nbsp;&nbsp;</span>
             {p.data.result}
           </p>
         </div>
@@ -58,7 +54,7 @@ const projects = await Promise.all(
               {p.data.status}
             </p>
           )}
-          {p.data.role && <p class="font-mono text-[13px] leading-relaxed text-muted">{p.data.role}</p>}
+          {p.data.role && <p class="text-[15px] leading-relaxed text-muted">{p.data.role}</p>}
           <p class="font-mono text-[13px] leading-relaxed text-muted">
             {p.data.tags.join(' · ')}
             <span class="hidden md:inline"> · {year}</span>
@@ -83,22 +79,20 @@ const projects = await Promise.all(
         class="grid grid-rows-[1fr] transition-[grid-template-rows] duration-[450ms] ease-[cubic-bezier(.2,.7,.2,1)] data-[collapsed]:grid-rows-[0fr] motion-reduce:transition-none"
       >
         <div class="min-h-0 overflow-hidden">
-          <div class="grid gap-6 pt-5 pb-2 md:grid-cols-[1.1fr_1fr]">
-            <div class="relative self-start">
-              <div data-assemble>
-                <Visual visual={p.data.visual} />
+          <div class:list={['grid gap-6 pt-5 pb-2', p.data.visual.src && 'md:grid-cols-[1.1fr_1fr]']}>
+            {p.data.visual.src && (
+              <div class="relative self-start">
+                <div data-assemble>
+                  <Visual visual={p.data.visual} />
+                </div>
+                <canvas data-assemble-px aria-hidden="true" class="pointer-events-none absolute inset-0 size-full" />
               </div>
-              <canvas
-                data-assemble-px
-                aria-hidden="true"
-                class="pointer-events-none absolute inset-0 size-full"
-              ></canvas>
-            </div>
+            )}
             <dl>
               {sections.map((s) => (
                 <div class="grid grid-cols-[96px_1fr] gap-3 border-t border-line-soft py-2.5">
-                  <dt class="font-mono text-[13px] leading-relaxed text-muted">{s.label}</dt>
-                  <dd class="text-base leading-[1.55] text-body">{s.text}</dd>
+                  <dt class="text-sm leading-relaxed text-muted">{s.label}</dt>
+                  <dd class="max-w-[68ch] text-base leading-[1.55] text-body">{s.text}</dd>
                 </div>
               ))}
             </dl>
@@ -109,29 +103,25 @@ const projects = await Promise.all(
   ))}
   <div class="border-t border-ink"></div>
 
-  <div
-    data-peek
-    aria-hidden="true"
-    class="pointer-events-none fixed top-0 left-0 z-[45] hidden aspect-[16/10] w-[min(380px,32vw)] overflow-hidden"
-  >
-    <div data-peek-content class="absolute inset-0">
-      {projects.map(({ p }, index) => (
-        <div data-peek-item={p.id} hidden class="absolute inset-0">
-          {p.data.visual.src ? (
-            <img src={p.data.visual.src} alt="" loading="lazy" class="size-full object-cover" />
-          ) : (
-            <div
-              class="flex size-full items-end p-4 font-mono text-xs text-white"
-              style={`background:${PEEK_BG[index % PEEK_BG.length]}`}
-            >
-              {p.data.visual.label}
-            </div>
-          )}
-        </div>
-      ))}
+  {projects.some(({ p }) => p.data.visual.src) && (
+    <div
+      data-peek
+      aria-hidden="true"
+      class="pointer-events-none fixed top-0 left-0 z-[45] hidden aspect-[16/10] w-[min(380px,32vw)] overflow-hidden"
+    >
+      <div data-peek-content class="absolute inset-0">
+        {projects.map(
+          ({ p }) =>
+            p.data.visual.src && (
+              <div data-peek-item={p.id} hidden class="absolute inset-0">
+                <img src={p.data.visual.src} alt="" loading="lazy" class="size-full object-cover" />
+              </div>
+            ),
+        )}
+      </div>
+      <canvas data-peek-px class="absolute inset-0 size-full"></canvas>
     </div>
-    <canvas data-peek-px class="absolute inset-0 size-full"></canvas>
-  </div>
+  )}
 </Section>
 
 <script>
@@ -144,10 +134,9 @@ const projects = await Promise.all(
     const summary = project.querySelector<HTMLElement>('[data-summary]');
     const detail = project.querySelector<HTMLElement>('[data-detail]');
     if (!summary || !detail) return;
-    const assembler = createAssembler(
-      [project.querySelector<HTMLElement>('[data-assemble]')!],
-      project.querySelector<HTMLCanvasElement>('[data-assemble-px]')!,
-    );
+    // only a project with an image has something to assemble
+    const art = project.querySelector<HTMLElement>('[data-assemble]');
+    const assembler = art && createAssembler([art], project.querySelector<HTMLCanvasElement>('[data-assemble-px]')!);
     // the project name becomes a real toggle button (set from script, so without JS the details just stay visible);
     // a click anywhere else on the summary toggles too, except on its links or while text is being selected
     const heading = summary.querySelector('h3')!;
@@ -155,20 +144,27 @@ const projects = await Promise.all(
     button.type = 'button';
     button.textContent = heading.textContent;
     button.className =
-      'cursor-[inherit] text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink';
+      'cursor-pointer text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink';
+    // the visible hint; aria-expanded already says it to screen readers
+    const hint = document.createElement('span');
+    hint.setAttribute('aria-hidden', 'true');
+    hint.className = 'mt-2 block text-[15px] leading-normal font-medium tracking-normal text-ink';
+    button.append(hint);
+    summary.classList.add('cursor-pointer');
     button.setAttribute('aria-controls', detail.id);
     heading.replaceChildren(button);
     const set = (open: boolean) => {
       detail.toggleAttribute('data-collapsed', !open);
       detail.toggleAttribute('inert', !open);
       button.setAttribute('aria-expanded', String(open));
+      hint.textContent = open ? 'Details −' : 'Details +';
     };
     set(false);
     const toggle = () => {
       const open = button.getAttribute('aria-expanded') !== 'true';
       set(open);
-      assembler.reset();
-      if (open && !prefersReducedMotion()) assembler.show(0, 'left', 700, assembler.reset);
+      assembler?.reset();
+      if (open && !prefersReducedMotion()) assembler?.show(0, 'left', 700, assembler.reset);
     };
     summary.addEventListener('click', (e) => {
       if ((e.target as Element).closest('a') || getSelection()?.toString()) return;

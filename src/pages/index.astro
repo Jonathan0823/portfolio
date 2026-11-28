@@ -24,7 +24,7 @@ const navLinks = [
 
 <BaseLayout title={seo.title} description={seo.description} image={seo.ogPath} imageAlt={seo.imageAlt} {jsonLd}>
   <Nav links={navLinks} />
-  <main>
+  <main id="main" tabindex="-1" class="focus:outline-none">
     <Hero />
     <Experience />
     <Skills />
