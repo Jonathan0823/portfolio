@@ -4,6 +4,7 @@ import type { FieldShape } from './pixel-math';
 import type { HeroField } from './hero-field';
 import { REDUCE_QUERY, prefersReducedMotion } from './motion';
 import { whenCoverGone } from './page-cover';
+import { markHeroPoured } from './hero-poured';
 import { applyHolds } from './heat-hold';
 import { IGNITE_MS, createIgnite } from './hero-ignite';
 import { DRIP_PENDING_CLASS, mountHeroDrip } from './hero-drip';
@@ -35,6 +36,7 @@ export function emptyDepth(horizonRow: number, hostRows: number): number {
 function finishIgnite(): void {
   igniteDone = true;
   ignite.end();
+  markHeroPoured();
   igniteResolve();
 }
 
