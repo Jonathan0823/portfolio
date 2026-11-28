@@ -2,6 +2,8 @@ import type { FieldShape } from './pixel-math';
 
 /** How far past a field's box (px) its canvas reaches, behind the content, for cursor heat. */
 export const FIELD_BLEED = 200;
+/** px under the top of the screen where a field is kept to its darkest layer: where the nav's links sit on it (Nav.astro) */
+export const NAV_BAND = 60;
 const clamp = (v: number) => Math.max(0, Math.min(1, v));
 const ease = (t: number) => t * t * (3 - 2 * t);
 
@@ -23,5 +25,10 @@ export function fieldShape(
       fadeRows: 2.5,
       coverage: motion ? ease(clamp((viewportHeight - box.top) / box.height)) : 1,
     };
-  return { runoff: true, coverage: motion ? 1 - ease(clamp(scrollY / (box.height * 1.4))) * 0.85 : 1 };
+  return {
+    runoff: true,
+    // the nav stays put as the field scrolls under it; rows above the screen are darkened too, where nobody sees
+    darkTop: NAV_BAND + Math.max(0, -box.top),
+    coverage: motion ? 1 - ease(clamp(scrollY / (box.height * 1.4))) * 0.85 : 1,
+  };
 }

@@ -116,6 +116,8 @@ export interface FieldShape {
   shore?: { from: number; to: number; row: number; strength: number };
   /** Wave: rows the surface moves per column, away from the anchored edge (negative pulls it back toward row 0) */
   wave?: Float32Array;
+  /** px from row 0 where the body is drawn no lighter than the top layer, heated or not: what the nav's white links sit on */
+  darkTop?: number;
   /** drops a wave shook loose, placed for this frame */
   loose?: ReadonlyArray<{ column: number; row: number; falling: number }>;
 }
@@ -158,6 +160,7 @@ export function stepField(field: Field, time: number, seed: number, decay = 0.94
   const { columns, rows, hostRows, horizonRow, heat, bucket, lowestRow, lowestBucket, alpha, surface } = field;
   const coverage = Math.max(0, Math.min(1, shape.coverage ?? 1));
   const fadeRows = shape.fadeRows ?? 0;
+  const darkRows = (shape.darkTop ?? 0) / field.cellSize;
   const stamp = shape.stamp?.length === columns * rows ? shape.stamp : null;
   const mold = shape.mold?.length === columns * rows ? shape.mold : null;
   bucket.fill(-1);
@@ -207,6 +210,8 @@ export function stepField(field: Field, time: number, seed: number, decay = 0.94
         level = body || stamped >= 0.3 ? Math.max(level, heatTone(touched)) : heatTone(touched);
         if (!body && !(stamped >= 0.3)) alpha[i] = heatFade(touched);
       }
+      // after the heat, so a warm cell cannot lighten the band
+      if (body && y < darkRows) level = Math.min(level, 1);
       // the footer letters are one flat dark colour (10+n is one popping in), and only show above the body
       if (!body && m === 1) level = 0;
       else if (!body && m >= 10) level = m - 10;

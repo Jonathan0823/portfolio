@@ -90,6 +90,15 @@ if (typeof window.matchMedia === 'function') {
       glyphKey = key;
     }
   };
+  // a still field is not repainted by itself, and the nav's dark band has to follow the scroll (field-edges.ts)
+  addEventListener(
+    'scroll',
+    () => {
+      if (!prefersReducedMotion()) return;
+      fields.forEach((f, i) => hosts[i].dataset.pixelField !== 'foot' && f.markDirty());
+    },
+    { passive: true },
+  );
   whenIdle(sync);
   whenIdle(() => void mountHeroLife(hero));
   const foot = fields[hosts.findIndex((h) => h.dataset.pixelField === 'foot')];
