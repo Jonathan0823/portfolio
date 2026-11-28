@@ -74,6 +74,14 @@ describe('stepField', () => {
     expect(Array.from(dark.bucket.slice(band))).toEqual(Array.from(plain.bucket.slice(band)));
   });
 
+  it('keeps heated cells under darkTop to the darkest layer too', () => {
+    const f = createField(390, 200),
+      heated = 5 * f.columns + 10;
+    f.heat[heated] = 1;
+    stepField(f, 0.8, 1.3, 0.94, { darkTop: 60 });
+    expect(f.bucket[heated]).toBe(1);
+  });
+
   const lit = (f: ReturnType<typeof createField>, from: number, to: number) => {
     let n = 0;
     for (let y = from; y < to; y++) for (let x = 0; x < f.columns; x++) if (f.bucket[y * f.columns + x] >= 0) n++;
