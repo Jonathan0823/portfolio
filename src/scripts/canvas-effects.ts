@@ -14,11 +14,14 @@ import { FOOT_BLEED, mountFooterTide, tideSwell } from './footer-tide';
 import { heroLifeShape, mountHeroLife } from './hero-life';
 import { footWordmarkShape } from './footer-wordmark';
 import { mountFooterMascots } from './footer-mascots';
+import { mountSurfaceWaves, type SurfaceWaves } from './surface-waves';
 
 const SEEDS: Record<string, number> = { hero: 1.3, strip: 4.7, foot: 8.1 };
 const hosts = [...document.querySelectorAll<HTMLElement>('[data-pixel-field]')];
 
 if (typeof window.matchMedia === 'function') {
+  // read by every field's shape, so declared before the fields mount
+  let waves: SurfaceWaves | null = null;
   const fields: HeroField[] = hosts.map((host) => {
     const kind = host.dataset.pixelField ?? 'hero';
     return mountHeroField(host, prefersReducedMotion(), {
@@ -41,6 +44,7 @@ if (typeof window.matchMedia === 'function') {
           // the hero's ignite empties its field, and the footer's wordmark moulds its cells
           ...(kind === 'hero' ? heroLifeShape(field, motion, base) : {}),
           ...(kind === 'foot' ? footWordmarkShape(field, motion, base.coverage) : {}),
+          ...(waves?.shape(field) ?? {}),
         };
       },
       // the footer bleeds further up so the tide has room to rise
@@ -62,6 +66,12 @@ if (typeof window.matchMedia === 'function') {
     if (!cursor && stopCursor) {
       stopCursor();
       stopCursor = null;
+    }
+    // the surfaces answer the same hovering mouse: a Wave where the pointer presses them
+    if (cursor && !waves) waves = mountSurfaceWaves(fields);
+    if (!cursor && waves) {
+      waves.stop();
+      waves = null;
     }
     // the glyph spill reads both when it mounts, so a change of either remounts it
     const key = `${reduced}:${window.matchMedia(FINE_POINTER_QUERY).matches}`;
