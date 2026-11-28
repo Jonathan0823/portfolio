@@ -134,7 +134,7 @@ html.has-pixel-pointer :is(input, textarea, select, [contenteditable]) {
 :is([data-pixel-field='hero'], [data-pixel-field='strip']) {
   background-image: linear-gradient(transparent, transparent);
 }
-/* a nav item the pointer's heat has taken the shape of (nav-magnet.ts): the word turns white as the heat arrives */
+/* a nav item the pointer has filled (nav-magnet.ts): the word turns white as the fill arrives */
 [data-nav-magnet][data-held] {
   color: var(--color-paper);
   background: transparent;
