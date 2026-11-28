@@ -1,5 +1,7 @@
 // The pointer over the hero in the hero's own coordinates: where it is, presses on it, and how long one has been held.
 
+import { onScrollbar } from './scrollbar';
+
 export interface HeroPointer {
   /** where the pointer last was, far off-screen until it has moved */
   readonly ptr: { x: number; y: number };
@@ -31,9 +33,7 @@ export function mountHeroPointer(area: HTMLElement, on: Handlers): HeroPointer {
   const onMove = (e: PointerEvent) => void track(e);
   const onDown = (e: PointerEvent) => {
     const r = track(e);
-    // a press on the page's scrollbar lands outside the content box: it is a drag to scroll, not a hold
-    const root = document.documentElement;
-    if (e.clientX >= root.clientWidth || e.clientY >= root.clientHeight) return;
+    if (onScrollbar(e)) return;
     on.press(ptr.x, ptr.y);
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     if ((e.target as HTMLElement | null)?.closest?.(INTERACTIVE)) return;
