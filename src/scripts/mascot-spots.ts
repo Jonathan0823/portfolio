@@ -101,7 +101,7 @@ export function nearestSpot(
 }
 
 /**
- * Where loose heat (a pointer's trail, a spark) burns near a sprite: the mean column, in half cells, of the cells at
+ * Where loose heat (a click's ring, a spark) burns near a sprite: the mean column, in half cells, of the cells at
  * least `HOT` hot within `reach` cells either side and `above` rows over its feet, or null when too few burn to matter.
  * `heat` is the field's, row by row from the bottom; `row` is the row of the sprite's feet.
  */

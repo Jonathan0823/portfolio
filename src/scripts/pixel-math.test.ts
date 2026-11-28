@@ -125,6 +125,28 @@ describe('stepField', () => {
   });
 });
 
+describe('stepField wave', () => {
+  it('moves the surface by the wave, column by column', () => {
+    const plain = createField(1440, 336),
+      waved = createField(1440, 336);
+    const wave = new Float32Array(plain.columns);
+    wave[10] = 3;
+    wave[20] = -2;
+    stepField(plain, 0, 1.3);
+    stepField(waved, 0, 1.3, 0.94, { wave });
+    expect(waved.surface[10] - plain.surface[10]).toBeCloseTo(3, 5);
+    expect(waved.surface[20] - plain.surface[20]).toBeCloseTo(-2, 5);
+    expect(waved.surface[30]).toBe(plain.surface[30]);
+  });
+
+  it('paints loose drops below the surface', () => {
+    const f = createField(1440, 336, 200);
+    stepField(f, 0, 1.3, 0.94, { loose: [{ column: 40, row: 40, falling: 0.1 }] });
+    expect(f.bucket[40 * f.columns + 40]).toBeGreaterThanOrEqual(0);
+    expect(f.bucket[40 * f.columns + 60]).toBe(-1);
+  });
+});
+
 describe('stepField mold', () => {
   const at = (f: ReturnType<typeof createField>, x: number, y: number) => f.bucket[y * f.columns + x];
 

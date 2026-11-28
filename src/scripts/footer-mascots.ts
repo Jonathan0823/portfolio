@@ -38,6 +38,7 @@ import {
   topsOf,
 } from './mascot-spots';
 import { CLAWD, PI, type MascotSprite } from './mascot-sprites';
+import { CALM, type WaveUnder } from './surface-wave';
 
 /** the mascots rise once the word has formed this much of itself, so the letters are there to land on */
 const RISE_AT = 0.45;
@@ -98,8 +99,11 @@ const make = (sprite: MascotSprite): Mascot => ({
   blinkUntil: 0,
 });
 
-/** mounts the mascots on the footer field; the returned function removes them again */
-export function mountFooterMascots(foot: HeroField, reduced: boolean): () => void {
+/** the footer's Wave under columns from..to; calm when there is none */
+export type Ride = (from: number, to: number) => WaveUnder;
+
+/** mounts the mascots on the footer field; they ride its wave as `ride` reports it. The returned function removes them */
+export function mountFooterMascots(foot: HeroField, reduced: boolean, ride: Ride = () => CALM): () => void {
   const host = foot.canvas.parentElement;
   if (!host) return () => {};
   const canvas = document.createElement('canvas');
@@ -289,6 +293,14 @@ export function mountFooterMascots(foot: HeroField, reduced: boolean): () => voi
     }
   };
 
+  /** the water under a mascot: its pose is in half cells, the wave in field columns */
+  const under = (m: Mascot): WaveUnder => (m.pose ? ride(m.pose.P / 2, (m.pose.P + m.sprite.width) / 2) : CALM);
+  /** where a mascot is drawn and tapped: its pose lifted and tipped by the crest under its feet */
+  const shown = (m: Mascot, pose: Pose): Pose => {
+    const w = under(m);
+    return { ...pose, F: pose.F + w.lift * 2, tilt: pose.tilt + w.tilt };
+  };
+
   const draw = (s: Stance, now: number) => {
     const w = host.clientWidth;
     const h = host.clientHeight + FOOT_BLEED;
@@ -301,6 +313,10 @@ export function mountFooterMascots(foot: HeroField, reduced: boolean): () => voi
       s.wade,
       ...all.map((m) => (m.pose ? Object.values(m.pose).join(',') : '-')),
       now < clawd.blinkUntil,
+      ...all.map((m) => {
+        const w = under(m);
+        return `${w.lift}/${w.tilt}`;
+      }),
     ].join('|');
     particles = particles.filter(({ p, born }) => now - born < p.ms);
     const hadParticles = drawnParticles;
@@ -314,7 +330,11 @@ export function mountFooterMascots(foot: HeroField, reduced: boolean): () => voi
     view = { cell: foot.field().cellSize, base: s.base, wade: s.wade, height: h };
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
-    for (const m of all) if (m.pose) drawMascot(ctx, m.sprite, m.pose, view, m === clawd && now < clawd.blinkUntil);
+    for (const m of all) {
+      if (!m.pose) continue;
+      // a crest under its feet lifts it and tips it along the slope
+      drawMascot(ctx, m.sprite, shown(m, m.pose), view, m === clawd && now < clawd.blinkUntil);
+    }
     for (const { p, born } of particles) {
       const d = particleAt(p, now - born);
       if (d) drawParticle(ctx, d, view);
@@ -331,6 +351,8 @@ export function mountFooterMascots(foot: HeroField, reduced: boolean): () => voi
     const want = wordmarkWanted();
     for (const m of all) update(m, stance, dt, now, want);
     if (!reduced && want && ready() && live().length) life(stance, now);
+    // a splash under one knocks it into a hop
+    if (!reduced) for (const m of all) if (under(m).splash) hopInPlace(m);
     draw(stance, now);
     raf = requestAnimationFrame(frame);
   };
@@ -348,7 +370,7 @@ export function mountFooterMascots(foot: HeroField, reduced: boolean): () => voi
     const x = e.clientX - box.left;
     const y = e.clientY - box.top;
     for (const m of all)
-      if (m.pose && m.presence.phase === 'up' && hits(m.sprite, m.pose, view, x, y, TAP_SLOP)) hopInPlace(m);
+      if (m.pose && m.presence.phase === 'up' && hits(m.sprite, shown(m, m.pose), view, x, y, TAP_SLOP)) hopInPlace(m);
   };
   window.addEventListener('pointerdown', onPointerDown, { passive: true });
 

@@ -39,25 +39,36 @@ export function sag(list: Drip[], x: number): number {
   return most;
 }
 
+/** paints one cell over the stepped field; cells off the field are skipped */
+function setCell(field: Field, x: number, y: number, level: number, opacity = 1): void {
+  if (x < 0 || x >= field.columns || y < 0 || y >= field.rows) return;
+  field.bucket[y * field.columns + x] = level;
+  field.alpha[y * field.columns + x] = opacity;
+}
+
+/** a round drop with its top at row y: 4, 2 or 1 cells wide */
+function drawDrop(field: Field, x: number, y: number, width: number, level: number): void {
+  if (width === 1) return setCell(field, x, y, level, 0.65);
+  const side = width === 4 ? 1 : 0,
+    height = width === 4 ? 3 : 2;
+  for (let dx = -side; dx <= 1 + side; dx++)
+    for (let dy = 0; dy < height; dy++) {
+      const corner = side > 0 && (dx === -1 || dx === 2) && (dy === 0 || dy === 2);
+      setCell(field, x + dx, y + dy, level, corner ? 0.5 : 1);
+    }
+}
+
+/** a drop that has let go, its top at row y, `falling` 0..1 through its fall: it shrinks and cools as it goes */
+export function drawFallingDrop(field: Field, column: number, y: number, falling: number): void {
+  drawDrop(field, column, y, falling < 0.45 ? 4 : falling < 0.75 ? 2 : 1, falling < 0.4 ? 5 : falling < 0.7 ? 4 : 3);
+  // one spark trails behind
+  if (falling > 0.2 && falling < 0.8) setCell(field, column + 1, y - 3, 4, 0.5);
+}
+
 /** stems, bulbs and falling drops, drawn over the stepped field */
 export function drawRunoff(field: Field, list: Drip[], coverage: number): void {
-  const { columns, rows, hostRows, bucket, alpha, surface } = field;
-  const set = (x: number, y: number, level: number, opacity = 1) => {
-    if (x < 0 || x >= columns || y < 0 || y >= rows) return;
-    bucket[y * columns + x] = level;
-    alpha[y * columns + x] = opacity;
-  };
-  /** a round drop with its top at row y: 4, 2 or 1 cells wide */
-  const drop = (x: number, y: number, width: number, level: number) => {
-    if (width === 1) return set(x, y, level, 0.65);
-    const side = width === 4 ? 1 : 0,
-      height = width === 4 ? 3 : 2;
-    for (let dx = -side; dx <= 1 + side; dx++)
-      for (let dy = 0; dy < height; dy++) {
-        const corner = side > 0 && (dx === -1 || dx === 2) && (dy === 0 || dy === 2);
-        set(x + dx, y + dy, level, corner ? 0.5 : 1);
-      }
-  };
+  const { hostRows, surface } = field;
+  const set = (x: number, y: number, level: number) => setCell(field, x, y, level);
   const floor = Math.floor(hostRows * FLOOR_SHARE * coverage);
   for (const { column, phase } of list) {
     const root = Math.floor(Math.min(surface[column] ?? 0, surface[column + 1] ?? 0));
@@ -70,14 +81,12 @@ export function drawRunoff(field: Field, list: Drip[], coverage: number): void {
       set(column + 1, root + k, k < 2 ? 4 : 5);
     }
     if (falling < 0) {
-      if (stretched > 0.45) drop(column, root + stem - 1, stretched > 0.75 ? 4 : 2, 5);
+      if (stretched > 0.45) drawDrop(field, column, root + stem - 1, stretched > 0.75 ? 4 : 2, 5);
       continue;
     }
     if (falling >= 1) continue;
     const from = root + STEM - 1;
     const y = from + Math.round(Math.min(FALL_ROWS, Math.max(0, floor - from)) * falling * falling);
-    drop(column, y, falling < 0.45 ? 4 : falling < 0.75 ? 2 : 1, falling < 0.4 ? 5 : falling < 0.7 ? 4 : 3);
-    // one spark trails behind
-    if (falling > 0.2 && falling < 0.8) set(column + 1, y - 3, 4, 0.5);
+    drawFallingDrop(field, column, y, falling);
   }
 }

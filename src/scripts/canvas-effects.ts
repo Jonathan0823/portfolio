@@ -14,11 +14,17 @@ import { FOOT_BLEED, mountFooterTide, tideSwell } from './footer-tide';
 import { heroLifeShape, mountHeroLife } from './hero-life';
 import { footWordmarkShape } from './footer-wordmark';
 import { mountFooterMascots } from './footer-mascots';
+import { mountSurfaceWaves, type SurfaceWaves } from './surface-waves';
+import { hoverInput } from './wave-hover';
+import { touchInput } from './wave-touch';
+import { CALM } from './surface-wave';
 
 const SEEDS: Record<string, number> = { hero: 1.3, strip: 4.7, foot: 8.1 };
 const hosts = [...document.querySelectorAll<HTMLElement>('[data-pixel-field]')];
 
 if (typeof window.matchMedia === 'function') {
+  // read by every field's shape, so declared before the fields mount
+  let waves: SurfaceWaves | null = null;
   const fields: HeroField[] = hosts.map((host) => {
     const kind = host.dataset.pixelField ?? 'hero';
     return mountHeroField(host, prefersReducedMotion(), {
@@ -41,6 +47,7 @@ if (typeof window.matchMedia === 'function') {
           // the hero's ignite empties its field, and the footer's wordmark moulds its cells
           ...(kind === 'hero' ? heroLifeShape(field, motion, base) : {}),
           ...(kind === 'foot' ? footWordmarkShape(field, motion, base.coverage) : {}),
+          ...(waves?.shape(field) ?? {}),
         };
       },
       // the footer bleeds further up so the tide has room to rise
@@ -50,6 +57,7 @@ if (typeof window.matchMedia === 'function') {
   const hero = fields[hosts.findIndex((h) => h.dataset.pixelField === 'hero')] ?? null;
   const glyphCanvas = document.querySelector<HTMLCanvasElement>('canvas[data-glyph]');
   let stopCursor: (() => void) | null = null;
+  let wavesKey: string | null = null;
   let glyph: GlyphSpill | null = null;
   let glyphKey: string | null = null;
 
@@ -62,6 +70,14 @@ if (typeof window.matchMedia === 'function') {
     if (!cursor && stopCursor) {
       stopCursor();
       stopCursor = null;
+    }
+    // the Wave: a hovering mouse presses the surfaces; on touch, taps and the page's scrolling move them
+    const fine = window.matchMedia(FINE_POINTER_QUERY).matches;
+    const nextWaves = reduced ? null : fine ? 'hover' : 'touch';
+    if (nextWaves !== wavesKey) {
+      waves?.stop();
+      waves = nextWaves ? mountSurfaceWaves(fields, nextWaves === 'hover' ? hoverInput : touchInput) : null;
+      wavesKey = nextWaves;
     }
     // the glyph spill reads both when it mounts, so a change of either remounts it
     const key = `${reduced}:${window.matchMedia(FINE_POINTER_QUERY).matches}`;
@@ -85,7 +101,9 @@ if (typeof window.matchMedia === 'function') {
   let stopMascots: (() => void) | null = null;
   const mountMascots = () => {
     stopMascots?.();
-    stopMascots = foot ? mountFooterMascots(foot, prefersReducedMotion()) : null;
+    stopMascots = foot
+      ? mountFooterMascots(foot, prefersReducedMotion(), (from, to) => waves?.under(foot, from, to) ?? CALM)
+      : null;
   };
   whenIdle(mountMascots);
   for (const q of [REDUCE_QUERY, FINE_POINTER_QUERY])

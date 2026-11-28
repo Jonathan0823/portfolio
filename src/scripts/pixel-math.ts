@@ -1,5 +1,5 @@
 export { HEAT_PALETTE } from '@/lib/palette';
-import { drawRunoff, drips, sag } from './field-runoff';
+import { drawFallingDrop, drawRunoff, drips, sag } from './field-runoff';
 import { bubbles, dome, drawBoil } from './field-boil';
 
 export function hash(a: number, b: number, c = 0): number {
@@ -114,6 +114,10 @@ export interface FieldShape {
   mold?: Int8Array;
   /** footer wordmark: the surface runs nearly level at `row` in front of columns `from`..`to`, at `strength` 0..1 */
   shore?: { from: number; to: number; row: number; strength: number };
+  /** Wave: rows the surface moves per column, away from the anchored edge (negative pulls it back toward row 0) */
+  wave?: Float32Array;
+  /** drops a wave shook loose, placed for this frame */
+  loose?: ReadonlyArray<{ column: number; row: number; falling: number }>;
 }
 
 /** pointer and click heat: stays warm as it cools, never the dark end of the palette */
@@ -174,6 +178,7 @@ export function stepField(field: Field, time: number, seed: number, decay = 0.94
     let top = (horizonRow + outline * (1 - settled)) * coverage + swell;
     // a footer tide takes the surface over from the shore
     if (shape.shore && !swell) top = ashore(shape.shore, x, top, rest);
+    top += shape.wave?.[x] ?? 0;
     surface[x] = swell > 0 && shape.cap ? Math.min(top, shape.cap) : top;
   }
 
@@ -221,5 +226,6 @@ export function stepField(field: Field, time: number, seed: number, decay = 0.94
   // reduced motion holds time at 0, where a drop would hang frozen in mid-air
   if (runoff && time > 0) drawRunoff(field, runoff, coverage);
   if (boil) drawBoil(field, boil, time, shape);
+  for (const drop of shape.loose ?? []) drawFallingDrop(field, drop.column, drop.row, drop.falling);
   field.hottest = hottest;
 }
