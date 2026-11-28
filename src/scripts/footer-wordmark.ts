@@ -135,6 +135,8 @@ export function popLevel(age: number, dissolvingIn: boolean): number {
 
 interface Layout extends Wordmark {
   key: string;
+  /** the key without the horizon: what the word's own shape and spots depend on */
+  shape: string;
   base: number;
 }
 
@@ -158,11 +160,20 @@ const tideBusy = () => {
 /** phones and touch screens get the small word, as does any narrow window */
 const isSmall = () => !window.matchMedia(NARROW_QUERY).matches || !window.matchMedia(FINE_POINTER_QUERY).matches;
 
+/** px from the document's left edge to an element's, ignoring any transform on it */
+function pageLeft(el: HTMLElement): number {
+  let x = 0;
+  for (let e: HTMLElement | null = el; e; e = e.offsetParent as HTMLElement | null) x += e.offsetLeft;
+  return x;
+}
+
 function place(foot: HeroField, small: boolean): Layout {
   const f = foot.field();
   const { columns, hostRows, cellSize } = f;
   const heading = document.querySelector('#contact h2');
-  const gutter = heading ? heading.getBoundingClientRect().left - foot.rect().left : 96;
+  // offsets, not rects: a blast kicks the heading with a transform, and the word must not follow it
+  const host = foot.canvas?.parentElement;
+  const gutter = heading && host ? pageLeft(heading as HTMLElement) - pageLeft(host) : 96;
   const left = Math.max(1, Math.round(gutter / cellSize));
   const key = [columns, hostRows, cellSize, left, f.horizonRow, small].join('x');
   if (layout?.key === key) return layout;
@@ -170,6 +181,7 @@ function place(foot: HeroField, small: boolean): Layout {
   layout = {
     ...word,
     key,
+    shape: [columns, hostRows, cellSize, left, small].join('x'),
     // standing on the field's usual surface; a short footer stands it lower, and the shore dips with it
     base: Math.max(0, Math.min(f.horizonRow, hostRows - word.height + HEADROOM)),
   };
@@ -185,6 +197,8 @@ export const wordmarkRise = () => clock / FULL_MS;
 export interface Stance extends Wordmark {
   /** changes whenever the word is laid out differently (a resize, another size of word) */
   key: string;
+  /** changes only when the word itself is laid out differently, not when the surface rides up or down a row (a blast does) */
+  shape: string;
   /** the row the word stands on, riding the field's surface down as the footer scrolls out of view */
   base: number;
 }

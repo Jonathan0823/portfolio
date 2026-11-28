@@ -55,7 +55,7 @@ The hero's mascot intro, once after the Ignite has settled: Clawd slides out of 
 _Avoid_: Cutscene, hero animation, drip
 
 **Blast**:
-Holding the pointer on the hero charges a ring that closes in on it; letting go sends a shockwave out and throws the idle Mascots off the name, which they hop back to. Alongside the Wave's own charged blast, which rolls across the surfaces.
+Holding the pointer on the hero charges a ring that closes in on it; letting go sends a shockwave out and throws the idle Mascots off the name, which they hop back to. Holding on the footer makes its Mascots strain, and letting go throws them up to fall back onto their letters. Clawd shuts his eyes into `> <` while he strains, is thrown, or is hurt or held in the Mishap. Alongside the Wave's own charged blast, which rolls across the surfaces.
 _Avoid_: Explosion, shockwave
 
 **Clock**:

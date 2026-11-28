@@ -39,6 +39,8 @@ import {
 } from './mascot-spots';
 import { CLAWD, PI, type MascotSprite } from './mascot-sprites';
 import { CALM, type WaveUnder } from './surface-wave';
+import { BLAST_MIN_MS, chargeOf } from './hero-blast';
+import { mountHeroPointer } from './hero-pointer';
 
 /** the mascots rise once the word has formed this much of itself, so the letters are there to land on */
 const RISE_AT = 0.45;
@@ -64,6 +66,17 @@ const SPARK_CHECK_MS = 350;
 const SPARK_NEAR = 6;
 /** Pi bursts out a beat after Clawd (ms) */
 const PI_DELAY = [200, 300] as const;
+/** a crest under a mascot this many rows high throws it up (a blast; a hover's ripples are lower) and gravity brings it down */
+const TOSS_LIFT = 2;
+const TOSS_SPEED = 45;
+const TOSS_PER_ROW = 6;
+const GRAVITY = 200;
+/** a hold on the footer: they quiver and squint from this charge, and a release after BLAST_MIN_MS throws them like a blast */
+const SQUINT_CHARGE = 0.35;
+const HELD_TOSS_SPEED = 38;
+const HELD_TOSS_PER_CHARGE = 26;
+const LAND_SQUASH_MS = 140;
+const TOSS_REST_MS = 1500;
 /** a tap this many px outside a mascot still counts */
 const TAP_SLOP = 6;
 
@@ -81,6 +94,10 @@ interface Mascot {
   bobUntil: number;
   blinkDue: number;
   blinkUntil: number;
+  /** thrown up by a blast: half cells above where it stands and how fast it is rising, and the age of the throw (s) */
+  air: { h: number; v: number; t: number } | null;
+  /** squashed from a landing until then */
+  landUntil: number;
 }
 
 const rnd = (lo: number, hi: number) => lo + Math.random() * (hi - lo);
@@ -97,6 +114,8 @@ const make = (sprite: MascotSprite): Mascot => ({
   bobUntil: 0,
   blinkDue: 0,
   blinkUntil: 0,
+  air: null,
+  landUntil: 0,
 });
 
 /** the footer's Wave under columns from..to; calm when there is none */
@@ -130,6 +149,8 @@ export function mountFooterMascots(foot: HeroField, reduced: boolean, ride: Ride
   let last = 0;
   let raf = 0;
   let inViewport = false;
+  /** how far a hold on the footer has charged, 0..1 */
+  let charge = 0;
   let view: View = { cell: 10, base: 0, wade: 0, height: 0 };
 
   const live = () => all.filter((m) => m.home);
@@ -137,7 +158,7 @@ export function mountFooterMascots(foot: HeroField, reduced: boolean, ride: Ride
 
   /** the word is laid out differently: find where each mascot can stand, and start them under the lava */
   const lay = (stance: Stance, columns: number) => {
-    layoutKey = stance.key;
+    layoutKey = stance.shape;
     tops = topsOf(stance.ink, columns + 2);
     const spans = letterSpans(tops, stance.x0, stance.x1);
     gaps = spans.slice(0, -1).map((s, i) => (s.end + 1 + spans[i + 1].start) / 2);
@@ -298,7 +319,17 @@ export function mountFooterMascots(foot: HeroField, reduced: boolean, ride: Ride
   /** where a mascot is drawn and tapped: its pose lifted and tipped by the crest under its feet */
   const shown = (m: Mascot, pose: Pose): Pose => {
     const w = under(m);
-    return { ...pose, F: pose.F + w.lift * 2, tilt: pose.tilt + w.tilt };
+    const squash = performance.now() < m.landUntil;
+    const sq: Partial<Pose> = squash ? { sx: 1.15, sy: 0.85 } : {};
+    // straining against the charge: the same quiver and squash as on the hero
+    const strain = charge > 0 && !m.air && !m.travel ? charge : 0;
+    if (strain) {
+      sq.sx = 1 + 0.08 * strain;
+      sq.sy = 1 - 0.12 * strain;
+      sq.tilt = Math.sin(performance.now() / 22) * 2.5 * strain;
+    }
+    if (m.air) return { ...pose, ...sq, F: pose.F + m.air.h, tilt: 22 * Math.sin(m.air.t * 9) };
+    return { ...pose, ...sq, F: pose.F + w.lift * 2, tilt: pose.tilt + w.tilt + (sq.tilt ?? 0) };
   };
 
   const draw = (s: Stance, now: number) => {
@@ -312,7 +343,9 @@ export function mountFooterMascots(foot: HeroField, reduced: boolean, ride: Ride
       s.base,
       s.wade,
       ...all.map((m) => (m.pose ? Object.values(m.pose).join(',') : '-')),
-      now < clawd.blinkUntil,
+      ...all.map((m) => (m.air ? m.air.h.toFixed(1) : m.landUntil > now ? 'l' : '-')),
+      eyesShut(now),
+      charge > 0 ? Math.floor(now / 16) : 0,
       ...all.map((m) => {
         const w = under(m);
         return `${w.lift}/${w.tilt}`;
@@ -333,7 +366,7 @@ export function mountFooterMascots(foot: HeroField, reduced: boolean, ride: Ride
     for (const m of all) {
       if (!m.pose) continue;
       // a crest under its feet lifts it and tips it along the slope
-      drawMascot(ctx, m.sprite, shown(m, m.pose), view, m === clawd && now < clawd.blinkUntil);
+      drawMascot(ctx, m.sprite, shown(m, m.pose), view, m === clawd && eyesShut(now));
     }
     for (const { p, born } of particles) {
       const d = particleAt(p, now - born);
@@ -347,12 +380,19 @@ export function mountFooterMascots(foot: HeroField, reduced: boolean, ride: Ride
     const dt = last ? Math.min(MAX_DT_MS, now - last) : 16;
     last = now;
     const stance = wordmarkStance(foot);
-    if (stance.key !== layoutKey) lay(stance, foot.field().columns);
+    // only a new layout starts them over: the surface riding a row up or down (a blast) must not sink them
+    if (stance.shape !== layoutKey) lay(stance, foot.field().columns);
+    const held = hold?.heldMs(now) ?? null;
+    charge = held === null ? 0 : chargeOf(held);
     const want = wordmarkWanted();
     for (const m of all) update(m, stance, dt, now, want);
     if (!reduced && want && ready() && live().length) life(stance, now);
-    // a splash under one knocks it into a hop
-    if (!reduced) for (const m of all) if (under(m).splash) hopInPlace(m);
+    if (!reduced)
+      for (const m of all) {
+        toss(m, dt, now);
+        // a splash under one knocks it into a hop
+        if (under(m).splash) hopInPlace(m);
+      }
     draw(stance, now);
     raf = requestAnimationFrame(frame);
   };
@@ -360,8 +400,41 @@ export function mountFooterMascots(foot: HeroField, reduced: boolean, ride: Ride
     if (!raf && inViewport && !document.hidden) raf = requestAnimationFrame(frame);
   };
 
+  /** a hard crest throws a mascot up; it spins a little and falls back onto its letter, landing squashed */
+  const toss = (m: Mascot, dt: number, now: number) => {
+    if (m.presence.phase !== 'up') {
+      m.air = null;
+      return;
+    }
+    const lift = under(m).lift;
+    // one throw per blast: the crest outlasts a landing, so it must not catch them again
+    if (!m.air && lift >= TOSS_LIFT && now > m.landUntil + TOSS_REST_MS) {
+      launch(m, TOSS_SPEED + TOSS_PER_ROW * lift, lift * 2);
+    }
+    const a = m.air;
+    if (!a) return;
+    const s = dt / 1000;
+    a.v -= GRAVITY * s;
+    a.h += a.v * s;
+    a.t += s;
+    if (a.h <= 0 && a.v < 0) {
+      m.air = null;
+      m.landUntil = now + LAND_SQUASH_MS;
+    }
+  };
+
+  /** Clawd's eyes are shut for a blink, for the heat of coming out of the lava, while straining against a charge and while thrown */
+  const eyesShut = (now: number) =>
+    now < clawd.blinkUntil || charge > SQUINT_CHARGE || !!clawd.air || clawd.presence.phase === 'emerging';
+
+  /** thrown up at `speed` half cells a second, spinning, to fall back onto its letter */
+  const launch = (m: Mascot, speed: number, h = 0) => {
+    m.travel = null;
+    m.air = { h, v: speed, t: 0 };
+  };
+
   const hopInPlace = (m: Mascot) => {
-    if (m.travel || m.presence.phase !== 'up') return;
+    if (m.travel || m.air || m.presence.phase !== 'up') return;
     m.travel = startTravel(m.at, [{ ...m.at, kind: 'hop' }]);
   };
   const onPointerDown = (e: PointerEvent) => {
@@ -370,9 +443,24 @@ export function mountFooterMascots(foot: HeroField, reduced: boolean, ride: Ride
     const x = e.clientX - box.left;
     const y = e.clientY - box.top;
     for (const m of all)
-      if (m.pose && m.presence.phase === 'up' && hits(m.sprite, shown(m, m.pose), view, x, y, TAP_SLOP)) hopInPlace(m);
+      if (m.pose && m.presence.phase === 'up' && hits(m.sprite, shown(m, m.pose), view, x, y, TAP_SLOP)) {
+        hopInPlace(m);
+        // Clawd shuts his eyes for the jump
+        if (m === clawd) clawd.blinkUntil = performance.now() + 380;
+      }
   };
   window.addEventListener('pointerdown', onPointerDown, { passive: true });
+  // holding on the footer charges like the hero's: they strain and squint, and letting go throws them up to fall back
+  const hold = reduced
+    ? null
+    : mountHeroPointer(document.getElementById('contact') ?? host, {
+        press: () => {},
+        release: (_x, _y, held) => {
+          if (held < BLAST_MIN_MS) return;
+          const speed = HELD_TOSS_SPEED + HELD_TOSS_PER_CHARGE * chargeOf(held);
+          for (const m of all) if (m.presence.phase === 'up' && !m.air) launch(m, speed);
+        },
+      });
 
   // nothing to animate (or to pay for) while the footer is off screen: they start again under the lava
   const io = new IntersectionObserver(
@@ -405,6 +493,7 @@ export function mountFooterMascots(foot: HeroField, reduced: boolean, ride: Ride
     cancelAnimationFrame(raf);
     io.disconnect();
     window.removeEventListener('pointerdown', onPointerDown);
+    hold?.stop();
     document.removeEventListener('visibilitychange', onVisibility);
     canvas.remove();
   };
