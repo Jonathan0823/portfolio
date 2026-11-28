@@ -6,5 +6,7 @@ const { visual } = Astro.props;
 ---
 
 {visual.src && (
-  <img src={visual.src} alt={visual.label} loading="lazy" class="aspect-[16/10] w-full rounded-md object-cover" />
+  <div class="aspect-[16/10] w-full border border-line-soft bg-pixel-mist p-4">
+    <img src={visual.src} alt={visual.label} loading="lazy" class="size-full object-contain" />
+  </div>
 )}

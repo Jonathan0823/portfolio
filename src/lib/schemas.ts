@@ -34,14 +34,7 @@ export const achievementSchema = z.object({
   month,
   text: copy,
   tags: z.array(copy).default([]),
-  detail: z
-    .object({
-      problem: copy,
-      did: copy,
-      why: copy.optional(),
-      result: copy,
-    })
-    .optional(),
+  story: z.array(copy).min(1).optional(),
   visual: visualSchema.optional(),
 });
 
@@ -58,12 +51,9 @@ export const roleSchema = z.object({
 
 export const projectSchema = z.object({
   name: copy,
-  hook: copy.optional(),
-  status: copy.optional(),
-  role: copy.optional(),
   order: z.number().int(),
   month,
-  result: copy,
+  result: copy.optional(),
   repo: url,
   extraRepos: z.array(z.object({ text: copy, href: url })).default([]),
   package: url.optional(),

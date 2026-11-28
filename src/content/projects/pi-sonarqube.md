@@ -1,27 +1,22 @@
 ---
 name: 'pi-sonarqube'
-hook: 'My coding agent fixes its own SonarQube issues before I review.'
-status: 'On npm'
-role: 'Solo'
 order: 3
 month: '2026-01'
-result: 'Published on npm as @jonathan0823/pi-sonarqube.'
+result: 'About 1,000 downloads a month on npm.'
 repo: 'https://github.com/Jonathan0823/pi-sonarqube'
 package: 'https://www.npmjs.com/package/@jonathan0823/pi-sonarqube'
 tags:
   - 'TypeScript'
-  - 'npm'
+  - 'SonarQube'
+  - 'MCP'
 visual:
-  kind: 'screenshot'
-  label: 'SonarQube findings in the agent’s terminal'
+  kind: 'diagram'
+  label: 'The agent calls the sonarqube tool; it runs sonar-scanner, reads issues from the SonarQube API and returns them to the agent'
+  src: '/diagrams/pi-sonarqube.svg'
 ---
 
-Runs SonarQube inside the Pi coding agent, so the agent reads and fixes its own issues before I review.
+Local SonarQube analysis for coding agents: an extension for the Pi agent, and an MCP server for Claude Code.
 
-## Problem
+## How it works
 
-My coding agent wrote code faster than I could review it.
-
-## What I did
-
-A Pi extension that runs SonarQube locally and feeds the findings back to the agent.
+It runs sonar-scanner on the project, then pulls issues, measures and duplications from the SonarQube API and hands them back as text the agent can act on. The agent gets a sonarqube tool and a /sonarqube command, so it can scan its own changes and fix what it finds before I review them.

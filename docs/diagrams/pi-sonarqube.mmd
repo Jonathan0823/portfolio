@@ -1,0 +1,8 @@
+flowchart LR
+  ag["Coding agent<br/>Pi / Claude Code"] --> tool["sonarqube tool"]
+  tool --> sc["sonar-scanner"]
+  sc --> sq["SonarQube<br/>local"]
+  sq --> api["SonarQube API<br/>issues, measures, duplications"]
+  api ==>|findings| ag
+  ag --> fx["Agent fixes code"]
+  linkStyle 4 stroke:#e5484d,stroke-width:2px

@@ -1,0 +1,27 @@
+---
+import Section from './Section.astro';
+import { getRoles } from '@/lib/content';
+import { formatRange } from '@/lib/role-timeline';
+
+const education = await getRoles('education');
+---
+
+<Section id="education" title="Education.">
+  {education.map((e) => (
+    <div class="grid grid-cols-12 items-baseline gap-x-6 border-t border-ink py-6 md:py-8">
+      <p class="col-span-12 font-mono text-[13px] leading-relaxed text-muted md:col-span-3 md:font-sans md:text-[22px] md:leading-tight md:font-semibold md:tracking-[-0.02em] md:text-ink">
+        Education
+      </p>
+      <div class="col-span-12 flex flex-col gap-1 md:col-span-9">
+        <h3 class="text-lg leading-snug text-ink md:text-body">
+          {e.data.title}, {e.data.org}
+        </h3>
+        <p class="font-mono text-[13px] leading-relaxed text-muted">
+          {formatRange(e.data.start, e.data.end)}
+          {e.data.note && ` · ${e.data.note}`}
+        </p>
+      </div>
+    </div>
+  ))}
+  <div class="border-t border-ink"></div>
+</Section>

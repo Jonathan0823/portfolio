@@ -1,11 +1,11 @@
 ---
 import Section from './Section.astro';
 import Visual from './Visual.astro';
+import TechStack from './TechStack.astro';
 import { getProjects } from '@/lib/content';
 import { GITHUB_REPOS_URL } from '@/lib/profile';
+import { GRID, skillIcon } from '@/lib/skill-icons';
 import { projectAnchor, projectLinks, projectYear, splitProjectBody } from '@/lib/projects';
-
-const STATUS_COLOR: Record<string, string> = { 'Open source': '#4338CA', 'On npm': '#E5484D', 'Daily use': '#FF7A28' };
 
 const projects = await Promise.all(
   (await getProjects()).map(async (p) => ({
@@ -15,6 +15,10 @@ const projects = await Promise.all(
     ...splitProjectBody(p.body),
   })),
 );
+const github = skillIcon({ icon: 'github' });
+const npm = skillIcon({ icon: 'npm' });
+const how = (sections: { label: string; text: string }[]) =>
+  sections.filter((s) => !/result/i.test(s.label)).flatMap((s) => s.text.split(/\n\s*\n/).map((x) => x.trim()));
 ---
 
 <Section id="projects" title="Projects.">
@@ -24,53 +28,39 @@ const projects = await Promise.all(
   </a>
   {projects.map(({ p, links, year, description, sections }) => (
     <article id={projectAnchor(p.id)} data-project={p.id} class="border-t border-ink py-6 md:py-7">
-      <div data-cursor="eye" data-summary class="md:grid md:grid-cols-12 md:items-baseline md:gap-x-6">
-        <div class="flex items-baseline justify-between md:col-span-3 md:block">
+      <div data-cursor="eye" data-summary class="md:grid md:grid-cols-12 md:gap-x-6">
+        <div class="md:col-span-3">
           <h3 class="text-[28px] leading-[1.1] font-semibold tracking-[-0.03em] md:text-[32px]">{p.data.name}</h3>
-          <p class="font-mono text-[13px] leading-relaxed text-muted md:hidden">{year}</p>
         </div>
-        <div class="mt-2.5 flex flex-col gap-2 md:col-span-6 md:mt-0 md:gap-2.5">
-          {p.data.hook && (
-            <p class="max-w-[68ch] text-[22px] leading-[1.25] font-medium tracking-[-0.02em] text-balance md:text-2xl">
-              {p.data.hook}
-            </p>
-          )}
-          <p class="max-w-[68ch] text-[17px] leading-[1.55] text-body text-pretty md:text-lg md:leading-relaxed">
-            {description}
+        <div class="mt-2.5 flex flex-col gap-2.5 md:col-span-9 md:mt-0">
+          <p class="max-w-[68ch] text-[17px] leading-[1.55] text-body text-pretty md:text-lg">
+            <span class="text-ink">{description}</span>
+            {p.data.result && ' ' + p.data.result}
           </p>
-          <p class="max-w-[68ch] text-[15px] leading-normal text-ink md:text-base">
-            <span class="text-sm leading-relaxed text-muted">Result&nbsp;&nbsp;</span>
-            {p.data.result}
-          </p>
-        </div>
-        <div class="mt-2.5 flex flex-col gap-1 md:col-span-3 md:mt-0 md:text-right">
-          {p.data.status && (
-            <p class="flex items-center gap-2 font-mono text-[13px] leading-relaxed text-ink md:justify-end">
-              <span
-                aria-hidden="true"
-                class="size-2"
-                style={`background:${STATUS_COLOR[p.data.status] ?? '#7C5CFA'}`}
-              ></span>
-              {p.data.status}
-            </p>
-          )}
-          {p.data.role && <p class="text-[15px] leading-relaxed text-muted">{p.data.role}</p>}
-          <p class="font-mono text-[13px] leading-relaxed text-muted">
-            {p.data.tags.join(' · ')}
-            <span class="hidden md:inline"> · {year}</span>
-          </p>
-          <div class="flex items-baseline justify-between gap-3 md:flex-col md:items-end md:gap-1">
-            <p class="font-mono text-[13px] leading-relaxed text-muted">
-              {links.map((l, i) => (
-                <>
-                  {i > 0 && ' · '}
-                  <a href={l.href} class="text-ink max-md:inline-flex max-md:min-h-11 max-md:items-center">
-                    {l.text} ↗
-                  </a>
-                </>
-              ))}
-            </p>
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-[15px] leading-relaxed text-muted">
+            <span>{year}</span>
+            <TechStack tags={p.data.tags} />
+            {links.map((l) => {
+              const icon = /npmjs\.com/.test(l.href) ? npm : github;
+              return (
+                <a
+                  href={l.href}
+                  class="inline-flex items-center gap-1.5 text-ink underline decoration-line underline-offset-4 hover:decoration-ink max-md:min-h-11"
+                >
+                  <svg
+                    viewBox={`0 0 ${GRID} ${GRID}`}
+                    aria-hidden="true"
+                    shape-rendering="crispEdges"
+                    class="size-4 shrink-0"
+                  >
+                    <path class="fill-ink" d={icon.base} />
+                  </svg>
+                  {l.text} ↗
+                </a>
+              );
+            })}
           </div>
+          <div data-toggle-slot></div>
         </div>
       </div>
       <div
@@ -81,21 +71,15 @@ const projects = await Promise.all(
         <div class="min-h-0 overflow-hidden">
           <div class:list={['grid gap-6 pt-5 pb-2', p.data.visual.src && 'md:grid-cols-[1.1fr_1fr]']}>
             {p.data.visual.src && (
-              <div class="relative self-start">
-                <div data-assemble>
-                  <Visual visual={p.data.visual} />
-                </div>
-                <canvas data-assemble-px aria-hidden="true" class="pointer-events-none absolute inset-0 size-full" />
+              <div class="self-start">
+                <Visual visual={p.data.visual} />
               </div>
             )}
-            <dl>
-              {sections.map((s) => (
-                <div class="grid grid-cols-[96px_1fr] gap-3 border-t border-line-soft py-2.5">
-                  <dt class="text-sm leading-relaxed text-muted">{s.label}</dt>
-                  <dd class="max-w-[68ch] text-base leading-[1.55] text-body">{s.text}</dd>
-                </div>
+            <div class="flex flex-col gap-4">
+              {how(sections).map((para) => (
+                <p class="max-w-[68ch] text-[17px] leading-[1.55] text-body md:text-lg">{para}</p>
               ))}
-            </dl>
+            </div>
           </div>
         </div>
       </div>
@@ -107,68 +91,51 @@ const projects = await Promise.all(
     <div
       data-peek
       aria-hidden="true"
-      class="pointer-events-none fixed top-0 left-0 z-[45] hidden aspect-[16/10] w-[min(380px,32vw)] overflow-hidden"
+      class="pointer-events-none fixed top-0 left-0 z-[45] hidden aspect-[16/10] w-[min(380px,32vw)]"
     >
       <div data-peek-content class="absolute inset-0">
         {projects.map(
           ({ p }) =>
             p.data.visual.src && (
-              <div data-peek-item={p.id} hidden class="absolute inset-0">
-                <img src={p.data.visual.src} alt="" loading="lazy" class="size-full object-cover" />
+              <div data-peek-item={p.id} hidden class="absolute inset-0 bg-pixel-mist p-4">
+                <img src={p.data.visual.src} alt="" loading="lazy" class="size-full object-contain" />
               </div>
             ),
         )}
       </div>
       <canvas data-peek-px class="absolute inset-0 size-full"></canvas>
+      <canvas data-peek-frame class="pointer-events-none absolute inset-0 size-full"></canvas>
     </div>
   )}
 </Section>
 
 <script>
   import '@/scripts/project-peek';
-  import { createAssembler } from '@/scripts/pixel-assemble';
-  import { prefersReducedMotion } from '@/scripts/motion';
 
   // the whole summary is the open/close control on every device; links and selected text keep their own behaviour
   document.querySelectorAll<HTMLElement>('[data-project]').forEach((project) => {
     const summary = project.querySelector<HTMLElement>('[data-summary]');
     const detail = project.querySelector<HTMLElement>('[data-detail]');
-    if (!summary || !detail) return;
-    // only a project with an image has something to assemble
-    const art = project.querySelector<HTMLElement>('[data-assemble]');
-    const assembler = art && createAssembler([art], project.querySelector<HTMLCanvasElement>('[data-assemble-px]')!);
-    // the project name becomes a real toggle button (set from script, so without JS the details just stay visible);
-    // a click anywhere else on the summary toggles too, except on its links or while text is being selected
-    const heading = summary.querySelector('h3')!;
+    const slot = project.querySelector<HTMLElement>('[data-toggle-slot]');
+    if (!summary || !detail || !slot) return;
+    // the toggle is made from script, so without JS the details just stay visible
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = heading.textContent;
     button.className =
-      'cursor-pointer text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink';
-    // the visible hint; aria-expanded already says it to screen readers
-    const hint = document.createElement('span');
-    hint.setAttribute('aria-hidden', 'true');
-    hint.className = 'mt-2 block text-[15px] leading-normal font-medium tracking-normal text-ink';
-    button.append(hint);
-    summary.classList.add('cursor-pointer');
+      'w-fit cursor-pointer text-left text-[15px] leading-relaxed text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink';
     button.setAttribute('aria-controls', detail.id);
-    heading.replaceChildren(button);
+    slot.replaceWith(button);
+    summary.classList.add('cursor-pointer');
     const set = (open: boolean) => {
       detail.toggleAttribute('data-collapsed', !open);
       detail.toggleAttribute('inert', !open);
       button.setAttribute('aria-expanded', String(open));
-      hint.textContent = open ? 'Details −' : 'Details +';
+      button.textContent = open ? 'Details −' : 'Details +';
     };
     set(false);
-    const toggle = () => {
-      const open = button.getAttribute('aria-expanded') !== 'true';
-      set(open);
-      assembler?.reset();
-      if (open && !prefersReducedMotion()) assembler?.show(0, 'left', 700, assembler.reset);
-    };
     summary.addEventListener('click', (e) => {
       if ((e.target as Element).closest('a') || getSelection()?.toString()) return;
-      toggle();
+      set(button.getAttribute('aria-expanded') !== 'true');
     });
   });
 </script>

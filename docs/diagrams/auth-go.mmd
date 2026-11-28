@@ -1,0 +1,10 @@
+flowchart LR
+  rl["Rate limit<br/>Redis fixed window"] -.-> login
+  oauth["OAuth<br/>GitHub, Google"] -.-> login["Login<br/>Argon2id"]
+  login --> acc["Access token<br/>15 min"]
+  login --> ref["Refresh token"]
+  ref -->|refresh| np["New pair<br/>old one retired"]
+  ref ==>|retired token reused| rv["Revoke whole family"]
+  classDef accent fill:#fdecec,stroke:#e5484d,stroke-width:2px
+  class rv accent
+  linkStyle 5 stroke:#e5484d,stroke-width:2px

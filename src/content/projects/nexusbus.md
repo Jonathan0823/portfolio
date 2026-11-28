@@ -1,11 +1,8 @@
 ---
 name: 'NexusBus'
-hook: 'The Modbus gateway I built for a battery factory, rebuilt in the open.'
-status: 'Open source'
-role: 'Solo, built at work first'
 order: 1
 month: '2025-08'
-result: 'The same design runs the gateway on the factory floor at Century Batteries.'
+result: 'The same design runs in production at Century Batteries.'
 repo: 'https://github.com/Jonathan0823/nexusbus'
 extraRepos:
   - text: 'nexusbus-mqtt-consumer'
@@ -15,22 +12,18 @@ tags:
   - 'FastAPI'
   - 'Go'
   - 'Redis'
+  - 'PostgreSQL'
 visual:
   kind: 'diagram'
-  label: 'Modbus devices → gateway → MQTT → Redis Streams → consumer'
+  label: 'Modbus devices → FastAPI gateway → MQTT → Go consumer → Redis Stream → PostgreSQL, with a dead-letter stream'
+  src: '/diagrams/nexusbus.svg'
 fromAchievement: 'modbus-mqtt-gateway'
 ---
 
-The open-source version of the gateway I run at work. It polls Modbus TCP and RTU devices, caches values and publishes them over MQTT, and a Go consumer keeps every reading through network drops.
+An open-source rebuild of the Modbus-to-MQTT gateway I wrote at Century Batteries, in two parts: a Python gateway and a Go consumer.
 
-## Problem
+## How it works
 
-Every machine on the floor spoke Modbus a little differently, and the network drops for a few seconds at a time.
+The gateway is a FastAPI service that polls Modbus TCP and RTU devices and publishes what it reads over MQTT. Device settings live in the database rather than in code.
 
-## What I did
-
-A FastAPI gateway with database-driven config that polls TCP and RTU devices, plus a Go consumer that buffers MQTT in Redis Streams, removes duplicates and parks bad messages.
-
-## Why open source
-
-I rebuilt it outside work so others with the same machines don’t start from zero.
+The consumer, written in Go, puts each message on a Redis Stream and reads it back through a consumer group before writing to PostgreSQL. Every reading carries an idempotency key, so a retry after a network drop can’t store it twice. Messages that are malformed or keep failing go to a dead-letter stream instead of holding up the rest.

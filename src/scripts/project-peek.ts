@@ -1,4 +1,5 @@
 import { createAssembler, NONE } from './pixel-assemble';
+import { mountPeekFrame } from './peek-frame';
 import { canRunCursor } from './motion';
 import { easeFactor, frameScale } from './timing';
 
@@ -15,6 +16,7 @@ if (peek && list && canRunCursor()) {
   const items = [...peek.querySelectorAll<HTMLElement>('[data-peek-item]')];
   const assembler = createAssembler(items, peek.querySelector<HTMLCanvasElement>('[data-peek-px]')!);
   items.forEach((el) => (el.hidden = false));
+  const framer = mountPeekFrame(peek.querySelector<HTMLCanvasElement>('[data-peek-frame]')!, false);
   let current: string | null = null;
   let x = 0,
     y = 0,
@@ -47,14 +49,18 @@ if (peek && list && canRunCursor()) {
     if (id === current) return;
     const wasHidden = peek.classList.contains('hidden');
     current = id;
-    peek.classList.remove('hidden');
     if (wasHidden) {
       x = targetX;
       y = targetY;
       assembler.reset();
     }
+    peek.classList.remove('hidden');
     const layer = items.findIndex((el) => el.dataset.peekItem === id);
-    assembler.show(layer, fromAbove ? 'top' : 'bottom', wasHidden ? BUILD_MS : SWITCH_MS);
+    const side = fromAbove ? 'top' : 'bottom';
+    // the frame builds with the card, and on a switch stays and flicks its colour the new way
+    if (framer.active()) framer.shift(side);
+    else framer.build(side, wasHidden ? BUILD_MS : SWITCH_MS);
+    assembler.show(layer, side, wasHidden ? BUILD_MS : SWITCH_MS);
     wake();
   };
   const hide = () => {
@@ -62,6 +68,7 @@ if (peek && list && canRunCursor()) {
     linger = window.setTimeout(() => {
       linger = 0;
       current = null;
+      framer.scatter(SCATTER_MS);
       assembler.show(NONE, 'left', SCATTER_MS, () => peek.classList.add('hidden'));
     }, LINGER_MS);
   };

@@ -60,6 +60,17 @@ describe('projectLinks', () => {
   });
 });
 
+describe('projectLinks package', () => {
+  it('adds an npm link last when a package is set', () => {
+    expect(
+      projectLinks({ repo: 'https://github.com/a/b', extraRepos: [], package: 'https://www.npmjs.com/package/b' }),
+    ).toEqual([
+      { text: 'b', href: 'https://github.com/a/b' },
+      { text: 'npm', href: 'https://www.npmjs.com/package/b' },
+    ]);
+  });
+});
+
 describe('projectForAchievement', () => {
   const projects = [
     { id: 'a', data: {} },

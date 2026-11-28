@@ -1,0 +1,5 @@
+flowchart LR
+  s["Session"] --> o["Observers<br/>chunks"] --> l["Ledger"]
+  l --> c["Compaction<br/>no model call"] --> sum["Summary in context"]
+  l --> co["Consolidator"] ==> mem[".memory/ topic files"] ==> r["recall tool"] ==> nx["Next session"]
+  linkStyle 5,6,7 stroke:#e5484d,stroke-width:2px

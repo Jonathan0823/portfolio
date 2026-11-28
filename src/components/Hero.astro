@@ -63,7 +63,81 @@ const icons = heatIcons(14);
 
 <section class="px-5 pt-10 md:px-24 md:pt-40">
   <p class="text-[25px] leading-tight font-medium tracking-[-0.02em] text-pretty md:max-w-[min(83.333%,56ch)] md:text-5xl md:leading-[1.2] md:tracking-[-0.03em]">
-    I’m a software engineer in Karawang, Indonesia. I write the software between factory machines and the people who
+    I’m a software engineer in Karawang, Indonesia. I write the software between production machines and the people who
     watch them: device gateways, data pipelines and dashboards that load fast.
   </p>
+  <p class="mt-6 text-[17px] leading-[1.55] text-body text-pretty md:mt-8 md:max-w-[min(83.333%,56ch)] md:text-lg">
+    I started informatics in 2023 to learn how the apps on my phone worked, fell for Go that December, and left
+    university in 2025 to work full time at a battery manufacturer.
+    <a
+      href="/story/"
+      data-cursor="next"
+      class="story-link ml-2.5 font-semibold whitespace-nowrap text-accent-ink no-underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
+    >
+      Read the full story{' '}
+      <span aria-hidden="true" class="story-arrow">
+        →
+      </span>
+    </a>
+  </p>
 </section>
+
+<style>
+  .story-link {
+    position: relative;
+  }
+  .story-link::before,
+  .story-link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -0.25em;
+    height: 5px;
+    pointer-events: none;
+    -webkit-mask-image: repeating-linear-gradient(to right, #000 0 6px, transparent 6px 9px);
+    mask-image: repeating-linear-gradient(to right, #000 0 6px, transparent 6px 9px);
+  }
+  .story-link::before {
+    background: var(--color-square);
+  }
+  .story-link::after {
+    background: linear-gradient(
+      to right,
+      var(--color-pixel-night),
+      var(--color-pixel-indigo),
+      var(--color-pixel-violet),
+      var(--color-pixel-orange),
+      var(--color-pixel-sun)
+    );
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 260ms steps(10, end);
+  }
+  .story-arrow {
+    display: inline-block;
+    margin-left: 0.35em;
+    transition: transform 200ms;
+  }
+  .story-link:focus-visible::after {
+    clip-path: inset(0 0 0 0);
+    transition: clip-path 420ms steps(14, end);
+  }
+  .story-link:focus-visible .story-arrow {
+    transform: translateX(6px);
+  }
+  @media (hover: hover) {
+    .story-link:hover::after {
+      clip-path: inset(0 0 0 0);
+      transition: clip-path 420ms steps(14, end);
+    }
+    .story-link:hover .story-arrow {
+      transform: translateX(6px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .story-link::after,
+    .story-arrow {
+      transition: none !important;
+    }
+  }
+</style>
