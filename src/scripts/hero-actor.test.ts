@@ -99,6 +99,17 @@ describe('stepIdle', () => {
     expect(b.bobs).toBe(0);
   });
 
+  it("squints for a click's jump but not an idle hop, and while a blast charges", () => {
+    const a = actor();
+    bob(a, 1, 5);
+    expect(stepIdle(a, ctx({ dt: 0.05 })).blink).toBe(false);
+    bob(a, 1, 24);
+    expect(stepIdle(a, ctx({ dt: 0.05 })).blink).toBe(true);
+    const b = actor();
+    expect(stepIdle(b, ctx({ charge: 0.2 })).blink).toBe(false);
+    expect(stepIdle(b, ctx({ charge: 0.6 })).blink).toBe(true);
+  });
+
   it('quivers while a blast charges', () => {
     const a = actor();
     const calm = stepIdle(a, ctx({ now: 11 }));

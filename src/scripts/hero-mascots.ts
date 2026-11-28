@@ -264,6 +264,8 @@ function play(hero: HeroField | null): () => void {
         a.y += a.vy * dt;
         tsy = 1.12;
         tsx = 0.92;
+        // squeezed shut against the heat
+        blink = true;
         const gx = Math.round((a.x + w / 2 - cs / 2) / cs) * cs;
         const topY = a.y - h;
         const hot = ['#FFC43C', '#FF7A28', '#E5484D'];
@@ -305,6 +307,8 @@ function play(hero: HeroField | null): () => void {
           }
         }
       } else if (a.mode === 'land') {
+        // the hit of landing: eyes screwed shut
+        blink = true;
         if (a === pi) a.y = landY(a);
         if (a.t > 0.22) {
           a.t = 0;
@@ -333,6 +337,8 @@ function play(hero: HeroField | null): () => void {
         a.leg = Math.floor(a.t / 0.05) % 2 ? 1 : 0;
         tsx = 0.92;
         tsy = 1.1;
+        // tumbling
+        blink = true;
         const cx = a.x + w / 2;
         const ground = floorUnder(letters, cx, a.y, lastLineTop(cx));
         if (a.vy > 0 && a.y >= ground && a.t > 0.08) {
@@ -383,6 +389,7 @@ function play(hero: HeroField | null): () => void {
             straighten(l);
             effects.burst(l.x + l.w / 2, l.top, 2, now);
             a.next++;
+            a.squint = 0.16;
             a.mode = 'dwell';
           } else {
             a.mode = 'idle';
@@ -407,6 +414,10 @@ function play(hero: HeroField | null): () => void {
         });
         ({ lift, tilt, tsx, tsy, blink } = look);
       }
+      // Clawd winces as Pi lands on him and keeps his eyes shut, content, while he holds him; a straightening shoves with a squint
+      if (a === clawd && (pi.mode === 'land' || pi.mode === 'caught')) blink = true;
+      a.squint = Math.max(0, a.squint - dt);
+      if (a.squint > 0) blink = true;
       a.lift = lift;
       const k = Math.min(1, dt * 22);
       a.sx += (tsx - a.sx) * k;

@@ -55,6 +55,8 @@ export interface Actor {
   reactIn: number;
   /** how far above its feet it is lifted this frame, so what stands on it can follow */
   lift: number;
+  /** seconds left of a squint a moment asked for (a hop that straightened a letter) */
+  squint: number;
   /** idle: it has stepped off its place and is due to go back */
   shuffled: boolean;
   /** thrown by a blast: spin in degrees a second, and the angle it has turned */
@@ -102,11 +104,16 @@ export function makeActor(
     startledIn: 0,
     reactIn: 0,
     lift: 0,
+    squint: 0,
     shuffled: false,
     spin: 0,
     ang: 0,
   };
 }
+
+/** a bounce at least this high (a click's jump, not an idle hop) shuts its eyes, and so does a blast charged this far */
+const JUMP_SQUINT_H = 15;
+const CHARGE_SQUINT = 0.35;
 
 /** a bounce in place: n small hops, h px high */
 export function bob(a: Actor, n: number, h: number): void {
@@ -202,5 +209,7 @@ export function stepIdle(a: Actor, c: IdleCtx): Look {
     look.blink = true;
     a.blinkT -= c.dt;
   }
+  // squeezes its eyes shut for a jump a click made, and while a blast charges
+  if ((a.bobs > 0 && a.bobH >= JUMP_SQUINT_H) || c.charge > CHARGE_SQUINT) look.blink = true;
   return look;
 }
