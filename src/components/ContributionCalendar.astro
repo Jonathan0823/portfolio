@@ -78,7 +78,7 @@ const dayLabels = [
     </a>
   </div>
 
-  <p data-readout aria-live="polite" class="mb-2 min-h-[1.6em] font-mono text-[13px] leading-relaxed text-ink"></p>
+  <p data-readout aria-live="polite" class="sr-only"></p>
   <div data-scroller class="overflow-x-auto pb-1">
     <div class="relative w-full min-w-[1100px] md:min-w-[640px]">
       <svg
@@ -145,7 +145,7 @@ const dayLabels = [
 
 <script>
   import { HEAT_PALETTE } from '@/lib/palette';
-  import { FINE_POINTER_QUERY, prefersReducedMotion } from '@/scripts/motion';
+  import { prefersReducedMotion } from '@/scripts/motion';
   import { SHOCKWAVE_EVENT, type ShockwaveDetail } from '@/scripts/cursor-math';
   import {
     CAL,
@@ -234,15 +234,9 @@ const dayLabels = [
     let moved = false;
     // the pointer that began the current touch gesture; other fingers are ignored until it ends
     let pid = -1;
-    const fine = matchMedia(FINE_POINTER_QUERY);
-    const idle = () => (fine.matches ? 'Hover a day' : 'Tap a day, then drag it to scrub');
     const readout = fig.querySelector<HTMLElement>('[data-readout]')!;
     const scroller = fig.querySelector<HTMLElement>('[data-scroller]')!;
     const grab = fig.querySelector<HTMLElement>('[data-grab]')!;
-    readout.textContent = idle();
-    fine.addEventListener('change', () => {
-      if (!selected) readout.textContent = idle();
-    });
 
     const frame = (now: number) => {
       const dt = now - (spot.last || now);
@@ -347,9 +341,31 @@ const dayLabels = [
     // the hovered day (mouse) wins over the chosen day (a click, a tap, a scrub or an arrow key); only a mouse leaving clears it
     const show = () => {
       selected = hover ?? chosen;
-      readout.textContent = selected?.el.dataset.tip ?? idle();
+      // read out to screen readers; on screen the day is named by the tooltip
+      readout.textContent = selected?.el.dataset.tip ?? '';
       raf ||= requestAnimationFrame(frame);
       placeGrab();
+      placeTip();
+    };
+    const openTip = (text: string, x: number, y: number) => {
+      tip.textContent = text;
+      const room = fig.clientWidth - tip.offsetWidth;
+      tip.style.transform = `translate(${Math.max(0, Math.min(x, room))}px,${y}px)`;
+      tip.style.opacity = '1';
+    };
+    /** a day chosen by touch or keyboard has no cursor to follow: its tooltip sits above the cell (a hovering mouse places its own) */
+    const placeTip = () => {
+      if (hover) return;
+      const r = chosen?.el.getBoundingClientRect();
+      const view = scroller.getBoundingClientRect();
+      const x = r ? r.left + r.width / 2 : 0;
+      if (!chosen || !r || x < view.left || x > view.right) {
+        tip.style.opacity = '0';
+        return;
+      }
+      const fb = fig.getBoundingClientRect();
+      tip.textContent = chosen.el.dataset.tip!;
+      openTip(chosen.el.dataset.tip!, x - fb.left - tip.offsetWidth / 2, r.top - fb.top - tip.offsetHeight - 12);
     };
     /** a transparent target over the chosen day (touch only): it is a separate element because touch-action is read when the finger lands */
     const placeGrab = () => {
@@ -394,16 +410,14 @@ const dayLabels = [
         tip.style.opacity = '0';
         return;
       }
-      tip.textContent = text;
-      tip.style.transform = `translate(${Math.max(0, Math.min(e.clientX - fb.left + 12, fb.width - 260))}px,${e.clientY - fb.top - 48}px)`;
-      tip.style.opacity = '1';
+      openTip(text, e.clientX - fb.left + 12, e.clientY - fb.top - 48);
     };
     svg.addEventListener('pointerenter', edge);
     svg.addEventListener('pointerleave', edge);
+    scroller.addEventListener('scroll', placeTip, { passive: true });
     svg.addEventListener('pointerleave', (e) => {
       // a mouse takes its clicked day with it; a touch also fires this on lifting, and its day has to stay
       if (e.pointerType === 'mouse') chosen = null;
-      tip.style.opacity = '0';
       spot.target = 0;
       hover = null;
       show();
@@ -519,7 +533,10 @@ const dayLabels = [
     });
     // iOS Safari can still start a scroll from a target that says touch-action: none
     grab.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
-    new ResizeObserver(placeGrab).observe(svg);
+    new ResizeObserver(() => {
+      placeGrab();
+      placeTip();
+    }).observe(svg);
     // a charged click elsewhere sends a front across the page: the graph ripples from the cell facing it when the front arrives
     window.addEventListener(SHOCKWAVE_EVENT, (ev) => {
       const { x, y, speed } = (ev as CustomEvent<ShockwaveDetail>).detail;
