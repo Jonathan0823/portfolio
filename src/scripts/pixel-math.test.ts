@@ -62,6 +62,26 @@ describe('stepField', () => {
     expect(f.bucket.some((k) => k >= 0)).toBe(true);
   });
 
+  it('keeps the band under darkTop to the darkest layer, and the rest as it was', () => {
+    // a phone-sized hero, where the lighter layers reach up under the nav
+    const plain = createField(390, 200),
+      dark = createField(390, 200);
+    stepField(plain, 0.8, 1.3, 0.94, { runoff: true });
+    stepField(dark, 0.8, 1.3, 0.94, { runoff: true, darkTop: 60 });
+    const band = Math.ceil(60 / dark.cellSize) * dark.columns;
+    expect(Array.from(plain.bucket.slice(0, band)).some((k) => k > 1)).toBe(true);
+    expect(Array.from(dark.bucket.slice(0, band)).every((k) => k <= 1)).toBe(true);
+    expect(Array.from(dark.bucket.slice(band))).toEqual(Array.from(plain.bucket.slice(band)));
+  });
+
+  it('keeps heated cells under darkTop to the darkest layer too', () => {
+    const f = createField(390, 200),
+      heated = 5 * f.columns + 10;
+    f.heat[heated] = 1;
+    stepField(f, 0.8, 1.3, 0.94, { darkTop: 60 });
+    expect(f.bucket[heated]).toBe(1);
+  });
+
   const lit = (f: ReturnType<typeof createField>, from: number, to: number) => {
     let n = 0;
     for (let y = from; y < to; y++) for (let x = 0; x < f.columns; x++) if (f.bucket[y * f.columns + x] >= 0) n++;

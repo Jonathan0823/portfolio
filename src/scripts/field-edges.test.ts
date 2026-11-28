@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fieldShape } from './field-edges';
+import { NAV_BAND, fieldShape } from './field-edges';
 
 const box = { top: 0, height: 300 };
 describe('fieldShape', () => {
@@ -21,6 +21,13 @@ describe('fieldShape', () => {
     expect(fieldShape('hero', box, 0, 800, true).fadeRows).toBeUndefined();
     expect(fieldShape('hero', box, 0, 800, true).runoff).toBe(true);
     expect(fieldShape('foot', box, 0, 800, true).runoff).toBeUndefined();
+  });
+
+  it('stretches the dark band down by however far the field has scrolled under the nav', () => {
+    expect(fieldShape('hero', box, 0, 800, true).darkTop).toBe(NAV_BAND);
+    expect(fieldShape('hero', { top: -120, height: 300 }, 120, 800, true).darkTop).toBe(NAV_BAND + 120);
+    expect(fieldShape('strip', { top: -40, height: 300 }, 40, 800, false).darkTop).toBe(NAV_BAND + 40);
+    expect(fieldShape('hero', { top: 30, height: 300 }, 0, 800, true).darkTop).toBe(NAV_BAND);
   });
 
   it('holds still under reduced motion', () => {

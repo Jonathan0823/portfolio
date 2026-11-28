@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { distanceToBox, nearestBox, roundedDistance, stretchToward } from './nav-magnet';
+import { distanceToBox, nearestBox, stepSlosh } from './nav-magnet';
+import { frameScale } from './timing';
 
 const boxes = [
   { left: 0, top: 0, width: 100, height: 30 },
@@ -23,21 +24,13 @@ describe('nearestBox', () => {
   });
 });
 
-describe('roundedDistance', () => {
-  it('is negative inside, positive outside and rounds the corners off', () => {
-    expect(roundedDistance(50, 15, boxes[0], 8)).toBeLessThan(0);
-    expect(roundedDistance(50, 40, boxes[0], 8)).toBe(10);
-    expect(roundedDistance(0, 0, boxes[0], 8)).toBeGreaterThan(0);
-  });
-});
-
-describe('stretchToward', () => {
-  it('runs the leading edge ahead of the trailing one, then settles on the goal', () => {
-    const shape = { ...boxes[1] };
-    stretchToward(shape, boxes[0], 1);
-    expect(boxes[1].left - shape.left).toBeGreaterThan(boxes[1].left + boxes[1].width - shape.left - shape.width);
-    for (let i = 0; i < 200; i++) stretchToward(shape, boxes[0], 1);
-    expect(shape.left).toBeCloseTo(0);
-    expect(shape.width).toBeCloseTo(100);
+describe('stepSlosh', () => {
+  it('settles even when every frame is as slow as frameScale allows', () => {
+    let s = { position: 0, velocity: 0.42 };
+    for (let i = 0; i < 20; i++) {
+      s = stepSlosh(s.position, s.velocity, frameScale(1000));
+      expect(Math.abs(s.position)).toBeLessThan(2);
+    }
+    expect(Math.abs(s.position)).toBeLessThan(0.05);
   });
 });
