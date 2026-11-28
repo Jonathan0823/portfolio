@@ -177,10 +177,6 @@ html.has-pixel-pointer :is(input, textarea, select, [contenteditable]) {
     transform: translateY(-8px);
   }
 }
-/* the hero drip builds the headline's period: absent until built */
-html.drip-pending [data-drip-period] {
-  color: transparent;
-}
 .sq.sq-hidden {
   background-color: var(--color-line);
 }

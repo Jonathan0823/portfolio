@@ -12,6 +12,7 @@ import { mountGlyphSpill, type GlyphSpill } from './glyph-spill';
 import { FIELD_BLEED, fieldShape } from './field-edges';
 import { FOOT_BLEED, mountFooterTide, tideSwell } from './footer-tide';
 import { heroLifeShape, mountHeroLife } from './hero-life';
+import { mountHeroMascots } from './hero-mascots';
 import { footWordmarkShape } from './footer-wordmark';
 import { mountFooterMascots } from './footer-mascots';
 import { combineInputs, mountSurfaceWaves, type SurfaceWaves } from './surface-waves';
@@ -100,7 +101,7 @@ if (typeof window.matchMedia === 'function') {
     { passive: true },
   );
   whenIdle(sync);
-  whenIdle(() => void mountHeroLife(hero));
+  whenIdle(() => void mountHeroMascots(hero, mountHeroLife(hero)));
   const foot = fields[hosts.findIndex((h) => h.dataset.pixelField === 'foot')];
   // hover drives the tide, so it exists on a fine pointer only and switching pointer remounts it
   let stopTide: (() => void) | null = null;

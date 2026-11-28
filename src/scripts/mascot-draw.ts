@@ -46,7 +46,8 @@ export function drawMascot(
   };
   sprite.body.forEach(fill);
   (sprite.legs[pose.leg] ?? []).forEach(fill);
-  (blink ? sprite.lids : sprite.eyes).forEach(fill);
+  if (blink) [...sprite.lids, ...sprite.squint].forEach(fill);
+  else sprite.eyes.forEach(fill);
   ctx.restore();
 }
 

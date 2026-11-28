@@ -83,6 +83,8 @@ const { links, brandHref = '#top' } = Astro.props;
   const SURFACE = 0.68;
   /** where the bar starts on a page without a field */
   const SCROLLED_PX = 40;
+  /** on a page with a field, the bar comes once the page has scrolled this far: the lava has begun to drain, and the band that kept the links readable on it has faded */
+  const BAR_PX = 60;
   /** how long after the cover has gone the story strip takes to fill in behind the links (the hero says when it has poured) */
   const POURED_MS = 700;
 
@@ -109,7 +111,7 @@ const { links, brandHref = '#top' } = Astro.props;
     // the bar waits until the lava has left: its surface has scrolled up to the bottom of the links
     const box = field?.getBoundingClientRect();
     const scrolled = box
-      ? box.top + box.height * SURFACE < (nav?.firstElementChild?.clientHeight ?? 0)
+      ? box.top + box.height * SURFACE < (nav?.firstElementChild?.clientHeight ?? 0) || scrollY > BAR_PX
       : scrollY > SCROLLED_PX;
     if (navBg) navBg.style.opacity = scrolled ? '1' : '0';
     nav?.toggleAttribute('data-on-field', poured && !scrolled);
