@@ -79,6 +79,8 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     fallbackTime = 0,
     sizeKey = '';
   let onScreen = true;
+  /** false where the glyph belongs beside the links and has no room there */
+  let hasRoom = true;
   let current: GlyphName | 'clock' | null = null;
   /** the time the clock on show was poured with */
   let shownTime = '';
@@ -86,7 +88,7 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
   let cell = 10,
     fieldCell = 10;
 
-  const canRun = () => onScreen && !document.hidden;
+  const canRun = () => onScreen && hasRoom && !document.hidden;
   const isCompact = () => isCompactHero(hero.field().cellSize);
 
   const measureText = (heroRect: DOMRect, blocks: HTMLElement[]) => {
@@ -178,7 +180,8 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     canvas.style.width = layout.width + 'px';
     canvas.style.height = layout.height + 'px';
     // no room beside the links: nothing shows, rather than a glyph over the text
-    canvas.classList.toggle('hidden', beside && !slot);
+    hasRoom = !beside || !!slot;
+    canvas.classList.toggle('hidden', !hasRoom);
     const ratio = Math.min(2, window.devicePixelRatio || 1);
     const key = [layout.width, layout.height, ratio].join('x');
     if (key !== sizeKey) {
