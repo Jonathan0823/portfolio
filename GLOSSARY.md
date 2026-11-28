@@ -43,7 +43,7 @@ The footer field's own motion: bubbles swell on its surface and pop, and hot spo
 _Avoid_: Bubbles effect, footer embers
 
 **Wave**:
-The hero's and footer's surfaces moving like water under a hovering mouse: the pointer just outside a surface presses it in, sweeping along it pushes waves out both ways, and a hard slosh shakes a drop loose from the hero's edge. The surfaces are the only thing the pointer moves; it leaves no mark inside the lava.
+The hero's and footer's surfaces moving like water. A hovering mouse just outside a surface presses it in and sweeping along it pushes waves out both ways; on touch, a tap near a surface drops into it, and the page sloshes the water when its scrolling speeds up or stops (a fling landing at the bottom splashes the footer). A hard slosh shakes a drop loose from the hero's edge. The surfaces are the only thing the pointer moves; it leaves no mark inside the lava.
 _Avoid_: Ripple, trail, cursor effect
 
 **Wordmark**:
