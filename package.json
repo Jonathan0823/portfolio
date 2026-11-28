@@ -13,6 +13,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "stats:snapshot": "node scripts/github-snapshot.ts",
+    "diagrams": "bash scripts/render-diagrams.sh",
     "astro": "astro"
   },
   "dependencies": {

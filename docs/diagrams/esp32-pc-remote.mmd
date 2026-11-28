@@ -1,0 +1,8 @@
+flowchart LR
+  v["Voice 'Jarvis'<br/>ESP-SR, on board"] --> esp["ESP32-S3"]
+  t["Telegram bot<br/>polled"] -->|outbound only| esp
+  m["MQTT broker<br/>subscribed"] -->|outbound only| esp
+  dash["React dashboard"] <--> m
+  esp ==>|Wake-on-LAN| pc["PC<br/>Rust daemon"]
+  linkStyle 4 stroke:#e5484d,stroke-width:2px
+  %% note: no inbound ports

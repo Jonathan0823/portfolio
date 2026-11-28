@@ -1,0 +1,11 @@
+flowchart TD
+  dev["Modbus devices<br/>TCP / RTU"] --> gw["Gateway<br/>FastAPI"]
+  cfg[("Device config (DB)")] -.-> gw
+  gw --> mq["MQTT broker"]
+  mq --> go["Go consumer"]
+  go --> rs[("Redis Stream<br/>consumer group")]
+  rs --> pg[("PostgreSQL<br/>idempotency key")]
+  rs ==> dl["Dead-letter stream<br/>malformed / max retries"]
+  classDef accent fill:#fdecec,stroke:#e5484d,stroke-width:2px
+  class dl accent
+  linkStyle 6 stroke:#e5484d,stroke-width:2px

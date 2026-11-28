@@ -1,0 +1,8 @@
+flowchart LR
+  b[("bms_data · 314M rows<br/>duplicate index dropped: 6.7 GB")] --> j["Daily rollup job"]
+  j ==> t[("Daily rollup table")]
+  t ==>|long ranges| api["Go API"]
+  b -->|raw ranges| lt["LTTB downsample<br/>in Go API"]
+  lt --> api
+  api --> dash["Dashboard (Next.js)<br/>few thousand points"]
+  linkStyle 1,2 stroke:#e5484d,stroke-width:2px
