@@ -88,7 +88,7 @@ const dayLabels = [
         tabindex="0"
         aria-label={calendarLabel(calendar.total)}
         viewBox={'0 0 ' + (gutter + cols * cell) + ' ' + (labelH + 7 * cell)}
-        class="block h-auto w-full overflow-visible select-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
+        class="block h-auto w-full overflow-visible select-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink [&:focus:not(:focus-visible)]:outline-none"
       >
         {months.map((m) => (
           <text x={gutter + m.col * cell} y={9} font-size="9" class="fill-muted font-mono">
@@ -344,7 +344,7 @@ const dayLabels = [
       const { col, row } = under(e);
       return byPosition.get(col + ',' + row) ?? null;
     };
-    // the hovered day (mouse) wins over the chosen day (a click, a tap or a scrub), which stays after the pointer leaves
+    // the hovered day (mouse) wins over the chosen day (a click, a tap, a scrub or an arrow key); only a mouse leaving clears it
     const show = () => {
       selected = hover ?? chosen;
       readout.textContent = selected?.el.dataset.tip ?? idle();
@@ -400,7 +400,9 @@ const dayLabels = [
     };
     svg.addEventListener('pointerenter', edge);
     svg.addEventListener('pointerleave', edge);
-    svg.addEventListener('pointerleave', () => {
+    svg.addEventListener('pointerleave', (e) => {
+      // a mouse takes its clicked day with it; a touch also fires this on lifting, and its day has to stay
+      if (e.pointerType === 'mouse') chosen = null;
       tip.style.opacity = '0';
       spot.target = 0;
       hover = null;
