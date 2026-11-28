@@ -1,4 +1,4 @@
-// The pointer's trail on the nav: near an item the blob of heat stops trailing, flows onto the item and takes its
+// The pointer's heat on the nav: near an item a blob of heat flows from the pointer onto the item and takes its
 // shape. Between items its front edge runs ahead of the back, thinning in the middle; once landed it cools from yellow
 // to red and its edge bubbles. Letting go, it breaks into cells and gathers back into the pointer.
 import { HEAT_PALETTE, hash } from './pixel-math';
@@ -8,7 +8,7 @@ import { easeFactor, frameScale } from './timing';
 const ZONE = 24;
 /** how far past an item's box the settled heat reaches */
 const PAD = 5;
-/** the radius of the loose blob at the pointer, matching the trail's */
+/** the radius of the loose blob at the pointer */
 const BLOB = 30;
 const SETTLED_CORNER = 8;
 /** how long after landing the heat stays yellow, then orange, before it rests red */
@@ -158,7 +158,7 @@ export function mountNavMagnet(): NavMagnet {
           (hash(c, r, flicker) - 0.5) * size;
         // leaving, the shape breaks into scattered cells
         if (d > size || hash(c, r) > mix * 1.15) continue;
-        // the core under the word, then the trail's rim and a faint fringe
+        // the core under the word, then the blob's rim and a faint fringe
         ctx.fillStyle = HEAT_PALETTE[d < 0 ? core : Math.max(core, d < size / 2 ? 4 : 5)];
         ctx.globalAlpha = Math.min(1, mix * 1.4) * (d < size / 2 ? 1 : 0.55);
         ctx.fillRect(c * size - origin.left, r * size - origin.top, size, size);

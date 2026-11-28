@@ -3,7 +3,7 @@ import { TAP_MS, impactRamp } from './cursor-math';
 import { isShapeName } from './cursor-shapes';
 import { startCharge, type Charger } from './charger';
 import { mountHoldHint } from './hold-hint';
-import { createHeroStamper, injectFieldRing, pointInField } from './hero-stamp';
+import { injectFieldRing, pointInField } from './hero-stamp';
 import { mountMagnetRing } from './magnet-ring';
 import { mountNavMagnet } from './nav-magnet';
 import { pageImpact } from './page-impact';
@@ -23,13 +23,13 @@ const TEXT_FIELD = 'input,textarea,select,[contenteditable]';
 /**
  * The site's only cursor, for a hovering mouse without reduced motion: a small pixel arrow locked 1:1 to the pointer
  * that becomes the hot arrow or a named shape over clickable things, a ring around logos, a shockwave on click,
- * and a hold-to-charge that can hit the whole page. Its one mark on the page is heat in the hero fields.
+ * and a hold-to-charge that can hit the whole page. Its one mark on the fields is a click's ring of heat; their surfaces
+ * answer the same pointer as a Wave (surface-waves.ts).
  */
 export function mountCursor(fields: HeroField[]): () => void {
   const pointer = createPixelPointer();
   const magnets = mountMagnetRing();
   const navMagnet = mountNavMagnet();
-  const stamper = createHeroStamper(fields);
   const hint = mountHoldHint();
 
   let inside = false,
@@ -64,9 +64,7 @@ export function mountCursor(fields: HeroField[]): () => void {
     pointer.move(x, y);
     inside = true;
     evaluate(e.target instanceof Element ? e.target : null);
-    // while a nav item holds the pointer, the trail's heat takes the item's shape instead of trailing
-    if (navMagnet.update(x, y, true)) stamper.reset();
-    else stamper.move(x, y, e.timeStamp);
+    navMagnet.update(x, y, true);
     syncMagnets();
   };
   // scrolling moves content under a still pointer, so what it is over changes without a mouse move
@@ -86,7 +84,6 @@ export function mountCursor(fields: HeroField[]): () => void {
     // leaving the window cancels a charge: the release would land somewhere we cannot see
     charger?.cancel();
     hint.leave();
-    stamper.reset();
     navMagnet.update(x, y, false);
     syncVisible();
     syncMagnets();

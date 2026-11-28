@@ -13,15 +13,3 @@ export function easeFactor(k: number, scale: number): number {
 export function decayFactor(perFrame: number, scale: number): number {
   return Math.pow(perFrame, scale);
 }
-
-export interface Velocity {
-  x: number;
-  y: number;
-}
-
-export function smoothVelocity(smooth: Velocity, step: Velocity, k: number, scale: number): Velocity {
-  const opposes = smooth.x * step.x + smooth.y * step.y < 0;
-  if (opposes && Math.hypot(step.x, step.y) > 1) return { x: step.x, y: step.y };
-  const e = easeFactor(k, scale);
-  return { x: smooth.x + (step.x - smooth.x) * e, y: smooth.y + (step.y - smooth.y) * e };
-}

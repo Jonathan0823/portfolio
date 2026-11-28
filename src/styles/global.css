@@ -128,7 +128,7 @@ html.has-pixel-pointer :is(input, textarea, select, [contenteditable]) {
 [data-pixel-btn]:is(:hover, :focus-visible) .btn-icon {
   color: var(--heat);
 }
-/* a nav item the trail's heat has taken the shape of (nav-magnet.ts): the word turns white as the heat arrives */
+/* a nav item the pointer's heat has taken the shape of (nav-magnet.ts): the word turns white as the heat arrives */
 [data-nav-magnet][data-held] {
   color: var(--color-paper);
   background: transparent;
