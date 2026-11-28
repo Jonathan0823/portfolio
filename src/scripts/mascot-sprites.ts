@@ -39,9 +39,10 @@ export interface MascotSprite {
   body: Rect[];
   /** Clawd's two leg frames; Pi has none */
   legs: Rect[][];
-  /** drawn over the body, and the lids that cover them while blinking */
+  /** drawn over the body, the lids that cover them while blinking, and the `> <` drawn on the lids */
   eyes: Rect[];
   lids: Rect[];
+  squint: Rect[];
   /** per half-cell column: the lowest height occupied above the feet, Infinity where the column is empty */
   low: number[];
   /** columns whose lowest cell touches the feet line, grouped into pairs of neighbouring feet */
@@ -60,6 +61,19 @@ const CLAWD_COLOR = '#D97757';
 const CLAWD_EYE = '#111';
 /** the eyes are the two gaps in the second row */
 const EYE_COLUMNS = [5, 12];
+/** a blink's `>` and `<`: five half cells tall, pointing in at the two eyes' columns */
+const SQUINT = [
+  [4, 1],
+  [5, 2],
+  [6, 3],
+  [5, 4],
+  [4, 5],
+  [13, 1],
+  [12, 2],
+  [11, 3],
+  [12, 4],
+  [13, 5],
+];
 /** the alternate leg frame: four single-cell feet */
 const STEP_FEET = [5, 7, 10, 12];
 
@@ -117,6 +131,7 @@ export const CLAWD: MascotSprite = {
   ],
   eyes: EYE_COLUMNS.map((x) => eyeRect(x, CLAWD_EYE)),
   lids: EYE_COLUMNS.map((x) => eyeRect(x, CLAWD_COLOR)),
+  squint: SQUINT.map(([x, y]) => ({ x, y, w: 1, h: 1, color: CLAWD_EYE })),
   low: clawdLow,
   feet: feetOf(clawdLow),
   gait: {
@@ -146,6 +161,7 @@ export const PI: MascotSprite = {
   legs: [],
   eyes: [],
   lids: [],
+  squint: [],
   low: piLow,
   feet: feetOf(piLow),
   gait: {
