@@ -47,8 +47,16 @@ The word EGUIN standing in the footer field's skyline, made of field cells; it d
 _Avoid_: Footer logo, footer title
 
 **Mascots**:
-Clawd and Pi, two pixel characters standing on the Wordmark's letter tops. They burst out of the lava when the Wordmark rises and sink with it when it goes, and ride the footer's Wave.
+Clawd and Pi, two pixel characters. In the footer they stand on the Wordmark's letter tops; in the hero they play the Mishap and then idle on the headline. In the footer they burst out of the lava when the Wordmark rises and sink with it when it goes, and ride the footer's Wave.
 _Avoid_: Cameo, sprites, pets
+
+**Mishap**:
+The hero's mascot intro, once after the Ignite has settled: Clawd slides out of the lava onto the headline, knocks "Hi, I'm" crooked, panics and straightens it letter by letter, then Pi drops from the lava and Clawd catches him; both end up idling on "Eguin". The headline is drawn on a canvas only while letters are crooked and is never touched afterwards.
+_Avoid_: Cutscene, hero animation, drip
+
+**Blast**:
+Holding the pointer on the hero charges a ring that closes in on it; letting go sends a shockwave out and throws the idle Mascots off the name, which they hop back to. Alongside the Wave's own charged blast, which rolls across the surfaces.
+_Avoid_: Explosion, shockwave
 
 **Clock**:
 The time in Karawang as pixel digits, poured from the hero field. It stands by default; a contact link's logo takes its place while that link is hovered or focused, or for a while after it is tapped.
