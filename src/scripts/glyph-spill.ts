@@ -12,23 +12,21 @@ import {
   type GlyphCanvasLayout,
   type GlyphName,
 } from './glyph-model';
-import { clockBitmap, clockTime } from './glyph-clock';
 import { FINE_POINTER_QUERY } from './motion';
 import type { HeroField } from './hero-field';
 
 const GLYPH_ROWS = 28;
 const SHIMMER_INTERVAL_MS = 50;
-/** how long a tapped logo stands before the clock returns, where no pointer ever leaves */
-const CLOCK_AFTER_TOUCH_MS = 6000;
-/** the clock's colon is lit for this long, then dark for as long */
-const BLINK_MS = 500;
+/** how long a tapped logo stands before it leaves, where no pointer ever does */
+const LOGO_AFTER_TOUCH_MS = 6000;
 const DESKTOP = { rightMargin: 96, minTop: 64, gap: 40 };
 const COMPACT = { rightMargin: 20, minTop: 60, gap: 16 };
 /** how far the desktop logos shrink to stay beside the text, as a share of the field's cell */
 const MIN_CELL_SHARE = 0.6;
 /** the glyph beside the stacked links; at `hiddenWidth` and under it is not shown */
 const BESIDE = { minCell: 3, gap: 12, hiddenWidth: 340 };
-const CLOCK_ROWS = clockBitmap(new Date(0)).rows.length;
+/** the tallest logo, which the layout beside the links makes room for while none is showing */
+const TALLEST_ROWS = Math.max(...Object.values(BITMAPS).map((bitmap) => bitmap.rows.length));
 
 interface Particle {
   targetColumn: number;
@@ -42,8 +40,6 @@ interface Particle {
   sourceIndex: number;
   fadeFromRow?: number;
   level?: number;
-  /** part of the clock's colon */
-  blinks: boolean;
   /** the glyph row the drop leaves the field at: a hot spout above it, else the field's bottom edge */
   lavaFrom?: number;
   /** the glyph column of that spout; the drop drifts from it to its own column as it falls */
@@ -75,15 +71,12 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
   let raf = 0,
     timer = 0,
     returnTimer = 0,
-    clockTimer = 0,
     fallbackTime = 0,
     sizeKey = '';
   let onScreen = true;
   /** false where the glyph belongs beside the links and has no room there */
   let hasRoom = true;
-  let current: GlyphName | 'clock' | null = null;
-  /** the time the clock on show was poured with */
-  let shownTime = '';
+  let current: GlyphName | null = null;
   let layout: GlyphCanvasLayout;
   let cell = 10,
     fieldCell = 10;
@@ -124,7 +117,7 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
       linksTop: pills[0].top - heroRect.top,
       linksBottom: pills[pills.length - 1].bottom - heroRect.top,
       columns: GLYPH_COLUMNS,
-      bitmapRows: current && current !== 'clock' ? BITMAPS[current].rows.length : CLOCK_ROWS,
+      bitmapRows: current ? BITMAPS[current].rows.length : TALLEST_ROWS,
       rightMargin: COMPACT.rightMargin,
       maxCell: Math.floor(fieldCell / 2),
     });
@@ -215,13 +208,8 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     });
   };
 
-  const spill = (name: GlyphName | 'clock') => {
-    current = name;
-    layoutCanvas();
-    const clock = name === 'clock' ? clockBitmap(new Date()) : null;
-    if (clock) shownTime = clock.time;
-    const bitmap = clock ?? BITMAPS[name as GlyphName];
-    const now = performance.now();
+  /** whatever is standing dissolves; without motion it is gone at once */
+  const fadeOut = (now: number) => {
     if (reduced) particles = [];
     for (const particle of particles) {
       if (!particle.fadingOut) {
@@ -231,6 +219,14 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
         particle.delay = hash(particle.targetColumn, particle.targetRow) * 0.12;
       }
     }
+  };
+
+  const spill = (name: GlyphName) => {
+    current = name;
+    layoutCanvas();
+    const bitmap = BITMAPS[name];
+    const now = performance.now();
+    fadeOut(now);
     sources = pickSources();
     const pixelsBySource = assignPixels(
       bitmap,
@@ -241,8 +237,6 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
     );
     /** the grid column the bitmap's first column lands on */
     const bitmapLeft = Math.floor((GLYPH_COLUMNS - bitmap.rows[0].length * bitmap.scale) / 2);
-    const inColon = (column: number) =>
-      !!clock && column - bitmapLeft >= clock.colon[0] && column - bitmapLeft <= clock.colon[1];
     // where the field's bottom edge sits over each glyph column, in glyph rows
     const field = hero.field();
     const ratio = fieldCell / cell;
@@ -297,12 +291,10 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
           column: source.column,
           row: source.row - (layout.rising ? -1 : 1),
           sourceIndex,
-          blinks: inColon(pixel.column),
         });
       });
     });
     kick();
-    armClock();
   };
 
   const loop = (now: number) => {
@@ -319,7 +311,6 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
       level: number;
       streak: number;
       falling: boolean;
-      blinks: boolean;
     }> = [];
     particles = particles.filter((p) => {
       const elapsed = ((now - p.startedAt) / 1000) * SPILL_SPEED - p.delay;
@@ -385,14 +376,10 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
         level: heat >= 0 ? Math.max(level, heat) : level,
         streak,
         falling,
-        blinks: p.blinks && !p.fadingOut,
       });
       return true;
     });
-    // the colon blinks on the wall clock once the digits have settled; without motion it stays lit
-    const dark = !moving && !reduced && Date.now() % (2 * BLINK_MS) >= BLINK_MS;
     for (const d of draws) {
-      if (dark && d.blinks) continue;
       // a molten streak trails behind a falling drop, cooling toward its tail
       for (let k = 1; k <= d.streak; k++) {
         ctx.globalAlpha = d.alpha * (1 - k / (d.streak + 1));
@@ -427,33 +414,23 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
 
   const stopTimers = () => {
     clearTimeout(returnTimer);
-    clearTimeout(clockTimer);
     returnTimer = 0;
-    clockTimer = 0;
   };
-  /** wakes at the next minute, when the clock on show goes stale */
-  const armClock = () => {
-    clearTimeout(clockTimer);
-    clockTimer = 0;
-    if (current !== 'clock' || !canRun()) return;
-    clockTimer = window.setTimeout(() => settleMode(), 60_000 - (Date.now() % 60_000));
-  };
-  const showClock = () => {
+  /** the logo dissolves and the hero's right side stands empty again */
+  const dismiss = () => {
     hovered = null;
-    spill('clock');
+    current = null;
+    fadeOut(performance.now());
+    kick();
   };
   const armReturn = () => {
     clearTimeout(returnTimer);
     returnTimer = 0;
-    if (canRun()) returnTimer = window.setTimeout(showClock, CLOCK_AFTER_TOUCH_MS);
+    if (canRun()) returnTimer = window.setTimeout(dismiss, LOGO_AFTER_TOUCH_MS);
   };
-  /** the clock stands, up to date, unless a button's logo is asked for */
+  /** a tapped logo leaves on its timer, which stopped while the hero was out of sight */
   const settleMode = () => {
-    if (!canRun()) return;
-    if (hovered) {
-      if (!fineQuery.matches) armReturn();
-    } else if (current !== 'clock' || shownTime !== clockTime(new Date())) spill('clock');
-    else armClock();
+    if (canRun() && hovered && !fineQuery.matches) armReturn();
   };
   let hovered: GlyphName | null = null;
 
@@ -464,7 +441,7 @@ export function mountGlyphSpill(canvas: HTMLCanvasElement, hero: HeroField, redu
   };
   const hide = () => {
     // a tapped logo leaves on its timer
-    if (fineQuery.matches && hovered) showClock();
+    if (fineQuery.matches && hovered) dismiss();
   };
 
   let resizeFrame = 0;

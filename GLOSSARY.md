@@ -58,6 +58,6 @@ _Avoid_: Cutscene, hero animation, drip
 Holding the pointer on the hero charges a ring that closes in on it; letting go sends a shockwave out and throws the idle Mascots off the name, which they hop back to. Holding on the footer makes its Mascots strain, and letting go throws them up to fall back onto their letters. Clawd shuts his eyes into `> <` while he strains, is thrown, or is hurt or held in the Mishap. Alongside the Wave's own charged blast, which rolls across the surfaces.
 _Avoid_: Explosion, shockwave
 
-**Clock**:
-The time in Karawang as pixel digits, poured from the hero field. It stands by default; a contact link's logo takes its place while that link is hovered or focused, or for a while after it is tapped.
-_Avoid_: Timer, widget, glyph cycle
+**Logo pour**:
+A contact link's logo poured from the hero field beside the links while that link is hovered or focused, or for a while after it is tapped; it dissolves when the link is let go.
+_Avoid_: Clock, glyph cycle, widget
