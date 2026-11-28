@@ -228,6 +228,8 @@ const dayLabels = [
     let selected: (typeof cells)[number] | null = null;
     let hover: (typeof cells)[number] | null = null;
     let chosen: (typeof cells)[number] | null = null;
+    // whether a mouse click made the chosen day: only such a day goes when the mouse leaves
+    let clicked = false;
     // set by the last touch: only then is the grab target shown
     let touched = false;
     let start: { x: number; y: number } | null = null;
@@ -338,7 +340,7 @@ const dayLabels = [
       const { col, row } = under(e);
       return byPosition.get(col + ',' + row) ?? null;
     };
-    // the hovered day (mouse) wins over the chosen day (a click, a tap, a scrub or an arrow key); only a mouse leaving clears it
+    // the hovered day (mouse) wins over the chosen day (a click, a tap, a scrub or an arrow key); a mouse leaving clears only a clicked one
     const show = () => {
       selected = hover ?? chosen;
       // read out to screen readers; on screen the day is named by the tooltip
@@ -380,8 +382,9 @@ const dayLabels = [
       grab.style.left = cx - GRAB / 2 + 'px';
       grab.style.top = cy - GRAB / 2 + 'px';
     };
-    const choose = (e: { clientX: number; clientY: number }, ripples: boolean) => {
+    const choose = (e: PointerEvent, ripples: boolean) => {
       chosen = cellAt(e);
+      clicked = e.pointerType === 'mouse';
       show();
       if (!ripples) return;
       const { col, row } = under(e);
@@ -416,8 +419,8 @@ const dayLabels = [
     svg.addEventListener('pointerleave', edge);
     scroller.addEventListener('scroll', placeTip, { passive: true });
     svg.addEventListener('pointerleave', (e) => {
-      // a mouse takes its clicked day with it; a touch also fires this on lifting, and its day has to stay
-      if (e.pointerType === 'mouse') chosen = null;
+      // a mouse takes its clicked day with it, not one chosen by touch or keyboard (a touch also fires this on lifting)
+      if (e.pointerType === 'mouse' && clicked) chosen = null;
       spot.target = 0;
       hover = null;
       show();
@@ -464,6 +467,7 @@ const dayLabels = [
           ? cells[cells.length - 1]
           : (byPosition.get(current.col + dx + ',' + (current.row + dy)) ?? current);
       touched = false;
+      clicked = false;
       chosen = next;
       show();
       ripple(next.col, next.row, 'click');
@@ -485,6 +489,7 @@ const dayLabels = [
         scroller.scrollLeft += toward * Math.min(1, depth / EDGE_ZONE) * MAX_SCROLL;
       }
       chosen = cellAt({ clientX: finger.x, clientY: finger.y }) ?? chosen;
+      clicked = false;
       show();
       scrollRaf = scrubbing ? requestAnimationFrame(follow) : 0;
     };
