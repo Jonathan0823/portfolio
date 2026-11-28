@@ -30,7 +30,7 @@ const { links, brandHref = '#top' } = Astro.props;
           href={l.href}
           data-sec={l.sec}
           class:list={[
-            'px-3 py-1.5 no-underline [html:not(.has-pixel-pointer)_&]:hover:underline decoration-accent decoration-2 underline-offset-[6px] aria-[current=true]:underline',
+            'relative px-3 py-1.5 no-underline [html:not(.has-pixel-pointer)_&]:hover:underline decoration-accent decoration-2 underline-offset-[6px] after:absolute after:inset-x-3 after:bottom-[3px] after:h-0.5 after:origin-left after:scale-x-0 after:bg-accent after:transition-transform after:duration-300 after:ease-[steps(6)] aria-[current=true]:after:scale-x-100 motion-reduce:after:transition-none',
             l.sec === 'contact'
               ? 'bg-ink text-paper group-data-on-field:bg-paper group-data-on-field:text-ink group-data-on-field:data-pixel-on:text-paper group-data-on-field:data-pixel-on:ring-1 group-data-on-field:data-pixel-on:ring-paper'
               : 'text-ink group-data-on-field:text-paper group-data-on-field:[text-shadow:0_1px_3px_rgb(30_27_75/0.9)]',
