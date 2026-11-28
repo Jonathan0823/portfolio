@@ -15,6 +15,7 @@ import { heroLifeShape, mountHeroLife } from './hero-life';
 import { footWordmarkShape } from './footer-wordmark';
 import { mountFooterMascots } from './footer-mascots';
 import { mountSurfaceWaves, type SurfaceWaves } from './surface-waves';
+import { CALM } from './surface-wave';
 
 const SEEDS: Record<string, number> = { hero: 1.3, strip: 4.7, foot: 8.1 };
 const hosts = [...document.querySelectorAll<HTMLElement>('[data-pixel-field]')];
@@ -95,7 +96,9 @@ if (typeof window.matchMedia === 'function') {
   let stopMascots: (() => void) | null = null;
   const mountMascots = () => {
     stopMascots?.();
-    stopMascots = foot ? mountFooterMascots(foot, prefersReducedMotion()) : null;
+    stopMascots = foot
+      ? mountFooterMascots(foot, prefersReducedMotion(), (from, to) => waves?.under(foot, from, to) ?? CALM)
+      : null;
   };
   whenIdle(mountMascots);
   for (const q of [REDUCE_QUERY, FINE_POINTER_QUERY])
