@@ -15,6 +15,7 @@ import { heroLifeShape, mountHeroLife } from './hero-life';
 import { footWordmarkShape } from './footer-wordmark';
 import { mountFooterMascots } from './footer-mascots';
 import { mountSurfaceWaves, type SurfaceWaves } from './surface-waves';
+import { hoverInput } from './wave-hover';
 import { CALM } from './surface-wave';
 
 const SEEDS: Record<string, number> = { hero: 1.3, strip: 4.7, foot: 8.1 };
@@ -69,7 +70,7 @@ if (typeof window.matchMedia === 'function') {
       stopCursor = null;
     }
     // the surfaces answer the same hovering mouse: a Wave where the pointer presses them
-    if (cursor && !waves) waves = mountSurfaceWaves(fields);
+    if (cursor && !waves) waves = mountSurfaceWaves(fields, hoverInput);
     if (!cursor && waves) {
       waves.stop();
       waves = null;
