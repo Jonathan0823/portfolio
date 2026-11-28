@@ -14,9 +14,10 @@ import { FOOT_BLEED, mountFooterTide, tideSwell } from './footer-tide';
 import { heroLifeShape, mountHeroLife } from './hero-life';
 import { footWordmarkShape } from './footer-wordmark';
 import { mountFooterMascots } from './footer-mascots';
-import { mountSurfaceWaves, type SurfaceWaves } from './surface-waves';
+import { combineInputs, mountSurfaceWaves, type SurfaceWaves } from './surface-waves';
 import { hoverInput } from './wave-hover';
 import { touchInput } from './wave-touch';
+import { blastInput } from './wave-blast';
 import { CALM } from './surface-wave';
 
 const SEEDS: Record<string, number> = { hero: 1.3, strip: 4.7, foot: 8.1 };
@@ -71,12 +72,14 @@ if (typeof window.matchMedia === 'function') {
       stopCursor();
       stopCursor = null;
     }
-    // the Wave: a hovering mouse presses the surfaces; on touch, taps and the page's scrolling move them
+    // the Wave: a hovering mouse presses the surfaces and a charged blast rolls across them; on touch, taps and the page's scrolling move them
     const fine = window.matchMedia(FINE_POINTER_QUERY).matches;
     const nextWaves = reduced ? null : fine ? 'hover' : 'touch';
     if (nextWaves !== wavesKey) {
       waves?.stop();
-      waves = nextWaves ? mountSurfaceWaves(fields, nextWaves === 'hover' ? hoverInput : touchInput) : null;
+      waves = nextWaves
+        ? mountSurfaceWaves(fields, nextWaves === 'hover' ? combineInputs(hoverInput, blastInput(fields)) : touchInput)
+        : null;
       wavesKey = nextWaves;
     }
     // the glyph spill reads both when it mounts, so a change of either remounts it

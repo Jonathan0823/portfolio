@@ -1,5 +1,5 @@
 // Wave, mounted: the hero's and the footer's surfaces move like water. This is the thin driver: it steps each field's
-// wave model (surface-wave.ts), lets inputs (a hovering mouse, or taps and scrolling on touch) push the water, shakes
+// wave model (surface-wave.ts), lets inputs (a hovering mouse and a charged blast, or taps and scrolling on touch) push the water, shakes
 // drops loose from the hero's hanging edge, and hands both to the field's shape each frame. It runs only while
 // something moves.
 import type { HeroField } from './hero-field';
