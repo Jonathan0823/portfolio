@@ -74,6 +74,13 @@ describe('stepField', () => {
     expect(Array.from(dark.bucket.slice(band))).toEqual(Array.from(plain.bucket.slice(band)));
   });
 
+  it('leaves a drained body its whole palette, darkening only the indigo share of its depth', () => {
+    const f = createField(390, 200);
+    // a body a few rows deep under a band far taller than it is
+    stepField(f, 0.8, 1.3, 0.94, { runoff: true, darkTop: 400, coverage: 0.2 });
+    expect(Array.from(f.bucket).some((k) => k > 1)).toBe(true);
+  });
+
   it('keeps heated cells under darkTop to the darkest layer too', () => {
     const f = createField(390, 200),
       heated = 5 * f.columns + 10;

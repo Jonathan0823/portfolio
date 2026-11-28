@@ -78,6 +78,7 @@ const { links, brandHref = '#top' } = Astro.props;
   import { prefersReducedMotion } from '@/scripts/motion';
   import { whenCoverGone } from '@/scripts/page-cover';
   import { whenHeroPoured } from '@/scripts/hero-poured';
+  import { lavaLeft } from '@/scripts/field-edges';
 
   /** how far down a field its lava's surface rests, as a share of its height (pixel-math's horizon) */
   const SURFACE = 0.68;
@@ -109,7 +110,9 @@ const { links, brandHref = '#top' } = Astro.props;
     // the bar waits until the lava has left: its surface has scrolled up to the bottom of the links
     const box = field?.getBoundingClientRect();
     const scrolled = box
-      ? box.top + box.height * SURFACE < (nav?.firstElementChild?.clientHeight ?? 0)
+      ? // the surface drains as the page scrolls (field-edges), so it leaves the links sooner than its resting height says
+        box.top + box.height * SURFACE * (prefersReducedMotion() ? 1 : lavaLeft(scrollY, box.height)) <
+        (nav?.firstElementChild?.clientHeight ?? 0)
       : scrollY > SCROLLED_PX;
     if (navBg) navBg.style.opacity = scrolled ? '1' : '0';
     nav?.toggleAttribute('data-on-field', poured && !scrolled);

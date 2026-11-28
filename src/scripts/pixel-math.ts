@@ -131,10 +131,13 @@ const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 /** the ordered blending pattern, 0..1 */
 const bayer = (x: number, y: number) => (BAYER[(y & 3) * 4 + (x & 3)] + 0.5) / 16;
 
+/** the share of a body's depth, from the top, that is indigo at rest (see strataLevel) */
+const DARK_SHARE = 0.36;
+
 /** the resting colour of a body cell: by depth toward the surface, one layer blending into the next */
 export function strataLevel(x: number, y: number, edge: number): number {
   const depth = y / Math.max(1, edge) + (bayer(x, y) - 0.5) * 0.13;
-  return depth < 0.36 ? 1 : depth < 0.6 ? 2 : depth < 0.76 ? 3 : depth < 0.89 ? 4 : 5;
+  return depth < DARK_SHARE ? 1 : depth < 0.6 ? 2 : depth < 0.76 ? 3 : depth < 0.89 ? 4 : 5;
 }
 
 /** columns over which the surface eases from its own waves into the shore */
@@ -161,6 +164,7 @@ export function stepField(field: Field, time: number, seed: number, decay = 0.94
   const coverage = Math.max(0, Math.min(1, shape.coverage ?? 1));
   const fadeRows = shape.fadeRows ?? 0;
   const darkRows = (shape.darkTop ?? 0) / field.cellSize;
+  const darkShare = DARK_SHARE + (1 - DARK_SHARE) * Math.max(0, Math.min(1, (coverage - 0.4) / 0.6));
   const stamp = shape.stamp?.length === columns * rows ? shape.stamp : null;
   const mold = shape.mold?.length === columns * rows ? shape.mold : null;
   bucket.fill(-1);
@@ -211,7 +215,8 @@ export function stepField(field: Field, time: number, seed: number, decay = 0.94
         if (!body && !(stamped >= 0.3)) alpha[i] = heatFade(touched);
       }
       // after the heat, so a warm cell cannot lighten the band
-      if (body && y < darkRows) level = Math.min(level, 1);
+      // a body that has drained keeps its whole palette: the band shrinks to the lava's own indigo as it goes
+      if (body && y < Math.min(darkRows, edge * darkShare)) level = Math.min(level, 1);
       // the footer letters are one flat dark colour (10+n is one popping in), and only show above the body
       if (!body && m === 1) level = 0;
       else if (!body && m >= 10) level = m - 10;
