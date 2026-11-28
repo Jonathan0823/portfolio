@@ -150,12 +150,26 @@ function play(hero: HeroField | null): () => void {
     if (done) return;
     done = true;
     cancelAnimationFrame(raf);
+    io?.disconnect();
     showLetters(false);
     canvas.remove();
     pointer.stop();
     removeEventListener('resize', cleanup);
     reduce.removeEventListener('change', onReduce);
   };
+  // the loop only runs while the hero is on screen: an idle page should not be asked for a frame sixty times a second
+  let onScreen = true;
+  const io =
+    'IntersectionObserver' in window
+      ? new IntersectionObserver((entries) => {
+          onScreen = entries[entries.length - 1].isIntersecting;
+          if (onScreen && !raf && !done) {
+            last = 0;
+            raf = requestAnimationFrame(frame);
+          }
+        })
+      : null;
+  io?.observe(canvas);
   const reduce = window.matchMedia(REDUCE_QUERY);
   const onReduce = () => reduce.matches && cleanup();
   reduce.addEventListener('change', onReduce);
@@ -219,6 +233,10 @@ function play(hero: HeroField | null): () => void {
 
   const frame = (now: number) => {
     if (done) return;
+    if (!onScreen) {
+      raf = 0;
+      return;
+    }
     raf = requestAnimationFrame(frame);
     if (pi.mode === 'idle') introDone = true;
     const held = pointer.heldMs(now);
