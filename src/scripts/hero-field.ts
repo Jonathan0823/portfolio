@@ -17,10 +17,13 @@ export interface HeroField {
 
 const SEED = 1.3;
 const STEP_MS = 50;
-const MIN_FRAME_MS = 1000 / 60 - 2;
+/** the field redraws at 30 fps: its motion is slow (time advances by elapsed time, so its speed is unchanged), and a full-canvas repaint is the page's biggest cost */
+const MIN_FRAME_MS = 1000 / 30 - 2;
 const TIME_STEP = 0.02;
 const HEAT_DECAY = 0.965;
 const MAX_ELAPSED_MS = 200;
+/** the same overlap a solid square gets in paintCell */
+const SOLID_OVERLAP = 0.5;
 
 export function mountHeroField(
   host: HTMLElement,
@@ -55,6 +58,9 @@ export function mountHeroField(
     raf = 0,
     dirty = true,
     visible = true;
+  /** cell indexes by colour, filled once a frame so each colour is drawn from its own list */
+  let byBucket: Int32Array[] = [];
+  let counts: number[] = [];
   const wants = () => visible && !document.hidden && (dirty || !reduced || field.hottest > 0.01);
 
   const paint = (elapsed: number) => {
@@ -64,10 +70,33 @@ export function mountHeroField(
     stepField(field, t, seed, decayFactor(HEAT_DECAY, steps), options.shape?.(!reduced) ?? {});
     const { columns, rows, cellSize, bucket, alpha } = field;
     ctx.clearRect(0, 0, columns * cellSize, rows * cellSize);
+    const size = columns * rows;
+    if (byBucket[0]?.length !== size) byBucket = HEAT_PALETTE.map(() => new Int32Array(size));
+    counts = HEAT_PALETTE.map(() => 0);
+    for (let i = 0; i < size; i++) {
+      const k = bucket[i];
+      if (k >= 0) byBucket[k][counts[k]++] = i;
+    }
     for (let k = 0; k < HEAT_PALETTE.length; k++) {
       ctx.fillStyle = HEAT_PALETTE[k];
-      for (let i = 0; i < columns * rows; i++) {
-        if (bucket[i] === k)
+      const list = byBucket[k];
+      // the solid squares of a colour go down as one path (one fill, not one per square); soft-edged ones are drawn singly
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      for (let n = 0; n < counts[k]; n++) {
+        const i = list[n];
+        if (alpha[i] < 1) continue;
+        ctx.rect(
+          (i % columns) * cellSize,
+          Math.floor(i / columns) * cellSize,
+          cellSize + SOLID_OVERLAP,
+          cellSize + SOLID_OVERLAP,
+        );
+      }
+      ctx.fill();
+      for (let n = 0; n < counts[k]; n++) {
+        const i = list[n];
+        if (alpha[i] < 1)
           paintCell(ctx, (i % columns) * cellSize, Math.floor(i / columns) * cellSize, cellSize, alpha[i]);
       }
     }
