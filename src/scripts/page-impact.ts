@@ -75,7 +75,7 @@ function kick(el: Element, dx: number, dy: number, rotate: number, delay: number
   el.animate(frames, { duration: KICK_MS, delay, composite: 'add', easing: 'linear' });
 }
 
-/** A short shake of main and footer, not the cursor's own canvases, which live on body. */
+/** A short shake of main, not the cursor's own canvases, which live on body. */
 function shake(amplitude: number): void {
   const steps = 16;
   const frames: Keyframe[] = [];
@@ -87,7 +87,7 @@ function shake(amplitude: number): void {
     const y = i === steps ? 0 : Math.sin(Math.PI * 2 * 4.5 * u + 1) * k * 0.6;
     frames.push({ offset: u, transform: `translate(${x.toFixed(2)}px,${y.toFixed(2)}px)` });
   }
-  for (const el of document.querySelectorAll('main,footer')) {
+  for (const el of document.querySelectorAll('main')) {
     el.animate(frames, { duration: 350, composite: 'add', easing: 'linear' });
   }
 }
@@ -155,7 +155,7 @@ function drawFront(x: number, y: number, farthest: number, speed: number, charge
 
 /**
  * A charged release hitting the page: the front crosses the viewport, content is kicked as it arrives,
- * main and footer shake, and listeners get SHOCKWAVE_EVENT. Below the impact threshold it does nothing.
+ * main shakes, and listeners get SHOCKWAVE_EVENT. Below the impact threshold it does nothing.
  */
 export function pageImpact(x: number, y: number, charge: number): void {
   const impact = impactStrength(charge);
