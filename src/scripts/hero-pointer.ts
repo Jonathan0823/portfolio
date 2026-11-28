@@ -20,6 +20,8 @@ const INTERACTIVE = 'a,button,input,textarea,summary,select';
 export function mountHeroPointer(area: HTMLElement, on: Handlers): HeroPointer {
   const ptr = { x: -1e4, y: -1e4 };
   let downAt: number | null = null;
+  /** the pointer that started the hold; others tapping elsewhere must not end it */
+  let holdId: number | null = null;
   const track = (e: PointerEvent) => {
     const r = area.getBoundingClientRect();
     ptr.x = e.clientX - r.left;
@@ -33,16 +35,20 @@ export function mountHeroPointer(area: HTMLElement, on: Handlers): HeroPointer {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     if ((e.target as HTMLElement | null)?.closest?.(INTERACTIVE)) return;
     if (ptr.x < 0 || ptr.y < 0 || ptr.x > r.width || ptr.y > r.height) return;
+    if (downAt !== null) return;
     downAt = performance.now();
+    holdId = e.pointerId;
   };
   const onUp = (e: PointerEvent) => {
-    if (downAt === null) return;
+    if (downAt === null || e.pointerId !== holdId) return;
     const held = performance.now() - downAt;
     downAt = null;
     track(e);
     on.release(ptr.x, ptr.y, held);
   };
-  const onCancel = () => (downAt = null);
+  const onCancel = (e: PointerEvent) => {
+    if (e.pointerId === holdId) downAt = null;
+  };
   addEventListener('pointermove', onMove, { passive: true });
   addEventListener('pointerdown', onDown);
   addEventListener('pointerup', onUp);

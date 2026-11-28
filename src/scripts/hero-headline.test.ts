@@ -11,6 +11,10 @@ describe('groupLines', () => {
     expect(letters.map((l) => l.line)).toEqual([1, 0, 0, 1]);
   });
 
+  it('groups baselines 1px apart even across a rounding boundary', () => {
+    expect(groupLines([letter('a', 0, 99), letter('b', 10, 100)])).toHaveLength(1);
+  });
+
   it('keeps letters whose baselines differ by a few pixels on one line', () => {
     expect(groupLines([letter('a', 0, 100), letter('b', 10, 104)])).toHaveLength(1);
   });

@@ -66,5 +66,7 @@ describe('floorUnder', () => {
 
   it('keeps falling past a gap between letters, until the fallback', () => {
     expect(floorUnder(tops, 55, 50, 999)).toBe(999);
+    // a top crossed in one step is still found from where the fall started
+    expect(floorUnder(tops, 20, 95, 999)).toBe(100);
   });
 });
