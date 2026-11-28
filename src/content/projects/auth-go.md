@@ -1,11 +1,7 @@
 ---
 name: 'auth-go'
-hook: 'The login service I drop into every new project, with safe defaults.'
-status: 'Open source'
-role: 'Solo'
 order: 2
 month: '2025-01'
-result: 'The login service I drop into every new project.'
 repo: 'https://github.com/Jonathan0823/auth-go'
 tags:
   - 'Go'
@@ -15,15 +11,14 @@ tags:
   - 'Docker'
 visual:
   kind: 'diagram'
-  label: 'login → access + refresh token → rotation → replay detection'
+  label: 'Login issues an access and refresh token; each refresh rotates the pair; a reused refresh token revokes its family'
+  src: '/diagrams/auth-go.svg'
 ---
 
-The auth service I reuse everywhere: Argon2id passwords, short-lived JWTs, rotating refresh tokens with replay detection, OAuth and rate limiting.
+A standalone authentication service in Go. I run it next to my other projects instead of writing login again for each one.
 
-## Problem
+## How it works
 
-Every new project needed login, and copying it each time led to mistakes.
+Passwords are hashed with Argon2id. Logging in returns a 15-minute access token and a refresh token, and every refresh swaps both for a new pair. Refresh tokens are grouped into families: if a token that was already swapped out shows up again, the service treats it as stolen and revokes the whole family.
 
-## What I did
-
-One service with safe defaults that I drop into new projects.
+It also handles sign-in with GitHub and Google over OAuth, and limits request rates with a fixed-window counter kept in Redis. It’s built on Gin and pgx and ships with Docker Compose.

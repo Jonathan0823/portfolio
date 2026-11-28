@@ -13,7 +13,7 @@ const PAGES: Record<SeoPage, { title: string; description: string; imageAlt: str
     title: 'My Story — Eguin Jonathan, Software Engineer',
     imageAlt: 'Eguin Jonathan, from informatics student to software engineer',
     description:
-      'How Eguin Jonathan went from informatics student to software engineer writing software for factory machines and the people who watch them.',
+      'How Eguin Jonathan went from informatics student to software engineer writing software for production machines and the people who watch them.',
   },
 };
 

@@ -28,7 +28,9 @@ export const projectAnchor = (id: string): string => `project-${id}`;
 export function projectLinks(project: {
   repo: string;
   extraRepos: { text: string; href: string }[];
+  package?: string | undefined;
 }): { text: string; href: string }[] {
   const name = new URL(project.repo).pathname.split('/').filter(Boolean).at(-1) ?? project.repo;
-  return [{ text: name, href: project.repo }, ...project.extraRepos];
+  const links = [{ text: name, href: project.repo }, ...project.extraRepos];
+  return project.package ? [...links, { text: 'npm', href: project.package }] : links;
 }

@@ -53,9 +53,9 @@ describe('projectSchema', () => {
   it('accepts a complete project', () => {
     expect(projectSchema.safeParse(project).success).toBe(true);
   });
-  it('requires a non-empty result', () => {
+  it('allows a missing result but not an empty one', () => {
     const { result: _r, ...rest } = project;
-    expect(projectSchema.safeParse(rest).success).toBe(false);
+    expect(projectSchema.safeParse(rest).success).toBe(true);
     expect(projectSchema.safeParse({ ...project, result: '' }).success).toBe(false);
   });
   it('accepts a visual with a src and rejects an unknown kind', () => {
@@ -63,6 +63,14 @@ describe('projectSchema', () => {
       true,
     );
     expect(projectSchema.safeParse({ ...project, visual: { kind: 'gif', label: 'x' } }).success).toBe(false);
+  });
+});
+
+describe('achievement story', () => {
+  it('accepts paragraphs and rejects an empty list', () => {
+    const withStory = (story: string[]) => ({ ...role, achievements: [{ ...achievement, story }] });
+    expect(roleSchema.safeParse(withStory(['One.', 'Two.'])).success).toBe(true);
+    expect(roleSchema.safeParse(withStory([])).success).toBe(false);
   });
 });
 

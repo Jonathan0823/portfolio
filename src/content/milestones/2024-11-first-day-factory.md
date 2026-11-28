@@ -4,7 +4,7 @@ tags:
   - 'Next.js'
 date: '2024-11'
 label: 'Work'
-title: 'First day inside a battery factory.'
+title: 'First day at a battery manufacturer.'
 refs:
   - kind: 'role'
     id: 'century-batteries-intern'

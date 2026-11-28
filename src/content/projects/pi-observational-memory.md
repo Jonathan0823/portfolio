@@ -1,25 +1,18 @@
 ---
 name: 'pi-observational-memory'
-hook: 'Tiered long-term memory for the Pi coding agent.'
-status: 'Open source'
-role: 'Solo'
 order: 5
 month: '2026-11'
-result: 'Open source on GitHub.'
 repo: 'https://github.com/Jonathan0823/pi-observational-memory'
 tags:
   - 'TypeScript'
 visual:
   kind: 'diagram'
-  label: 'tiered memory for the Pi agent'
+  label: 'Observers write a ledger; compaction folds it into a summary; a consolidator writes topic files the next session can recall'
+  src: '/diagrams/pi-observational-memory.svg'
 ---
 
-A memory system for the Pi coding agent, stored in tiers so the agent keeps useful context across sessions.
+Long-term memory for the Pi coding agent, so what it learns in one session is still there in the next.
 
-## Problem
+## How it works
 
-The agent forgot what it had learned in earlier sessions.
-
-## What I did
-
-A tiered memory extension for Pi, published as open source.
+Observer subprocesses read the session in chunks and record what they notice in a ledger. When the context gets large, a compaction step folds the ledger into a summary block without calling a model. A consolidator then writes it out as topic files under .memory/, which later sessions read back through a recall tool.
