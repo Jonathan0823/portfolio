@@ -128,6 +128,12 @@ html.has-pixel-pointer :is(input, textarea, select, [contenteditable]) {
 [data-pixel-btn]:is(:hover, :focus-visible) .btn-icon {
   color: var(--heat);
 }
+/* the nav's white links sit on these fields' lava, drawn in a canvas a contrast checker cannot read; on its own it measures
+   them against the white page and fails them. An image background (transparent, so nothing shows) tells it the background
+   is an image to judge by eye. The band under the links is kept to the lava's darkest layer (field-edges.ts NAV_BAND), about 8:1 */
+:is([data-pixel-field='hero'], [data-pixel-field='strip']) {
+  background-image: linear-gradient(transparent, transparent);
+}
 /* a nav item the pointer's heat has taken the shape of (nav-magnet.ts): the word turns white as the heat arrives */
 [data-nav-magnet][data-held] {
   color: var(--color-paper);
