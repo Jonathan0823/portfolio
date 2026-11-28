@@ -138,19 +138,6 @@ export function shockwaveShape(charge: number, strong: boolean): ShockwaveShape 
   };
 }
 
-/** Radius in hero-field cells of the heat ring a click injects `t` (0..1) of the way through its life. */
-export function fieldRingRadius(strong: boolean, charge: number, impact: number, t: number): number {
-  const reach = (strong ? 9 : 5.5) * (1 + 2 * charge) * (1 + 1.5 * impact);
-  return reach * (1 - (1 - t) * (1 - t));
-}
-
-/** Heat a hero-field cell at `distance` cells from the click gets from a ring of radius `radius`, 0 off the ring. */
-export function fieldRingHeat(distance: number, radius: number, strong: boolean, t: number): number {
-  const off = Math.abs(distance - radius);
-  if (off > 1.1) return 0;
-  return (strong ? 1 : 0.75) * (1 - t * 0.4) * (1 - off / 1.6);
-}
-
 /** Cells a charging mote starts from the pointer */
 export const MOTE_FROM = 8;
 /** How far a mote is from the pointer at `progress` (0 = just spawned, 1 = arrived); it accelerates in. */
