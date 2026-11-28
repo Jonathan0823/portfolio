@@ -27,6 +27,14 @@ const SHED_HEIGHT = 1.5;
 const SHED_SPEED = 0.6;
 const SHED_SPAN = 6;
 const SHED_REST_MS = 1500;
+/** how far outside the surface (rows) a tap still lands in it, how far inside, how hard it lands, and its span */
+const TAP_OUT = 8;
+const TAP_IN = 4;
+const TAP_PUSH = 0.9;
+const TAP_SPAN = 3;
+/** the most a slosh pushes per step, and the share of it that varies along the surface so it breaks into waves */
+const MAX_SLOSH = 0.8;
+const SLOSH_VARY = 0.4;
 /** degrees a mascot tilts per row of slope under it, at most MAX_TILT */
 const TILT_PER_ROW = 6;
 const MAX_TILT = 14;
@@ -60,6 +68,33 @@ export function pressWave(wave: SurfaceWave, column: number, outside: number, sp
     if (x < 0 || x >= wave.height.length) continue;
     wave.velocity[x] -= push * (1 - Math.abs(dx) / (PRESS_SPAN + 1));
   }
+}
+
+/**
+ * A tap `outside` rows past the surface at `column` drops into the water there: a sharp dent that rings out.
+ * Returns false (and leaves the water alone) when the tap is too far from the surface.
+ */
+export function tapWave(wave: SurfaceWave, column: number, outside: number): boolean {
+  if (outside <= -TAP_IN || outside >= TAP_OUT) return false;
+  const centre = Math.round(column);
+  let landed = false;
+  for (let dx = -TAP_SPAN; dx <= TAP_SPAN; dx++) {
+    const x = centre + dx;
+    if (x < 0 || x >= wave.height.length) continue;
+    wave.velocity[x] -= TAP_PUSH * (1 - Math.abs(dx) / (TAP_SPAN + 1));
+    landed = true;
+  }
+  return landed;
+}
+
+/**
+ * The page jolts the whole surface by `push` rows per step (positive: away from the anchored edge), capped at
+ * MAX_SLOSH. It varies along the surface with `phase`, so the water sloshes into waves instead of bobbing as one.
+ */
+export function sloshWave(wave: SurfaceWave, push: number, phase: number): void {
+  const p = Math.max(-MAX_SLOSH, Math.min(MAX_SLOSH, push));
+  for (let x = 0; x < wave.height.length; x++)
+    wave.velocity[x] += p * (1 - SLOSH_VARY + SLOSH_VARY * Math.sin(x * 0.13 + phase));
 }
 
 /** one WAVE_STEP_MS step: each column is pulled toward its neighbours and back toward calm */

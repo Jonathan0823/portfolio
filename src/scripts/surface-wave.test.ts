@@ -5,7 +5,9 @@ import {
   createWave,
   pressWave,
   shedColumns,
+  sloshWave,
   stepWave,
+  tapWave,
   waveMoving,
   waveUnder,
   type SurfaceWave,
@@ -66,6 +68,41 @@ describe('surface wave', () => {
       stepWave(wave);
       for (const h of wave.height) expect(Math.abs(h)).toBeLessThanOrEqual(MAX_ROWS);
     }
+  });
+});
+
+describe('tapWave', () => {
+  it('drops into the water near the tap only', () => {
+    const wave = createWave(40);
+    expect(tapWave(wave, 20, 2)).toBe(true);
+    run(wave, 3);
+    expect(wave.height[20]).toBeLessThan(0);
+    expect(wave.height[35]).toBe(0);
+  });
+
+  it('misses a tap far from the surface, or off the field', () => {
+    const wave = createWave(40);
+    expect(tapWave(wave, 20, 12)).toBe(false);
+    expect(tapWave(wave, 20, -6)).toBe(false);
+    expect(tapWave(wave, 60, 0)).toBe(false);
+    expect(waveMoving(wave)).toBe(false);
+  });
+});
+
+describe('sloshWave', () => {
+  it('moves the whole surface the way it is pushed, unevenly', () => {
+    const wave = createWave(60);
+    sloshWave(wave, 0.5, 0);
+    expect([...wave.velocity].every((v) => v > 0)).toBe(true);
+    expect(new Set([...wave.velocity].map((v) => v.toFixed(3))).size).toBeGreaterThan(1);
+  });
+
+  it('caps a hard jolt and settles afterwards', () => {
+    const wave = createWave(60);
+    sloshWave(wave, -50, 1);
+    for (const v of wave.velocity) expect(v).toBeGreaterThanOrEqual(-0.8);
+    run(wave, 3000);
+    expect(waveMoving(wave)).toBe(false);
   });
 });
 
