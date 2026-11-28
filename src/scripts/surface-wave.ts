@@ -3,8 +3,8 @@
 // it into the field's shape. Heights are in rows, counted away from the field's anchored edge, so a press is always
 // negative: it pushes the hero's hanging edge up and the footer's surface down.
 
-/** ms of one simulation step: the waves are tuned at 60 steps a second */
-export const WAVE_STEP_MS = 16;
+/** ms of one simulation step: the waves are tuned at about 143 steps a second, whatever the display's refresh rate */
+export const WAVE_STEP_MS = 7;
 /** rows the surface may move either way */
 export const MAX_ROWS = 6;
 /** how far outside the surface (rows) the pointer still presses it, and how far inside */

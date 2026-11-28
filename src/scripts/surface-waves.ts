@@ -26,8 +26,8 @@ const SPEED_FADE = 0.8;
 /** ms without a move before the speed starts fading; moves further apart than MOVE_GAP_MS give no speed */
 const STILL_MS = 60;
 const MOVE_GAP_MS = 100;
-/** steps a single frame may catch up on, so a stalled tab does not slosh the water all at once */
-const MAX_STEPS = 4;
+/** steps a single frame may catch up on (a dropped 30 fps frame), so a stalled tab does not slosh the water all at once */
+const MAX_STEPS = 8;
 
 export interface SurfaceWaves {
   /** the wave and loose drops for this field's shape this frame */
