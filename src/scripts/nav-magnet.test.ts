@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { distanceToBox, nearestBox } from './nav-magnet';
+import { distanceToBox, nearestBox, stepSlosh } from './nav-magnet';
+import { frameScale } from './timing';
 
 const boxes = [
   { left: 0, top: 0, width: 100, height: 30 },
@@ -20,5 +21,16 @@ describe('nearestBox', () => {
   });
   it('lets go outside the zone', () => {
     expect(nearestBox(50, 90, boxes)).toBe(-1);
+  });
+});
+
+describe('stepSlosh', () => {
+  it('settles even when every frame is as slow as frameScale allows', () => {
+    let s = { position: 0, velocity: 0.42 };
+    for (let i = 0; i < 20; i++) {
+      s = stepSlosh(s.position, s.velocity, frameScale(1000));
+      expect(Math.abs(s.position)).toBeLessThan(2);
+    }
+    expect(Math.abs(s.position)).toBeLessThan(0.05);
   });
 });

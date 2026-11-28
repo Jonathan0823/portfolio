@@ -37,6 +37,17 @@ export function nearestBox(x: number, y: number, boxes: readonly Box[], zone = Z
   return best;
 }
 
+/** The slosh a frame later. Taken in steps of one reference frame at most: one long step overshoots and grows. */
+export function stepSlosh(position: number, velocity: number, scale: number): { position: number; velocity: number } {
+  const steps = Math.ceil(scale);
+  for (let i = 0; i < steps; i++) {
+    const step = scale / steps;
+    velocity += (-0.1 * position - 0.09 * velocity) * step;
+    position += velocity * step;
+  }
+  return { position, velocity };
+}
+
 export interface NavMagnet {
   /** the pointer is at (x, y); true while a nav item holds it */
   update(x: number, y: number, engaged: boolean): boolean;
@@ -104,8 +115,7 @@ export function mountNavMagnet(): NavMagnet {
       fill[i] += (goal - fill[i]) * ease(goal ? 0.16 : 0.12, scale);
       if (Math.abs(goal - fill[i]) < 0.004) fill[i] = goal;
       if (reduced) slosh[i] = vel[i] = 0;
-      vel[i] += (-0.1 * slosh[i] - 0.09 * vel[i]) * scale;
-      slosh[i] += vel[i] * scale;
+      ({ position: slosh[i], velocity: vel[i] } = stepSlosh(slosh[i], vel[i], scale));
       if (Math.abs(slosh[i]) < 0.01 && Math.abs(vel[i]) < 0.01) slosh[i] = vel[i] = 0;
       if (fill[i] > 0 || slosh[i]) busy = true;
       const isWorded = worded.has(el);
