@@ -4,7 +4,6 @@ import type { FieldShape } from './pixel-math';
 import type { HeroField } from './hero-field';
 import { REDUCE_QUERY, prefersReducedMotion } from './motion';
 import { whenCoverGone } from './page-cover';
-import { applyHolds } from './heat-hold';
 import { IGNITE_MS, createIgnite } from './hero-ignite';
 
 /** the hero field's own seed (canvas-effects.ts): the ignite's last frame must equal the resting field */
@@ -37,13 +36,12 @@ function finishIgnite(): void {
   igniteResolve();
 }
 
-/** called from the hero field's shape callback every paint: applies held heat and empties the field during the ignite */
+/** called from the hero field's shape callback every paint: empties the field during the ignite */
 export function heroLifeShape(hero: HeroField | undefined, motion: boolean, base: FieldShape): FieldShape {
   const field = hero?.field();
   if (!hero || !field || !motion) return {};
   if (igniteStart < 0 && !igniteDone) void whenCoverGone().then(() => (igniteStart = performance.now()));
   const now = performance.now();
-  applyHolds(field, now);
   if (igniteDone) return {};
   const elapsed = igniteElapsed(igniteStart, now);
   if (elapsed === null) {
