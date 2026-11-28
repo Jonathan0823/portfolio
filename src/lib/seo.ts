@@ -7,7 +7,7 @@ const PAGES: Record<SeoPage, { title: string; description: string; imageAlt: str
     title: 'Eguin Jonathan — Software Engineer (Backend & Full-Stack)',
     imageAlt: 'Eguin Jonathan, software engineer: Go, Python, TypeScript, IoT and data pipelines',
     description:
-      'Eguin Jonathan, software engineer in Karawang, Indonesia: device gateways, data pipelines and fast dashboards in Go, Python, TypeScript. Open to remote roles.',
+      'Eguin Jonathan, software engineer in Indonesia: device gateways, data pipelines and fast dashboards in Go, Python, TypeScript. Open to remote roles.',
   },
   story: {
     title: 'My Story — Eguin Jonathan, Software Engineer',
