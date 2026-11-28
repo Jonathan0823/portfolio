@@ -16,6 +16,7 @@ import { footWordmarkShape } from './footer-wordmark';
 import { mountFooterMascots } from './footer-mascots';
 import { mountSurfaceWaves, type SurfaceWaves } from './surface-waves';
 import { hoverInput } from './wave-hover';
+import { touchInput } from './wave-touch';
 import { CALM } from './surface-wave';
 
 const SEEDS: Record<string, number> = { hero: 1.3, strip: 4.7, foot: 8.1 };
@@ -56,6 +57,7 @@ if (typeof window.matchMedia === 'function') {
   const hero = fields[hosts.findIndex((h) => h.dataset.pixelField === 'hero')] ?? null;
   const glyphCanvas = document.querySelector<HTMLCanvasElement>('canvas[data-glyph]');
   let stopCursor: (() => void) | null = null;
+  let wavesKey: string | null = null;
   let glyph: GlyphSpill | null = null;
   let glyphKey: string | null = null;
 
@@ -69,11 +71,13 @@ if (typeof window.matchMedia === 'function') {
       stopCursor();
       stopCursor = null;
     }
-    // the surfaces answer the same hovering mouse: a Wave where the pointer presses them
-    if (cursor && !waves) waves = mountSurfaceWaves(fields, hoverInput);
-    if (!cursor && waves) {
-      waves.stop();
-      waves = null;
+    // the Wave: a hovering mouse presses the surfaces; on touch, taps and the page's scrolling move them
+    const fine = window.matchMedia(FINE_POINTER_QUERY).matches;
+    const nextWaves = reduced ? null : fine ? 'hover' : 'touch';
+    if (nextWaves !== wavesKey) {
+      waves?.stop();
+      waves = nextWaves ? mountSurfaceWaves(fields, nextWaves === 'hover' ? hoverInput : touchInput) : null;
+      wavesKey = nextWaves;
     }
     // the glyph spill reads both when it mounts, so a change of either remounts it
     const key = `${reduced}:${window.matchMedia(FINE_POINTER_QUERY).matches}`;
